@@ -1,0 +1,31 @@
+body {
+  padding: 2rem;
+  max-width: 60rem;
+  margin: 0 auto;
+  font-family: sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+fieldset {
+  margin: 1.4rem 0;
+  padding: 1rem;
+}
+
+output {
+  display: block;
+  font-family: monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: white;
+    background-color: #222;
+  }
+}

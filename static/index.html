@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang=en>
+
+<head>
+  <title>TzStamp Web Client</title>
+  <meta charset=utf-8>
+  <meta name=viewport content="width = device-width, initial-scale = 1">
+  <link rel=stylesheet href=main.css>
+  <script defer src=main.js></script>
+
+<body>
+  <h1>TzStamp Web Client</h1>
+  <input id=submission type=file>
+  <fieldset>
+    <legend>SHA-256 Hash</legend>
+    <output id=hash>&mdash;</output>
+  </fieldset>
+  <fieldset>
+    <legend>Actions</legend>
+    <button id=timestamp disabled>Timestamp</button>
+    <button id=verify disabled>Verify</button>
+  </fieldset>

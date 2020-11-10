@@ -1,0 +1,14 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node tests.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv-defaults": "^2.0.1",
+    "express": "^4.17.1"
+  }
+}
