@@ -1,43 +1,54 @@
-const submissionInput = document.getElementById('submission')
-const timestampButton = document.getElementById('timestamp')
-const verifyButton = document.getElementById('verify')
-const hashDisplay = document.getElementById('hash')
+const form = document.forms.timestamp
+const {
+  file: fileInput,
+  hash: hashInput,
+  stamp: stampButton,
+  verify: verifyButton
+} = form.elements
 
-submissionInput.addEventListener('change', handleFileSelection)
-timestampButton.addEventListener('click', handleTimestampAction)
-verifyButton.addEventListener('click', handleVerifyAction)
-
-let hash = null
-
-async function handleFileSelection ({ target }) {
-  timestampButton.disabled = true
-  verifyButton.disabled = true
-  if (target.files.length) {
-    hashDisplay.innerText = 'Pending'
-    const buffer = await target.files[0].arrayBuffer()
-    hash = await window.crypto.subtle.digest('SHA-256', buffer)
-    const hashArray = Array.from(new Uint8Array(hash))
-    hashDisplay.innerText = hashArray
+fileInput.addEventListener('change', async () => {
+  if (fileInput.files.length) {
+    const buffer = await fileInput.files[0].arrayBuffer()
+    const digest = await window.crypto.subtle.digest('SHA-256', buffer)
+    const hash = Array
+      .from(new Uint8Array(digest))
       .map(b => b.toString(16)
       .padStart(2, '0'))
       .join('')
-    timestampButton.disabled = false
-    verifyButton.disabled = false
-  } else {
-    hashDisplay.innerText = '—'
+    hashInput.value = hash
   }
-}
+  updateActions()
+})
 
-async function handleTimestampAction ({ target }) {
-  await fetch('/add_hash', {
+hashInput.addEventListener('change', ({ target }) => {
+  updateActions()
+})
+
+stampButton.addEventListener('click', () => {
+  fileInput.value = null
+  fetch('/api/stamp', {
     method: 'POST',
-    body: hash
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ hash })
   })
-}
+    .then(res => res.json())
+    .then(console.log)
+  form.reset()
+})
 
-async function handleVerifyAction ({ target }) {
-  await fetch('/verify', {
-    method: 'GET',
-    body: hash
+verifyButton.addEventListener('click', () => {
+  fetch('/proof', {
+    method: 'GET'
   })
+    .then(res => res.json())
+    .then(console.log)
+  form.reset()
+})
+
+function updateActions () {
+  stampButton.disabled = !hashInput.checkValidity()
+  verifyButton.disabled = !hashInput.checkValidity()
 }

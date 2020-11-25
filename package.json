@@ -8,6 +8,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@tzstamp/merkle": "^1.1.0",
     "dotenv-defaults": "^2.0.1",
     "express": "^4.17.1"
   }

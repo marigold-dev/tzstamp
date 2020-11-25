@@ -2,21 +2,28 @@
 <html lang=en>
 
 <head>
-  <title>TzStamp Web Client</title>
+  <title>TzStamp Web</title>
   <meta charset=utf-8>
-  <meta name=viewport content="width = device-width, initial-scale = 1">
-  <link rel=stylesheet href=main.css>
+  <meta name=viewport content="width = device-width, initial-scale = 1, minimum-scale = 1">
+  <link rel=stylesheet href=/main.css>
   <script defer src=main.js></script>
 
 <body>
-  <h1>TzStamp Web Client</h1>
-  <input id=submission type=file>
-  <fieldset>
-    <legend>SHA-256 Hash</legend>
-    <output id=hash>&mdash;</output>
-  </fieldset>
-  <fieldset>
-    <legend>Actions</legend>
-    <button id=timestamp disabled>Timestamp</button>
-    <button id=verify disabled>Verify</button>
-  </fieldset>
+  <header>
+    <h1>TzStamp Web</h1>
+    <nav>
+      <a href=https://gitlab.com/tzstamp/server target=_blank rel="noopener noreferrer nofollow">Repository</a>
+      <a href=https://gitlab.com/tzstamp/cli target=_blank rel="noopener noreferrer nofollow">TzStamp CLI</a>
+    </nav>
+  </header>
+  <main>
+    <h2>Create Timestamp</h2>
+    <form id=timestamp>
+      <label for=file>Submit File</label>
+      <input id=file type=file>
+      <label for=hash>SHA-256 Hash</label>
+      <input id=hash type=text size=64 pattern=[0-9a-fA-F]{64}>
+      <button id=stamp type=button disabled>Stamp</button>
+      <button id=verify type=button disabled>Verify</button>
+    </form>
+  </main>

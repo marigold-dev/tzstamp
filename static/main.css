@@ -1,8 +1,43 @@
+:root {
+  --color-text: #000;
+  --color-border: #8f8f8f;
+  --color-background: #fff;
+  --border-radius: 6px;
+  --box-shadow: 3px 3px 8px;
+  --font-stack-sans-serif: Futura, "Trebuchet MS", Arial, sans-serif;
+  --font-stack-monospace: monaco, Consolas, "Lucida Console", monospace;
+  --line-height: 1.5;
+  --content-width: 60rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #fff;
+    --color-background: #282828;
+  }
+}
+
 body {
-  padding: 2rem;
-  max-width: 60rem;
-  margin: 0 auto;
-  font-family: sans-serif;
+  margin: 0;
+  padding: 1.4rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: var(--font-stack-sans-serif);
+  line-height: var(--line-height);
+  overflow-x: hidden;
+}
+
+main, header, footer {
+  margin: 2rem auto;
+  max-width: var(--content-width);
+}
+
+nav {
+  display: flex;
+  margin-bottom: 4rem;
+  align-items: flex-start;
+  gap: 1.4rem;
+  font-weight: bold;
 }
 
 a {
@@ -13,19 +48,43 @@ a:hover {
   text-decoration: underline;
 }
 
-fieldset {
-  margin: 1.4rem 0;
-  padding: 1rem;
-}
-
-output {
+label {
   display: block;
-  font-family: monospace;
+  font-weight: bold;
+  margin-bottom: 0.4rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    color: white;
-    background-color: #222;
-  }
+label + input {
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+input {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem;
+  font-family: var(--font-stack-monospace);
+  font-size: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+input[type=file]::-webkit-file-upload-button {
+  padding: 0.4rem;
+  margin-right: 0.8rem;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+}
+
+input[type=file]::file-selector-button {
+  padding: 0.4rem;
+  margin-right: 0.8rem;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+}
+
+button {
+  margin-right: 0.4rem;
+  padding: 0.4rem;
+  font-family: inherit;
 }
