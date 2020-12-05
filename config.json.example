@@ -1,0 +1,6 @@
+{
+  "TZNODE_RPC_URL":"https://delphinet-tezos.giganode.io/",
+  "TZSTAMP_CONTRACT_ADDR":"KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj",
+  "CERTIFY_TREE_N_DAYS":1,
+  "FAUCET_KEY": {}
+}
