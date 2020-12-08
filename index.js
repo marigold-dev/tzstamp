@@ -43,7 +43,6 @@ express()
   .post('/api/stamp', postStamp)
   .get('/api/proof/:id', getProof)
   .use(errorHandler)
-  .use(express.static("proofs"))
   .listen(PORT, listenHandler)
 
 // TODO: Set this to use config.CERTIFY_TREE_N_DAYS
