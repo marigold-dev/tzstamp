@@ -58,6 +58,9 @@ function postStamp (req, res) {
     else if (typeof(req.body.hash) == typeof({})) {
         throw SyntaxError("Request body's hash field was empty.")
     }
+    else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
+        throw SyntaxError(`${req.body.hash} is not a sha256 hash!`)
+    }
   const digest = parse(req.body.hash)
   tree.append(hash(digest))
   proof_id = stringify(hash(digest))
@@ -67,6 +70,9 @@ function postStamp (req, res) {
 }
 
 function getProof (req, res) {
+  if (!req.params.id.match(/^[0-9a-fA-F]{64}$/)) {
+      throw SyntaxError(`${req.params.id} is not a sha256 hash!`)
+  }
   const digest = parse(req.params.id)
   if (tree.leaves.find(leaf => compare(leaf, digest)))
     res
