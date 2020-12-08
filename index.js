@@ -5,7 +5,8 @@ const {
   _util: {
     parse,
     hash,
-    compare
+    compare,
+    stringify
   }
 } = require('@tzstamp/merkle')
 
@@ -23,9 +24,6 @@ const  { importKey } = require('@taquito/signer')
 
 const tezos = new TezosToolkit(config.TZNODE_RPC_URL);
 
-
-
-
 // TODO: Implement remote signer(?) branch
 if (config.FAUCET_KEY) {
     importKey(
@@ -37,16 +35,6 @@ if (config.FAUCET_KEY) {
     );
 }
 
-/*
-// 2020-12-03: Expect one method, bytes(), which takes a sha256; i.e. addHash()
-const tzstampContract = tezos.contract
-    .at(config.TZSTAMP_CONTRACT_ADDR)
-    .then(c => {
-        let methods = c.parameterSchema.ExtractSignatures();
-    })
-    .catch(error => console.log(`Error: ${error}`));
-*/
-
 let tree = new MerkleTree
 
 express()
@@ -55,31 +43,43 @@ express()
   .post('/api/stamp', postStamp)
   .get('/api/proof/:id', getProof)
   .use(errorHandler)
+  .use(express.static("proofs"))
   .listen(PORT, listenHandler)
 
 // TODO: Set this to use config.CERTIFY_TREE_N_DAYS
-setInterval(notarizeTree, (1 * 60 * 1000))
+setInterval(stampTree, (1 * 60 * 1000))
 
 function postStamp (req, res) {
-  if (!req.is('json'))
-    throw SyntaxError('Request type is not JSON')
-  if (req.body.hash == undefined)
-    throw SyntaxError('Request body does not contain a hash field')
+    if (!req.is('json'))
+        throw SyntaxError('Request type is not JSON')
+    if (req.body.hash == undefined) {
+        throw SyntaxError('Request body does not contain a hash field')
+    }
+    else if (typeof(req.body.hash) == typeof({})) {
+        throw SyntaxError("Request body's hash field was empty.")
+    }
   const digest = parse(req.body.hash)
   tree.append(hash(digest))
+  proof_id = stringify(hash(digest))
   res
     .status(202)
-    .json({ status: 'Notarization pending'})
+    .json({ status: 'Stamp pending', url: `/api/proof/${proof_id}`})
 }
 
 function getProof (req, res) {
   const digest = parse(req.params.id)
-  // TODO
   if (tree.leaves.find(leaf => compare(leaf, digest)))
     res
       .status(202)
-      .json({ status: 'Notarization pending'})
-  else throw new ReferenceError('Hash not found')
+      .json({ status: 'Stamp pending'})
+  else if (fs.existsSync("proofs/" + req.params.id + ".json"))
+      {
+          proof = JSON.parse(fs.readFileSync("proofs/" + req.params.id + ".json"))
+          res
+          .status(200)
+          .json(proof)
+      }
+  else throw new ReferenceError('Not found. Your proof is no longer in cache or unsubmitted.')
 }
 
 function errorHandler (err, req, res, next) {
@@ -100,16 +100,30 @@ function listenHandler () {
   console.log(`Serving on port ${PORT}`)
 }
 
-function notarizeTree () {
+function stampTree () {
+    if (tree.hash == null) {
+        return null;
+    }
+    if (!fs.existsSync("proofs")) {
+        fs.mkdirSync("proofs")
+    }
+    // Generate proof files for tree in memory
+    for (const leaf of tree.leaves) {
+        proof = JSON.stringify(tree.prove(leaf))
+        filename = stringify(leaf)
+        if (!fs.existsSync(`proofs/${filename}.json`)) {
+            fs.writeFileSync(`proofs/${filename}.json`, proof)
+        }
+    }
     tezos.contract
         .at(config.TZSTAMP_CONTRACT_ADDR)
         .then(c => {
-            return c.methods.default("84714a61037b3b4fa539008681cbfa97c7256930279ff4b54bad7366521afc67").send()
+            return c.methods.default(tree.hash).send()
         })
         .then(op => {
-            console.log(op)
             return op.confirmation(3).then(() => op.hash);
         })
         .then(hash => console.log(`Operation injected: https://delphi.tzstats.com/${hash}`))
         .catch(error => console.log(`Error: ${error.message}`));
+    tree = new MerkleTree
 }
