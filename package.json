@@ -8,6 +8,8 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@taquito/signer": "^7.0.1-beta.0",
+    "@taquito/taquito": "^7.0.1-beta.0",
     "@tzstamp/merkle": "^1.1.0",
     "dotenv-defaults": "^2.0.1",
     "express": "^4.17.1"

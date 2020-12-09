@@ -32,7 +32,7 @@ stampButton.addEventListener('click', () => {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ hash })
+    body: JSON.stringify({ hash: hashInput.value })
   })
     .then(res => res.json())
     .then(console.log)
