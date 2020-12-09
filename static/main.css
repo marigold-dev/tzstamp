@@ -87,4 +87,10 @@ button {
   margin-right: 0.4rem;
   padding: 0.4rem;
   font-family: inherit;
+  margin-bottom: 0.4rem;
+}
+
+#proofs {
+  height: 40ch;
+  width: 60ch;
 }
