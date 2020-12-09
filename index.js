@@ -65,7 +65,7 @@ function postStamp (req, res) {
   proof_id = stringify(hash(digest))
   res
     .status(202)
-    .json({ status: 'Stamp pending', url: `/api/proof/${proof_id}`})
+    .json({ status: 'Stamp pending', url: `${config.BASE_URL}/api/proof/${proof_id}`})
 }
 
 function getProof (req, res) {

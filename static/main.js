@@ -35,7 +35,11 @@ stampButton.addEventListener('click', () => {
     body: JSON.stringify({ hash: hashInput.value })
   })
     .then(res => res.json())
-    .then(console.log)
+    .then(json => {
+          proofs = document.getElementById("proofs")
+          console.log(proofs.value)
+          proofs.value = proofs.value + "\n" + json.url }
+         )
   form.reset()
 })
 
