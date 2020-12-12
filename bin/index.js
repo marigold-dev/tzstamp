@@ -40,17 +40,28 @@ async function handleVerify () {
     // Determine what arguments we've been passed
     sha256_p = /^[0-9a-fA-F]{64}$/;
     http_p = /^https?:\/\//
+    if (argv._[1] == undefined) {
+        console.log("Error: Hash to test for inclusion not given (first argument).")
+    }
     const hash = argv._[1].match(sha256_p)
           ? Hash.parse(argv._[1])
           : await hashFile(argv._[1]);
+    if (argv._[2] == undefined) {
+        throw "Error: Proof to test inclusion against not given (second argument)."
+    }
     const proof = argv._[2].match(http_p)
         ? await fetch(argv._[2]).then(
-            function (_proof) {
-                return Proof.parse(_proof);
+            async function (_proof) {
+                proof_obj = await _proof.json()
+                return Proof.parse(JSON.stringify(proof_obj));
             })
         : Proof.parse(fs.readFileSync(argv._[2]));
-    console.log(hash);
-    console.log(proof);
+    console.log("ROOT HASH DERIVED FROM PROOF AND LEAF HASH: ")
+    console.log(
+        Hash.stringify(
+            proof.derive(
+                Hash.hash(
+                    hash))));
 }
 
 async function handleStamp () {
