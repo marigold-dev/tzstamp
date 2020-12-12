@@ -25,7 +25,7 @@ const  { importKey } = require('@taquito/signer')
 const tezos = new TezosToolkit(config.TZNODE_RPC_URL);
 
 // TODO: Implement remote signer(?) branch
-if (config.FAUCET_KEY) {
+if (config.FAUCET_KEY.secret) {
     importKey(
         tezos,
         config.FAUCET_KEY.email,
@@ -46,7 +46,9 @@ express()
   .listen(PORT, listenHandler)
 
 // TODO: Set this to use config.CERTIFY_TREE_N_DAYS
-setInterval(stampTree, (1 * 60 * 1000))
+if (config.FAUCET_KEY.secret) {
+    setInterval(stampTree, (1 * 60 * 1000))
+}
 
 function postStamp (req, res) {
     if (!req.is('json'))
