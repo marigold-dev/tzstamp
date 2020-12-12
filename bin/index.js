@@ -52,9 +52,15 @@ async function handleVerify () {
     const proof = argv._[2].match(http_p)
         ? await fetch(argv._[2]).then(
             async function (_proof) {
+                if (_proof.status == 404) {
+                    throw `Requested proof "${argv._[2]}" hasn't been posted to tzstamp server`
+                }
+                else if (_proof.status == 202) {
+                    throw `Requested proof "${argv._[2]}" will be posted with the next merkle root`
+                }
                 proof_obj = await _proof.json()
                 return Proof.parse(JSON.stringify(proof_obj));
-            })
+            }).catch(error => { console.log(error) ; process.exit(1) })
         : Proof.parse(fs.readFileSync(argv._[2]));
     console.log("ROOT HASH DERIVED FROM PROOF AND LEAF HASH: ")
     console.log(
