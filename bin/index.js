@@ -53,7 +53,7 @@ async function handleVerify () {
         ? await fetch(argv._[2]).then(
             async function (_proof) {
                 if (_proof.status == 404) {
-                    throw `Requested proof "${argv._[2]}" hasn't been posted to tzstamp server`
+                    throw `Requested proof "${argv._[2]}" hasn't been posted to tzstamp server or has expired`
                 }
                 else if (_proof.status == 202) {
                     throw `Requested proof "${argv._[2]}" will be posted with the next merkle root`
