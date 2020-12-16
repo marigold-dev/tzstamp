@@ -4,7 +4,7 @@
   "description": "Command line application to make trusted timestamps using the Tezos blockchain.",
   "main": "bin/index.js",
   "bin": {
-    "hello": "./bin/index.js"
+    "tzstamp": "./bin/index.js"
   },
   "scripts": {
     "test": "test"
