@@ -9,30 +9,32 @@ const {
     stringify
   }
 } = require('@tzstamp/merkle')
-
 const express = require('express')
-
-const { PORT, INTERVAL } = process.env
-
-const config = JSON.parse(fs.readFileSync("config.json"))
-
 const { TezosToolkit } = require('@taquito/taquito')
-
-const { InMemorySigner } = require('@taquito/signer')
-
+// const { InMemorySigner } = require('@taquito/signer')
 const  { importKey } = require('@taquito/signer')
 
-const tezos = new TezosToolkit(config.TZNODE_RPC_URL);
+const {
+  PORT,
+  INTERVAL,
+  FAUCET_KEY_PATH,
+  CONTRACT_ADDRESS,
+  RPC_URL
+} = process.env
+
+const faucetKey = getFaucetKey()
+
+const tezos = new TezosToolkit(RPC_URL)
 
 // TODO: Implement remote signer(?) branch
-if (config.FAUCET_KEY.secret) {
-    importKey(
-        tezos,
-        config.FAUCET_KEY.email,
-        config.FAUCET_KEY.password,
-        config.FAUCET_KEY.mnemonic.join(' '),
-        config.FAUCET_KEY.secret
-    );
+if (faucetKey.secret) {
+  importKey(
+    tezos,
+    faucetKey.email,
+    faucetKey.password,
+    faucetKey.mnemonic.join(' '),
+    faucetKey.secret
+  )
 }
 
 let tree = new MerkleTree
@@ -45,60 +47,67 @@ express()
   .use(errorHandler)
   .listen(PORT, listenHandler)
 
-// TODO: Set this to use config.CERTIFY_TREE_N_DAYS
-if (config.FAUCET_KEY.secret) {
-    setInterval(stampTree, (1 * 60 * 1000))
+if (faucetKey.secret) {
+  setInterval(stampTree, INTERVAL * 1000)
+}
+
+function getFaucetKey () {
+  if (FAUCET_KEY_PATH == null) {
+    throw new Error ('Configure a path to a faucet key file')
+  }
+  const text = fs.readFileSync(FAUCET_KEY_PATH)
+  return JSON.parse(text)
 }
 
 function postStamp (req, res) {
-    if (!req.is('json'))
-        throw SyntaxError('Request type is not JSON')
-    if (req.body.hash == undefined) {
-        throw SyntaxError('Request body does not contain a hash field')
-    }
-    else if (typeof(req.body.hash) == typeof({})) {
-        throw SyntaxError("Request body's hash field was empty.")
-    }
-    else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
-        throw SyntaxError(`${req.body.hash} is not a sha256 hash!`)
-    }
+  if (!req.is('json')) {
+    throw new SyntaxError('Request type is not JSON')
+  }
+  if (req.body.hash == undefined) {
+    throw new SyntaxError('Request body does not contain a hash field')
+  } else if (typeof(req.body.hash) == typeof({})) {
+    throw new SyntaxError('Request body\'s hash field was empty.')
+  } else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
+    throw new SyntaxError(`${req.body.hash} is not a sha256 hash!`)
+  }
   const digest = parse(req.body.hash)
   tree.append(hash(digest))
   proof_id = stringify(hash(digest))
   res
     .status(202)
-    .json({ status: 'Stamp pending', url: `${config.BASE_URL}/api/proof/${proof_id}`})
+    .json({
+      status: 'Stamp pending',
+      url: `${config.BASE_URL}/api/proof/${proof_id}`
+    })
 }
 
 function getProof (req, res) {
   if (!req.params.id.match(/^[0-9a-fA-F]{64}$/)) {
-      throw SyntaxError(`${req.params.id} is not a sha256 hash!`)
+    throw new SyntaxError(`${req.params.id} is not a sha256 hash!`)
   }
   const digest = parse(req.params.id)
-  if (tree.leaves.find(leaf => compare(leaf, digest)))
+  if (tree.leaves.find(leaf => compare(leaf, digest))) {
     res
       .status(202)
       .json({ status: 'Stamp pending'})
-  else if (fs.existsSync("proofs/" + req.params.id + ".json"))
-      {
-          proof = JSON.parse(fs.readFileSync("proofs/" + req.params.id + ".json"))
-          res
-          .status(200)
-          .json(proof)
-      }
-  else throw new ReferenceError('Not found. Your proof is no longer in cache or unsubmitted.')
+  } else {
+    const proofPath = `proofs/${req.params.id}.json`
+    if (fs.existsSync(proofPath)) {
+      const proof = JSON.parse(fs.readFileSync(proofPath))
+      res.status(200).json(proof)
+    } else {
+      throw new ReferenceError('Not found. Your proof is no longer in cache or unsubmitted.')
+    }
+  }
 }
 
 function errorHandler (err, req, res, next) {
-  switch (err.constructor.name) {
-    case 'SyntaxError':
-      res.status(400)
-      break
-    case 'ReferenceError':
-      res.status(404)
-      break
-    default:
-      res.status(500)
+  if (err instanceof SyntaxError) {
+    res.status(400)
+  } else if (err instanceof ReferenceError) {
+    res.status(404)
+  } else {
+    res.status(500)
   }
   res.json({ error: err.message })
 }
@@ -107,30 +116,26 @@ function listenHandler () {
   console.log(`Serving on port ${PORT}`)
 }
 
-function stampTree () {
-    if (tree.hash == null) {
-        return null;
+async function stampTree () {
+  if (tree.hash == null) return
+  if (!fs.existsSync('proofs')) {
+    fs.mkdirSync('proofs')
+  }
+  // Generate proof files for tree in memory
+  for (const leaf of tree.leaves) {
+    const proof = JSON.stringify(tree.prove(leaf))
+    const filename = `proofs/${stringify(leaf)}.json`
+    if (!fs.existsSync(proofFile)) {
+      fs.writeFileSync(proofFile, proof)
     }
-    if (!fs.existsSync("proofs")) {
-        fs.mkdirSync("proofs")
-    }
-    // Generate proof files for tree in memory
-    for (const leaf of tree.leaves) {
-        proof = JSON.stringify(tree.prove(leaf))
-        filename = stringify(leaf)
-        if (!fs.existsSync(`proofs/${filename}.json`)) {
-            fs.writeFileSync(`proofs/${filename}.json`, proof)
-        }
-    }
-    tezos.contract
-        .at(config.TZSTAMP_CONTRACT_ADDR)
-        .then(c => {
-            return c.methods.default(tree.hash).send()
-        })
-        .then(op => {
-            return op.confirmation(3).then(() => op.hash);
-        })
-        .then(hash => console.log(`Operation injected: https://delphi.tzstats.com/${hash}`))
-        .catch(error => console.log(`Error: ${error.message}`));
-    tree = new MerkleTree
+  }
+  try {
+    const contract = await tezos.contract.at(CONTRACT_ADDRESS)
+    const operation = await contract.methods.default(tree.hash).send()
+    await operation.confirmation(3)
+    console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
+  } catch (error) {
+    console.error(`Error: ${error.message}`)
+  }
+  tree = new MerkleTree
 }
