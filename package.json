@@ -27,6 +27,7 @@
   "homepage": "https://gitlab.com/JD-P/tzstamp#readme",
   "dependencies": {
     "@tzstamp/merkle": "^1.1.0",
+    "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
   }
 }
