@@ -5,8 +5,6 @@ var argv = parseArgs(
     opts={"default":{"node":"https://mainnet-tezos.giganode.io/"}}
 )
 
-console.log(argv)
-
 require('dotenv-defaults').config()
 
 const { PORT, INTERVAL } = process.env
@@ -20,6 +18,8 @@ const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner } = require('@taquito/signer')
 
 const  { importKey } = require('@taquito/signer')
+
+const { Parser } = require('@taquito/michel-codec')
 
 const Tezos = new TezosToolkit(`${argv.node}`);
 
@@ -42,17 +42,10 @@ else if (argv.faucet) { // TestNet Key
 /* Feature List */
 /*
 
-1. Determine whether given address is tzstamp contract.
-Approach: Compare hash of contract michelson to premade list. Contracts
-shouldn't change often so this is viable.
-
-2. Manually upload hash to contract instance.
+1. Manually upload hash to contract instance.
 Approach: Taquito with remote signer(?)
 
-3. Deploy TzStamp
-Approach: IBID. Store predefined list of TzStamp contract types(?)
-
-4. Diagnostics
+2. Diagnostics
 Approach: Taquito and GigaNode as default
 
 */
@@ -85,4 +78,26 @@ if (argv._[2] === "is_tzstamp") {
         console.log(await isTzStamp(`${argv._[3]}`))
     }
     i()
+}
+
+else if (argv._[2] == "deploy") {
+    var contracts = fs.readdirSync("contracts")
+    var contract_tz = fs.readFileSync(
+        "contracts/" +
+        contracts[contracts.indexOf(argv._[3] + ".tz")],
+        {"encoding":"utf8"}
+    )
+    const p = new Parser()
+    var contract = p.parseScript(contract_tz)
+    Tezos.contract.originate({
+        code: contract,
+        init: "{}",
+        })
+        .then(originationOp => {
+            console.log(`Waiting for confirmation of origination for ${originationOp.contractAddress}...`);
+            return originationOp.contract()
+        })
+        .then (contract => {
+            console.log(`Origination completed. Use a chainviewer like https://tzstats.com/ to confirm the KT1 is ready.`);
+        }).catch(error => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
 }
