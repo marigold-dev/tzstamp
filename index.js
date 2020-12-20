@@ -2,7 +2,13 @@ var parseArgs = require('minimist')
 
 var argv = parseArgs(
     process.argv,
-    opts={"default":{"node":"https://mainnet-tezos.giganode.io/"}}
+    opts={"default":
+          {
+              "node":"https://mainnet-tezos.giganode.io/",
+              "indexer":"https://api.better-call.dev/v1",
+              "network":"delphinet",
+          }
+         }
 )
 
 require('dotenv-defaults').config()
@@ -10,6 +16,8 @@ require('dotenv-defaults').config()
 const { PORT, INTERVAL } = process.env
 
 const fs = require('fs')
+
+const fetch = require('node-fetch')
 
 const crypto = require('crypto')
 
@@ -68,23 +76,11 @@ async function isTzStamp (addr) {
     return TZSTAMP_VERSIONS.has(await getContractHash(addr))
 }
 
-
-
-if (argv._[2] === "is_tzstamp") {
-    if (argv._[3].length != 36) {
-        throw `"${argv._[3]}" doesn't seem to be a kt1 address (wrong length)`
-    }
-    async function i () {
-        console.log(await isTzStamp(`${argv._[3]}`))
-    }
-    i()
-}
-
-else if (argv._[2] == "deploy") {
+async function deploy (contractName) {
     var contracts = fs.readdirSync("contracts")
     var contract_tz = fs.readFileSync(
         "contracts/" +
-        contracts[contracts.indexOf(argv._[3] + ".tz")],
+            contracts[contracts.indexOf(`${contractName}` + ".tz")],
         {"encoding":"utf8"}
     )
     const p = new Parser()
@@ -98,6 +94,45 @@ else if (argv._[2] == "deploy") {
             return originationOp.contract()
         })
         .then (contract => {
-            console.log(`Origination completed. Use a chainviewer like https://tzstats.com/ to confirm the KT1 is ready.`);
+            console.log(`Origination completed. Use a chainviewer like https://better-call.dev/ to confirm the KT1 is ready.`);
         }).catch(error => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
 }
+
+async function viewStats (network, kt1) {
+    return await fetch(
+        argv.indexer +
+            `/stats/${network}/contracts?contracts=${kt1}&period=all`
+    )
+    .then(res => res.text())
+    .then(body => body = JSON.parse(body))
+}
+
+async function view () {
+    if (argv._[3] === "stats") {
+        var stats = await viewStats(argv.network, argv._[4])
+        console.log(`Users: ${stats.users}\n` +
+                    `Transactions: ${stats.txs}\n` +
+                    `Volume: ${stats.volume}`)
+    }
+}
+
+async function run () {
+    switch (argv._[2]) {
+        case 'is_tzstamp':
+            if (argv._[3].length != 36) {
+                throw `"${argv._[3]}" doesn't seem to be a kt1 address (wrong length)`
+            }
+            console.log(await isTzStamp(`${argv._[3]}`))
+            break;
+        case 'deploy':
+            await deploy(argv._[3])
+            break;
+        case 'view':
+            await view()
+            break;
+        default:
+            console.log(`Unrecognized subcommand: "${argv._[2]}"`)
+    }
+}
+
+run()
