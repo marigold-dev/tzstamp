@@ -107,12 +107,44 @@ async function viewStats (network, kt1) {
     .then(body => body = JSON.parse(body))
 }
 
+async function viewStorage(network, kt1) {
+    return await fetch(
+        argv.indexer +
+            `/contract/${network}/${kt1}/storage/raw`
+    )
+    .then(res => res.text())
+    .then(body => body = JSON.parse(body))
+    .then(
+        async function (bigMapID) {
+            return await fetch(
+                argv.indexer + 
+                    `/bigmap/${network}/${bigMapID}/keys`
+            )
+        })
+    .then(res => res.text())
+    .then(body => JSON.parse(body))
+}
+
 async function view () {
-    if (argv._[3] === "stats") {
-        var stats = await viewStats(argv.network, argv._[4])
-        console.log(`Users: ${stats.users}\n` +
-                    `Transactions: ${stats.txs}\n` +
-                    `Volume: ${stats.volume}`)
+    switch (argv._[3]) {
+        case 'stats':
+            var stats = await viewStats(argv.network, argv._[4])
+            console.log(`Users: ${stats.users}\n` +
+                        `Transactions: ${stats.txs}\n` +
+                        `Volume: ${stats.volume}`)
+            break;
+        case 'storage':
+            var contents = await viewStorage(argv.network, argv._[4])
+            contents.forEach(
+                function (i) {
+                    var key = i.data["key"]["value"]
+                    var value = i.data["value"]["value"]
+                    console.log(`${key}:${value}\n`)
+                }
+            )
+            break;
+        default:
+            console.log(`Unrecognized stats view: "${argv._[3]}"`)
     }
 }
 
