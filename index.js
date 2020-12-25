@@ -47,17 +47,6 @@ else if (argv.faucet) { // TestNet Key
     )
 }
 
-/* Feature List */
-/*
-
-1. Manually upload hash to contract instance.
-Approach: Taquito with remote signer(?)
-
-2. Diagnostics
-Approach: Taquito and GigaNode as default
-
-*/
-
 var TZSTAMP_VERSIONS = new Set()
 TZSTAMP_VERSIONS.add(
     "7009d7d3c79963f5128ba90d7f548eb82d4ec3d7f23ac919329234882e0d8ce3"
@@ -98,6 +87,17 @@ async function deploy (contractName) {
         }).catch(error => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
 }
 
+async function upload (kt1, uploadHash) {
+    try {
+        const contract = await Tezos.contract.at(kt1)
+        const operation = await contract.methods.default(uploadHash).send()
+        await operation.confirmation(3)
+        console.log(`Operation injected: https://better-call.dev/${argv.network}/opg/${operation.hash}/contents`)
+    } catch (error) {
+        console.error(`Error: ${error.message}`)
+    }
+}
+
 async function viewStats (network, kt1) {
     return await fetch(
         argv.indexer +
@@ -117,7 +117,7 @@ async function viewStorage(network, kt1) {
     .then(
         async function (bigMapID) {
             return await fetch(
-                argv.indexer + 
+                argv.indexer +
                     `/bigmap/${network}/${bigMapID}/keys`
             )
         })
@@ -150,7 +150,7 @@ async function view () {
 
 async function run () {
     switch (argv._[2]) {
-        case 'is_tzstamp':
+        case 'is-tzstamp':
             if (argv._[3].length != 36) {
                 throw `"${argv._[3]}" doesn't seem to be a kt1 address (wrong length)`
             }
@@ -158,6 +158,9 @@ async function run () {
             break;
         case 'deploy':
             await deploy(argv._[3])
+            break;
+        case 'upload-hash':
+            await upload(argv._[3], argv._[4])
             break;
         case 'view':
             await view()
