@@ -63,6 +63,7 @@ async function test_3 (proof_obj) {
 }
 
 async function run_tests () {
+    // TODO: Delete all files in /proofs before starting tests
     await test_1().catch(error => console.log(error))
     proof_res = await test_2().catch(error => console.log(error))
     proof = await proof_res.json()

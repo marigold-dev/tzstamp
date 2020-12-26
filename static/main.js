@@ -44,7 +44,7 @@ stampButton.addEventListener('click', () => {
 })
 
 verifyButton.addEventListener('click', () => {
-  fetch('/proof', {
+  fetch('/api/proof', {
     method: 'GET'
   })
     .then(res => res.json())

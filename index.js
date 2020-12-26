@@ -17,6 +17,7 @@ const  { importKey } = require('@taquito/signer')
 const {
   PORT,
   INTERVAL,
+  BASE_URL,
   FAUCET_KEY_PATH,
   CONTRACT_ADDRESS,
   RPC_URL
@@ -41,7 +42,6 @@ let tree = new MerkleTree
 
 express()
   .use(express.json())
-  .use(express.static('static'))
   .post('/api/stamp', postStamp)
   .get('/api/proof/:id', getProof)
   .use(errorHandler)
@@ -77,7 +77,7 @@ function postStamp (req, res) {
     .status(202)
     .json({
       status: 'Stamp pending',
-      url: `${config.BASE_URL}/api/proof/${proof_id}`
+      url: `${BASE_URL}/api/proof/${proof_id}`
     })
 }
 
@@ -125,13 +125,13 @@ async function stampTree () {
   for (const leaf of tree.leaves) {
     const proof = JSON.stringify(tree.prove(leaf))
     const filename = `proofs/${stringify(leaf)}.json`
-    if (!fs.existsSync(proofFile)) {
-      fs.writeFileSync(proofFile, proof)
+    if (!fs.existsSync(filename)) {
+      fs.writeFileSync(filename, proof)
     }
   }
   try {
     const contract = await tezos.contract.at(CONTRACT_ADDRESS)
-    const operation = await contract.methods.default(tree.hash).send()
+    const operation = await contract.methods.default(stringify(tree.hash)).send()
     await operation.confirmation(3)
     console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
   } catch (error) {
