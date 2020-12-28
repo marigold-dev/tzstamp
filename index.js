@@ -42,6 +42,7 @@ let tree = new MerkleTree
 
 express()
   .use(express.json())
+  .use(express.static('static'))
   .post('/api/stamp', postStamp)
   .get('/api/proof/:id', getProof)
   .use(errorHandler)
