@@ -41,4 +41,4 @@ trusted timestamping services.
 
 tzstamp stamp package.json
 
-tzstamp verify 344f904b931e6033102e4235e592ea19f800ff3737ff3a18c47cfe63dbea2ed7 http://localhost:8080/api/proof/bc46aa6337581b95201294a253f94c2ed3d51e11f17cabf84ad118d1d91ef080
+tzstamp verify 344f904b931e6033102e4235e592ea19f800ff3737ff3a18c47cfe63dbea2ed7 https://tzstamp.io/api/proof/bc46aa6337581b95201294a253f94c2ed3d51e11f17cabf84ad118d1d91ef080
