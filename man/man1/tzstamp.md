@@ -32,6 +32,11 @@ or billions of entries.
 See https://www.gwern.net/Timestamping for more background information on
 trusted timestamping services.
 
+# OPTIONS
+
+**\-\-server**
+: tzstamp server instance to publish hashes to.
+
 # EXAMPLES
 
 tzstamp stamp package.json
