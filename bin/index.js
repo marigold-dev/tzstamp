@@ -46,32 +46,32 @@ async function hashFile (path) {
   }
 }
 
-async function handleVerify () {
+async function handleVerify (hash_or_filep, proof_file_or_url) {
     // Determine what arguments we've been passed
     sha256_p = /^[0-9a-fA-F]{64}$/;
     http_p = /^https?:\/\//
-    if (argv._[1] == undefined) {
+    if (hash_or_filep == undefined) {
         console.log("Error: Hash to test for inclusion not given (first argument).")
     }
-    const hash = argv._[1].match(sha256_p)
-          ? Hash.parse(argv._[1])
-          : await hashFile(argv._[1]);
-    if (argv._[2] == undefined) {
+    const hash = hash_or_filep.match(sha256_p)
+          ? Hash.parse(hash_or_filep)
+          : await hashFile(hash_or_filep);
+    if (proof_file_or_url == undefined) {
         throw "Error: Proof to test inclusion against not given (second argument)."
     }
-    const proof = argv._[2].match(http_p)
-        ? await fetch(argv._[2]).then(
+    const proof = proof_file_or_url.match(http_p)
+        ? await fetch(proof_file_or_url).then(
             async function (_proof) {
                 if (_proof.status == 404) {
-                    throw `Requested proof "${argv._[2]}" hasn't been posted to tzstamp server or has expired`
+                    throw `Requested proof "${proof_file_or_url}" hasn't been posted to tzstamp server or has expired`
                 }
                 else if (_proof.status == 202) {
-                    throw `Requested proof "${argv._[2]}" will be posted with the next merkle root`
+                    throw `Requested proof "${proof_file_or_url}" will be posted with the next merkle root`
                 }
                 proof_obj = await _proof.json()
                 return Proof.parse(JSON.stringify(proof_obj));
             }).catch(error => { console.log(error) ; process.exit(1) })
-        : Proof.parse(fs.readFileSync(argv._[2]));
+        : Proof.parse(fs.readFileSync(proof_file_or_url));
     console.log("ROOT HASH DERIVED FROM PROOF AND LEAF HASH: ")
     console.log(
         Hash.stringify(
@@ -100,7 +100,7 @@ function handleHelp () {
 
 switch (subcommand) {
   case "verify":
-    handleVerify();
+    handleVerify(argv._[3], argv._[4]);
     break;
   case "stamp":
     handleStamp(argv._[3]);
