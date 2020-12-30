@@ -1,12 +1,22 @@
 #!/usr/bin/env node
 
-var argv = require('minimist')(process.argv.slice(2));
+var parseArgs = require('minimist')
+
+var argv = parseArgs(
+    process.argv,
+    opts={"default":
+          {
+              "server":"https://tzstamp.io",
+          }
+         }
+)
+
 const crypto = require('crypto');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const { Proof, _util: Hash } = require('@tzstamp/merkle')
 
-const subcommand = argv._[0];
+const subcommand = argv._[2];
 
 const { createHash } = require('crypto')
 
@@ -70,20 +80,18 @@ async function handleVerify () {
                     hash))));
 }
 
-async function handleStamp () {
-    digest = hashFile(argv._[1])
-    digest.then(function (h) {
-        return fetch("http://localhost:8080/api/add_hash", {
-            method: 'POST',
-            body: JSON.stringify({h:Hash.stringify(h)}),
-            headers: {
-                "Content-type": "application/json"
-            }
-        })
-            .then(res => res.json())
-            .then(data => console.log(data))
-            .catch(error => console.log(error));
+async function handleStamp (arg) {
+    digest = Hash.stringify(await hashFile(arg))
+    fetch(argv.server + "/api/stamp", {
+        method: 'POST',
+        body: JSON.stringify({hash:digest}),
+        headers: {
+            "Content-type": "application/json"
+        }
     })
+        .then(res => res.json())
+        .then(data => console.log(data.url))
+        .catch(error => console.log(error));
 }
 
 function handleHelp () {
@@ -95,7 +103,7 @@ switch (subcommand) {
     handleVerify();
     break;
   case "stamp":
-    handleStamp();
+    handleStamp(argv._[3]);
     break;
   case "help":
   default:
