@@ -8,7 +8,7 @@ tzstamp - Submit and verify hashes with the tzstamp Tezos timestamping service
 
 # SYNOPSIS
 
-**tzstamp** **stamp** [*FILEPATH*]
+**tzstamp** **stamp** [*HASH* | *FILEPATH*]
 
 **tzstamp** **verify** [*HASH* | *FILEPATH*] [*MERKLE_PROOF_FILEPATH* | *MERKLE_PROOF_URL*]
 
