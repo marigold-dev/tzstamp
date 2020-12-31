@@ -38,8 +38,8 @@ async function hashFile (path) {
 
 async function handleVerify () {
     // Determine what arguments we've been passed
-    sha256_p = /^[0-9a-fA-F]{64}$/;
-    http_p = /^https?:\/\//
+    var sha256_p = /^[0-9a-fA-F]{64}$/;
+    var http_p = /^https?:\/\//
     if (argv._[1] == undefined) {
         console.log("Error: Hash to test for inclusion not given (first argument).")
     }
@@ -71,19 +71,23 @@ async function handleVerify () {
 }
 
 async function handleStamp () {
-    digest = hashFile(argv._[1])
-    digest.then(function (h) {
-        return fetch("http://localhost:8080/api/add_hash", {
-            method: 'POST',
-            body: JSON.stringify({h:Hash.stringify(h)}),
-            headers: {
-                "Content-type": "application/json"
-            }
-        })
-            .then(res => res.json())
-            .then(data => console.log(data))
-            .catch(error => console.log(error));
+    var sha256_p = /^[0-9a-fA-F]{64}$/
+    if (argv._[1].match(sha256_p)) {
+        var digest = argv._[1]
+    }
+    else {
+        var digest = Hash.stringify(await hashFile(argv._[1]))
+    }
+    await fetch("http://localhost:8080/api/stamp", {
+        method: 'POST',
+        body: JSON.stringify({hash:digest}),
+        headers: {
+            "Content-type": "application/json"
+        }
     })
+        .then(res => res.json())
+        .then(data => console.log(data.url))
+        .catch(error => console.log(error));
 }
 
 function handleHelp () {
