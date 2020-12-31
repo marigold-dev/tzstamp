@@ -1,26 +1,57 @@
 #!/usr/bin/env node
 
-var argv = require('minimist')(process.argv.slice(2));
-const crypto = require('crypto');
-const fs = require('fs');
-const fetch = require('node-fetch');
+const fs = require('fs')
+const fetch = require('node-fetch')
+const parseArgs = require('minimist')
+const { createHash } = require('crypto')
 const { Proof, _util: Hash } = require('@tzstamp/merkle')
 
-const subcommand = argv._[0];
+const argv = parseArgs(
+    process.argv.slice(2),
+    opts = {
+        default: {
+            server: "https://tzstamp.io",
+        }
+    }
+)
 
-const { createHash } = require('crypto')
+const sha256_p = /^[0-9a-fA-F]{64}$/
+const http_p = /^https?:\/\//
+
+const [ subcommand, ...subcommandArgs ] = argv._
+
+void async function () {
+    try {
+        switch (subcommand) {
+            case "verify":
+                await handleVerify(...subcommandArgs)
+                break;
+            case "stamp":
+                await handleStamp(...subcommandArgs)
+                break;
+            case "help":
+            default:
+                handleHelp();
+        }
+    } catch (error) {
+        console.error(error.message)
+        process.exit(1)
+    }
+}()
 
 /**
  * Asynchronously SHA-256 hash a read stream
  */
-const sha256Async = stream => new Promise((resolve, reject) => {
-  if (stream.readableEnded) reject(new Error('Stream has ended'))
-  const hash = createHash('SHA256')
-  stream
-    .on('data', data => hash.update(data))
-    .on('end', () => resolve(new Uint8Array(hash.digest())))
-    .on('error', reject)
-})
+function sha256Async (stream) {
+    return new Promise((resolve, reject) => {
+        if (stream.readableEnded) reject(new Error('Stream has ended'))
+        const hash = createHash('SHA256')
+        stream
+            .on('data', data => hash.update(data))
+            .on('end', () => resolve(new Uint8Array(hash.digest())))
+            .on('error', reject)
+    })
+}
 
 /**
  * Asynchronously hash a file from read stream
@@ -36,72 +67,57 @@ async function hashFile (path) {
   }
 }
 
-async function handleVerify () {
-    // Determine what arguments we've been passed
-    var sha256_p = /^[0-9a-fA-F]{64}$/;
-    var http_p = /^https?:\/\//
-    if (argv._[1] == undefined) {
-        console.log("Error: Hash to test for inclusion not given (first argument).")
+async function fetchProofSerialization (url) {
+    const response = await fetch(url)
+    if (response.status == 404) {
+        throw new Error(`Requested proof "${url}" hasn't been posted to tzstamp server or has expired`)
+    } else if (response.status == 202) {
+        throw new Error(`Requested proof "${url}" will be posted with the next merkle root`)
     }
-    const hash = argv._[1].match(sha256_p)
-          ? Hash.parse(argv._[1])
-          : await hashFile(argv._[1]);
-    if (argv._[2] == undefined) {
-        throw "Error: Proof to test inclusion against not given (second argument)."
-    }
-    const proof = argv._[2].match(http_p)
-        ? await fetch(argv._[2]).then(
-            async function (_proof) {
-                if (_proof.status == 404) {
-                    throw `Requested proof "${argv._[2]}" hasn't been posted to tzstamp server or has expired`
-                }
-                else if (_proof.status == 202) {
-                    throw `Requested proof "${argv._[2]}" will be posted with the next merkle root`
-                }
-                proof_obj = await _proof.json()
-                return Proof.parse(JSON.stringify(proof_obj));
-            }).catch(error => { console.log(error) ; process.exit(1) })
-        : Proof.parse(fs.readFileSync(argv._[2]));
-    console.log("ROOT HASH DERIVED FROM PROOF AND LEAF HASH: ")
-    console.log(
-        Hash.stringify(
-            proof.derive(
-                Hash.hash(
-                    hash))));
 }
 
-async function handleStamp () {
-    var sha256_p = /^[0-9a-fA-F]{64}$/
-    if (argv._[1].match(sha256_p)) {
-        var digest = argv._[1]
+async function handleVerify (hash_or_filep, proof_file_or_url) {
+    if (hash_or_filep == undefined) {
+        throw new Error("Hash to test for inclusion not given (first argument).")
     }
-    else {
-        var digest = Hash.stringify(await hashFile(argv._[1]))
+    if (proof_file_or_url == undefined) {
+        throw new Error("Proof to test inclusion against not given (second argument).")
     }
-    await fetch("http://localhost:8080/api/stamp", {
+    // Determine what arguments we've been passed
+    const hash = hash_or_filep.match(sha256_p)
+        ? Hash.parse(hash_or_filep)
+        : await hashFile(hash_or_filep);
+    const proofSerialization = proof_file_or_url.match(http_p)
+        ? await fetchProofSerialization(proof_file_or_url)
+        : fs.readFileSync(proof_file_or_url, 'utf-8')
+    let proof
+    try {
+        proof = Proof.parse(proofSerialization)
+    } catch (_) {
+        throw new Error('Unable to parse proof')
+    }
+    let merkleRoot
+    try {
+        merkleRoot = proof.derive(Hash.hash(hash))
+    } catch (_) {
+        throw new Error('Unable to derive merkle root')
+    }
+    console.log(`ROOT HASH DERIVED FROM PROOF AND LEAF HASH:\n${Hash.stringify(merkleRoot)}`)
+}
+
+async function handleStamp (filePathOrHash) {
+    const hash = sha256_p.test(filePathOrHash)
+        ? filePathOrHash
+        : Hash.stringify(await hashFile(filePathOrHash))
+    const response = await fetch(`${argv.server}/api/stamp`, {
         method: 'POST',
-        body: JSON.stringify({hash:digest}),
-        headers: {
-            "Content-type": "application/json"
-        }
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify({ hash })
     })
-        .then(res => res.json())
-        .then(data => console.log(data.url))
-        .catch(error => console.log(error));
+    const { url } = await response.json()
+    console.log(url)
 }
 
 function handleHelp () {
     console.log("Was not a recognized subcommand.");
-}
-
-switch (subcommand) {
-  case "verify":
-    handleVerify();
-    break;
-  case "stamp":
-    handleStamp();
-    break;
-  case "help":
-  default:
-    handleHelp();
 }
