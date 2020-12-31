@@ -48,8 +48,8 @@ async function hashFile (path) {
 
 async function handleVerify (hash_or_filep, proof_file_or_url) {
     // Determine what arguments we've been passed
-    sha256_p = /^[0-9a-fA-F]{64}$/;
-    http_p = /^https?:\/\//
+    var sha256_p = /^[0-9a-fA-F]{64}$/;
+    var http_p = /^https?:\/\//
     if (hash_or_filep == undefined) {
         console.log("Error: Hash to test for inclusion not given (first argument).")
     }
@@ -81,7 +81,13 @@ async function handleVerify (hash_or_filep, proof_file_or_url) {
 }
 
 async function handleStamp (arg) {
-    digest = Hash.stringify(await hashFile(arg))
+    var sha256_p = /^[0-9a-fA-F]{64}$/
+    if (arg.match(sha256_p)) {
+        var digest = arg
+    }
+    else {
+        var digest = Hash.stringify(await hashFile(arg))
+    }
     fetch(argv.server + "/api/stamp", {
         method: 'POST',
         body: JSON.stringify({hash:digest}),
