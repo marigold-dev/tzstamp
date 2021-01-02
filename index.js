@@ -1,19 +1,25 @@
+#!/usr/bin/env node
+
 var parseArgs = require('minimist')
 
 var argv = parseArgs(
     process.argv,
-    opts={"default":
-          {
-              "node":"https://mainnet-tezos.giganode.io/",
-              "indexer":"https://api.better-call.dev/v1",
-              "network":"delphinet",
-          }
-         }
+    opts={
+        "default": {
+            "node":"https://mainnet-tezos.giganode.io/",
+            "indexer":"https://api.better-call.dev/v1",
+            "network":"mainnet",
+        },
+
+        "alias": {
+            "secret-path":"secret_path"
+        }
+    }
 )
 
 require('dotenv-defaults').config()
 
-const { PORT, INTERVAL } = process.env
+const { TEZOS_WALLET_SECRET } = process.env
 
 const fs = require('fs')
 
@@ -29,14 +35,25 @@ const  { importKey } = require('@taquito/signer')
 
 const { Parser } = require('@taquito/michel-codec')
 
-const Tezos = new TezosToolkit(`${argv.node}`);
+var Tezos = new TezosToolkit(`${argv.node}`);
 
-if (argv.secret) { // MainNet Key
-    async function keySetup () {
-        Tezos.setProvider({signer: await InMemorySigner.fromSecretKey(`${argv.secret}`)})
-    }
+if (argv.secret_path) {
+    SECRET = fs.readFileSync(argv.secret_path)
 }
-else if (argv.faucet) { // TestNet Key
+else if (TEZOS_WALLET_SECRET) {
+    SECRET = TEZOS_WALLET_SECRET
+}
+else {
+    SECRET = false
+}
+
+async function keySetup () {
+    // Setup MainNet Key
+    Tezos.setProvider({signer: await InMemorySigner.fromSecretKey(`${SECRET}`)})
+    return Tezos
+}
+
+if (argv.faucet) { // TestNet Key
     FAUCET_KEY = JSON.parse(fs.readFileSync(argv.faucet))
     importKey(
         Tezos,
@@ -149,6 +166,9 @@ async function view () {
 }
 
 async function run () {
+    if (!argv.faucet && SECRET) {
+        Tezos = await keySetup()
+    }
     switch (argv._[2]) {
         case 'is-tzstamp':
             if (argv._[3].length != 36) {

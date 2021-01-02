@@ -1,6 +1,6 @@
 % TZSTAMP-MANAGE(1)
 % John David Pressman, Benjamin Herman
-% December 2020
+% January 2021
 
 # NAME
 
@@ -34,13 +34,20 @@ is required to make use of deployment and manual uploading of merkle roots.
 **\-\-network**
 : The name of the network to publish transactions to. (e.g. delphinet)
 
+**\-\-secret\-path**
+: Filepath to an (unencrypted) tezos secret key. You can also export the environment variable TEZOS_WALLET_SECRET with the key itself.
+
 # EXAMPLES
 
 **Deploying A Contract**
 : tzstamp-manage deploy simple \-\-node https://testnet-tezos.giganode.io/
 
-**Manually Uploading A Merkle Root**
+**Manually Uploading A Merkle Root On TestNet**
 : tzstamp-manage upload-hash KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj 84714a61037b3b4fa539008681cbfa97c7256930279ff4b54bad7366521afc67 \-\-node https://testnet-tezos.giganode.io/ \-\-faucet tz1MKs91KPzkpmZYz7Dvbd9dyq86murA1BrN.json
+
+**Manually Uploading A Merkle Root On MainNet**
+
+: tzstamp-manage upload-hash KT1K5npkpWK6wxkcBg97dZD77c2J7DmWvxSb a4e9de2410c9e7c3ac4c57bbc18beedc5935d5c8118e345a72baee00a9820b67 \-\-secret-path secret.txt
 
 **Viewing Contract Storage**
 : tzstamp-manage view storage KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj \-\-node https://testnet-tezos.giganode.io/
