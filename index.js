@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 require('dotenv-defaults').config()
 const {
@@ -10,54 +12,67 @@ const {
   }
 } = require('@tzstamp/merkle')
 const express = require('express')
+const { InMemorySigner } = require('@taquito/signer')
 const { TezosToolkit } = require('@taquito/taquito')
-// const { InMemorySigner } = require('@taquito/signer')
-const  { importKey } = require('@taquito/signer')
+const { importKey } = require('@taquito/signer')
 
 const {
   PORT,
   INTERVAL,
   BASE_URL,
   FAUCET_KEY_PATH,
+  TEZOS_WALLET_SECRET,
   CONTRACT_ADDRESS,
   RPC_URL
 } = process.env
 
-const faucetKey = getFaucetKey()
 
-const tezos = new TezosToolkit(RPC_URL)
+const key = getKey()
+
+tezos = new TezosToolkit(RPC_URL)
+
+
 
 // TODO: Implement remote signer(?) branch
-if (faucetKey.secret) {
+if (key.secret) {
   importKey(
     tezos,
-    faucetKey.email,
-    faucetKey.password,
-    faucetKey.mnemonic.join(' '),
-    faucetKey.secret
+    key.email,
+    key.password,
+    key.mnemonic.join(' '),
+    key.secret
   )
 }
 
+
 let tree = new MerkleTree
 
-express()
-  .use(express.json())
-  .use(express.static('static'))
-  .post('/api/stamp', postStamp)
-  .get('/api/proof/:id', getProof)
-  .use(errorHandler)
-  .listen(PORT, listenHandler)
+async function run () {
+    if (!key.secret) {
+        tezos.setProvider({signer: await InMemorySigner.fromSecretKey(key)})
+    }
+    express()
+        .use(express.json())
+        .use(express.static('static'))
+        .post('/api/stamp', postStamp)
+        .get('/api/proof/:id', getProof)
+        .use(errorHandler)
+        .listen(PORT, listenHandler)
 
-if (faucetKey.secret) {
-  setInterval(stampTree, INTERVAL * 1000)
+    setInterval(stampTree, INTERVAL * 1000)
 }
 
-function getFaucetKey () {
-  if (FAUCET_KEY_PATH == null) {
-    throw new Error ('Configure a path to a faucet key file')
+function getKey () {
+  if (FAUCET_KEY_PATH != null) {
+      const text = fs.readFileSync(FAUCET_KEY_PATH)
+      return JSON.parse(text)
   }
-  const text = fs.readFileSync(FAUCET_KEY_PATH)
-  return JSON.parse(text)
+  else if (TEZOS_WALLET_SECRET != null) {
+      return TEZOS_WALLET_SECRET
+  }
+  else {
+      throw new Error("Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET")
+  }
 }
 
 function postStamp (req, res) {
@@ -140,3 +155,5 @@ async function stampTree () {
   }
   tree = new MerkleTree
 }
+
+run()
