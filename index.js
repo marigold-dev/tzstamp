@@ -133,27 +133,40 @@ function listenHandler () {
 }
 
 async function stampTree () {
+  // Publish the current merkle root and inclusion proofs
   if (tree.hash == null) return
   if (!fs.existsSync('proofs')) {
     fs.mkdirSync('proofs')
   }
+  const root = tree.hash
+  // Shallow copy leaves to avoid them changing during proof generation
+  const staticLeaves = tree.leaves.slice(0)
+  let operation = null
+  try {
+    const contract = await tezos.contract.at(CONTRACT_ADDRESS)
+    operation = await contract.methods.default(stringify(root)).send()
+  } catch (error) {
+    console.error(`Error: ${error.message}`)
+  }
   // Generate proof files for tree in memory
-  for (const leaf of tree.leaves) {
-    const proof = JSON.stringify(tree.prove(leaf))
+  for (const leaf of staticLeaves) {
+    // Strip custom .toJSON()...
+    var proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
+    proof["operation"] = operation.hash
+    proof = JSON.stringify(proof)
     const filename = `proofs/${stringify(leaf)}.json`
     if (!fs.existsSync(filename)) {
       fs.writeFileSync(filename, proof)
     }
   }
-  try {
-    const contract = await tezos.contract.at(CONTRACT_ADDRESS)
-    const operation = await contract.methods.default(stringify(tree.hash)).send()
-    await operation.confirmation(3)
-    console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
-  }
+  // Drop leaves before confirmation to prevent repeat commits during await
   tree = new MerkleTree
+  try {
+      await operation.confirmation(3)
+      console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
+  } catch (error) {
+      console.error(`Error: ${error.message}`)
+  }
 }
 
 run()
