@@ -1,0 +1,20 @@
+{ parameter bytes ;
+  storage (big_map address (list bytes)) ;
+  code { DUP ;
+         CDR ;
+         SWAP ;
+         CAR ;
+         SENDER ;
+         DIG 2 ;
+         DUP ;
+         DUG 3 ;
+         SWAP ;
+         DUP ;
+         DUG 2 ;
+         GET ;
+         IF_NONE
+           { DIG 2 ; NIL bytes ; DIG 3 ; CONS ; SOME ; DIG 2 ; UPDATE }
+           { DIG 3 ; SWAP ; DIG 3 ; CONS ; SOME ; DIG 2 ; UPDATE } ;
+         NIL operation ;
+         PAIR } }
+
