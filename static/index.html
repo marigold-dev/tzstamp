@@ -17,6 +17,17 @@
     </nav>
   </header>
   <main>
+    <p>Prove possession of a file at a certain time.</p>
+    <div id="instructions">
+      <h2>Instructions</h2>
+      <p>1. Click the file submission button to choose a file, it is then (locally, in your browser) SHA-256 hashed. Alternatively, <a href="https://linux.die.net/man/1/sha256sum">hash it yourself</a> and paste the hex digest into the form.</p>
+      <p>2. Press the 'stamp' button and a link(s) appears in the textbox below.</p>
+      <p>3. Open the link(s) and wait for the next merkle root to be published (see schedule), then refresh.</p>
+      <p>4. Right click and save the page. You now have proof that your hash was
+included in the block.</p>
+      <p>5. Store multiple copies of this file in safe places (consider printing it
+out). Without it you can't verify your timestamp!</p>
+    </div>
     <h2>Create Timestamp</h2>
     <form id=timestamp>
       <label for=file>Submit File</label>
