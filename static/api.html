@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="api.css">
+  </head>
+  <body>
+    <main>
+      <h1>API</h1>
+      <h2>Stamp A File</h2>
+      <p><span class="http-method">POST</span> <span class="api-path">/api/stamp/</span></p>
+
+      <p>Adds a hash to the next published merkle root.</p>
+
+      <h3>JSON Params</h3>
+
+      <table class="params">
+        <thead>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </thead>
+        <tr>
+          <td class="param-name">hash</td> 
+          <td class="param-type">string</td> 
+          <td class="param-description">SHA-256 hash to be included in the next merkle root.</td>
+        </tr>
+      </table>
+
+      <h2>Retrieve A Proof</h2>
+
+      <p><span class="http-method">GET</span> <span class="api-path">/api/proof/{id}</span></p>
+
+      <p>Get proof associated with hash {id}. Returns:</p>
+
+      <p><span class="http-status-good">200</span> if proof available.</p>
+
+      <p><span class="http-status-notice">202</span> if proof waiting to be published.</p>
+
+      <p><span class="http-status-error">404</span> if proof no longer in server cache.</p>
+
+    </main>
+    <footer><a href="/">Return to main site</a></footer>
+  </body>
+</html>
