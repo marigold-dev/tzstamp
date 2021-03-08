@@ -1,6 +1,11 @@
 /**
  * Commitment operator
  */
+namespace Operation {
+  export { Prepend } from './operations/prepend'
+  export { Append } from './operations/append'
+}
+
 export interface Operation {
 
   /**
