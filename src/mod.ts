@@ -1,1 +1,2 @@
-export { Operation } from '/operation'
+export { Operation } from './operation'
+export { Proof } from './proof'
