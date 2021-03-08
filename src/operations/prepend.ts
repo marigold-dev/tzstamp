@@ -1,16 +1,18 @@
-import { stringify, parse } from '../util/hex'
+import { stringify, parse } from '../utils/hex'
 import { Operation } from '../operation'
 
 /**
  * Data prepend operation
  */
-export class Prepend implements Operation {
+export class Prepend extends Operation {
 
-  static ID = 'prepend'
+  static readonly ID = 'prepend'
 
   private data: Uint8Array
 
-  constructor (data: string) {
+  constructor (...argv: string[]) {
+    super()
+    const data = argv[0]
     if (!data)
       throw new Error('Prepend operation has no data')
     this.data = parse(data)

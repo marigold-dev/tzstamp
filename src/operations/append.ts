@@ -1,16 +1,18 @@
-import { stringify, parse } from '../util/hex'
+import { stringify, parse } from '../utils/hex'
 import { Operation } from '../operation'
 
 /**
  * Data append operation
  */
-export class Append implements Operation {
+export class Append extends Operation {
 
-  static ID = 'append'
+  static readonly ID = 'append'
 
   private data: Uint8Array
 
-  constructor (data: string) {
+  constructor (...argv: string[]) {
+    super()
+    const data = argv[0]
     if (!data)
       throw new Error('Append operation has no data')
     this.data = parse(data)

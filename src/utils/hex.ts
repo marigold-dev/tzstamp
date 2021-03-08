@@ -21,11 +21,12 @@ const hexRegExp = /^[0-9a-fA-F]+$/
 /**
  * Parse hexadecimal string as unsigned 8-bit integer array
  */
-export const parse = (hex: string) => {
+export const parse = (hex: string): Uint8Array => {
   if (!hex.match(hexRegExp))
     throw new Error('Invalid hex string')
-  return hex
+  const bytes = hex
     .padStart(hex.length + hex.length % 2, '0')
     .match(/.{2}/g)
     .map(byte => parseInt(byte, 16))
+  return new Uint8Array(bytes)
 }

@@ -1,11 +1,12 @@
-import { sha256 } from '../util/hash'
+import { Operation } from '../operation'
+import { sha256 } from '../utils/hash'
 
 /**
  * SHA-256 hash operation
  */
-export class SHA256 implements Operation {
+export class SHA256 extends Operation {
 
-  static ID = 'sha-256'
+  static readonly ID = 'sha-256'
 
   public toString () {
     return 'SHA-256'
