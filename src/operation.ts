@@ -4,6 +4,7 @@
 namespace Operation {
   export { Prepend } from './operations/prepend'
   export { Append } from './operations/append'
+  export { SHA256 } from './operations/sha256'
 }
 
 export interface Operation {
