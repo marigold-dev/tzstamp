@@ -1,32 +1,28 @@
 /**
- * Encode byte as hexidecimal digit pair
- */
-const encodeHex = byte => byte
-  .toString(16)
-  .padStart(2, '0')
-
-/**
  * Serialize unsigned 8-bit integer array as hexadecimal string
  */
 export const stringify = (array: Uint8Array): string => Array
   .from(array)
-  .map(encodeHex)
+  .map(byte => byte
+    .toString(16)
+    .padStart(2, '0') // ensure leading zero for bytes less than 16
+  )
   .join('')
-
-/**
- * Hexadecimal string regular expression
- */
-const hexRegExp = /^[0-9a-fA-F]+$/
 
 /**
  * Parse hexadecimal string as unsigned 8-bit integer array
  */
 export const parse = (hex: string): Uint8Array => {
-  if (!hex.match(hexRegExp))
+  
+  // Validate
+  if (!hex.match(/^[0-9a-fA-F]+$/))
     throw new Error('Invalid hex string')
+  
+  // Parse byte array
   const bytes = hex
-    .padStart(hex.length + hex.length % 2, '0')
-    .match(/.{2}/g)
+    .padStart(hex.length + hex.length % 2, '0') // ensure even number of characters
+    .match(/.{2}/g) // split into hex pairs (bytes)
     .map(byte => parseInt(byte, 16))
+  
   return new Uint8Array(bytes)
 }
