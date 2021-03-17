@@ -1,15 +1,36 @@
 import { Operation } from './operation'
 import { parse } from './hex'
 import { validateChain, ValidationResult } from '@taquito/utils'
+import fetch from 'node-fetch'
 
 /**
  * Proof constructor options
  */
-interface ProofOptions {
+export interface ProofOptions {
   operations: Operation[],
   chainID: string,
   blockHash: string,
   operationHash: string
+}
+
+/**
+ * Verification result statuses
+ */
+export enum VerificationStatus {
+  SERVER_ERROR = "SERVER_ERROR",
+  BAD_SOURCE = "BAD_SOURCE",
+  DIFFERENT_ROOT = "DIFFERENT_ROOT",
+  VERIFIED = "VERIFIED"
+}
+
+/**
+ * Result of attempted verification from on-chain record
+ */
+export interface VerificationResult {
+  status: VerificationStatus,
+  root: Uint8Array,
+  publishedRoot?: Uint8Array
+  timestamp?: Date
 }
 
 /**
@@ -105,6 +126,52 @@ export class Proof {
       Promise.resolve(input)
     )
   }
+
+  /**
+   * Verify derived value against on-chain record
+   */
+  async verify (input: Uint8Array, rpcURL: string | URL): Promise<VerificationResult> {
+    
+    const root = await this.derive(input)
+    
+    // Fetch block data
+    const blockEndpoint = new URL(`/chains/${this.chainID}/blocks/${this.blockHash}`, rpcURL)
+    const blockResponse = await fetch(blockEndpoint)
+    
+    // Bad response status
+    if (!blockResponse.ok) {
+      if (blockResponse.status == 400)
+        return { status: VerificationStatus.BAD_SOURCE, root }
+      else
+        return { status: VerificationStatus.SERVER_ERROR, root }
+    }
+
+    const block = await blockResponse.json()
+    const timestamp = new Date(block.header.timestamp)
+    
+    // Find operation
+    const operation = block.operations
+      .flat()
+      .find(op => op.hash == this.operationHash)
+    if (!operation)
+      return { status: VerificationStatus.BAD_SOURCE, root }
+    const publishedHex = operation
+      ?.contents
+      .find(c => c.kind == 'transaction')
+      ?.parameters
+      ?.value
+      ?.bytes
+    if (typeof publishedHex != 'string')
+      return { status: VerificationStatus.BAD_SOURCE, root }
+    try {
+      const publishedRoot = parse(publishedHex)
+      if (!compare(root, publishedRoot))
+        return { status: VerificationStatus.DIFFERENT_ROOT, root, publishedRoot }
+      return { status: VerificationStatus.VERIFIED, root, timestamp, publishedRoot }
+    } catch (parseError) {
+      return { status: VerificationStatus.BAD_SOURCE, root } 
+    }
+  }
 }
 
 /**
@@ -126,8 +193,7 @@ const isObject = (value: any): boolean =>
  * Determine if a value is a valid tezos block hash
  */
 const isValidBlockHash = (value: any): boolean =>
-  typeof value == 'string' &&
-  value.startsWith('BL')
+  typeof value == 'string'
 
 /**
  * Determine if a value is a valid tezos operation hash
@@ -155,3 +221,10 @@ const toOperations = (op: any) => {
     default: throw new Error(`Unsupported operation "${id}"`)
   }
 }
+
+/**
+ * Compare two byte arrays
+ */
+const compare = (a: Uint8Array, b: Uint8Array): boolean =>
+  a.length == b.length &&
+  a.every((val, idx) => val == b[idx])

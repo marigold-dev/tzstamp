@@ -1,0 +1,18 @@
+{
+  "version": 0,
+  "ops": [
+    [ "sha-256" ],
+    [ "sha-256" ],
+    [ "prepend", "0ee6cc343703bb63f024a84c5818cfd9dc7104007fa03b4fd645a1ad36609277" ],
+    [ "sha-256" ],
+    [ "prepend", "515ae4da1102a705620b70ac3a058b899afcb298a49a5104f91ebb287da63e9a" ],
+    [ "sha-256" ],
+    [ "append", "4970766a334375bffb9fa2085711c0f8ab8ef3ee7f7f4158d58ad8c44a6b3a16" ],
+    [ "sha-256" ]
+  ],
+  "record": [
+    "NetXSgo1ZT2DRUG",
+    "BLCkrrtSHYoLMJ5k5N6urr3kd5QR8k9uFZ3iBqqoLEaNz3t3BJA",
+    "onujXSkutmBprHpJnQmKoBjknyqT9wFuJaHoHvuwdvKfzZv8ydq"
+  ]
+}

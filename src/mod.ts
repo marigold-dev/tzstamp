@@ -1,3 +1,3 @@
 export { Operation } from './operation'
-export { Proof } from './proof'
+export { Proof, ProofOptions, VerificationResult, VerificationStatus } from './proof'
 export * as Hex from './hex'
