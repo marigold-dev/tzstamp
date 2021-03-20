@@ -2,7 +2,7 @@ import { stringify, parse } from './hex'
 import { createHash } from 'crypto'
 
 /**
- * Proof operator
+ * Proof operation
  */
 export interface Operation {
 
@@ -22,36 +22,34 @@ export interface Operation {
   commit (input: Uint8Array): Promise<Uint8Array>
 }
 
-/**
- * Data insertion operation
- * @param prepend - Prepend data when true, append when false
- */
-export const insert = (prepend: boolean, data: string): Operation => {
-  
-  const hex = parse(data)
+export namespace Operation {
 
-  // Validate data
-  if (!hex)
-    throw new Error(`${ prepend ? 'Prepend' : 'Append' } operation has no data`)
-  
-  return {
-    toString: () => (prepend ? 'Prepend' : 'Append') + ' ' + stringify(hex),
-    toJSON: () => [ prepend ? 'prepend' : 'append' , stringify(hex) ],
-    commit: async (input: Uint8Array) => new Uint8Array(
-      prepend
-        ? [ ...hex, ...input ]
-        : [ ...input, ...hex ]
-    )
-  }
+  /**
+   * Prepend operation
+   */
+  export const prepend = (data: Uint8Array) => ({
+    toString: () => `Prepend ${stringify(data)}`,
+    toJSON: () => [ 'prepend', stringify(data) ],
+    commit: async (input: Uint8Array) => new Uint8Array([ ...data, ...input ])
+  })
+
+  /**
+   * Append operation
+   */
+  export const append = (data: Uint8Array) => ({
+    toString: () => `Append ${stringify(data)}`,
+    toJSON: () => [ 'append', stringify(data) ],
+    commit: async (input: Uint8Array) => new Uint8Array([ ...input, ...data ])
+  })
+
+  /**
+   * SHA-256 hash operation
+   */
+  export const sha256 = (): Operation => ({
+    toString: () => 'SHA-256',
+    toJSON: () => [ 'sha-256' ],
+    commit: async (input: Uint8Array) => createHash('SHA256')
+      .update(input)
+      .digest()
+  })
 }
-
-/**
- * SHA-256 commitment operation 
- */
-export const sha256 = (): Operation => ({
-  toString: () => 'SHA-256',
-  toJSON: () => [ 'sha-256' ],
-  commit: async (input: Uint8Array) => createHash('SHA256')
-    .update(input)
-    .digest()
-})

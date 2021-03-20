@@ -1,2 +1,3 @@
-export { Operation, insert, sha256 } from './operation'
-export { Proof } from './proof'
+export { Operation } from './operation'
+export { Proof, ProofOptions, VerificationResult, VerificationStatus } from './proof'
+export * as Hex from './hex'

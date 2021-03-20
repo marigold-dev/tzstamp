@@ -8,7 +8,7 @@ export default {
   },
   plugins: [
     typescript({
-      target: 'ES2018'
+      target: 'ES2020'
     })
   ]
 };
