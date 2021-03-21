@@ -1,5 +1,6 @@
 import { stringify, parse } from './hex'
 import { createHash } from 'crypto'
+import { concat } from './bytes'
 
 /**
  * Proof operation
@@ -19,7 +20,7 @@ export interface Operation {
   /**
    * Commit operation to input
    */
-  commit (input: Uint8Array): Promise<Uint8Array>
+  commit (input: Uint8Array): Uint8Array
 }
 
 export namespace Operation {
@@ -30,7 +31,7 @@ export namespace Operation {
   export const prepend = (data: Uint8Array) => ({
     toString: () => `Prepend ${stringify(data)}`,
     toJSON: () => [ 'prepend', stringify(data) ],
-    commit: async (input: Uint8Array) => new Uint8Array([ ...data, ...input ])
+    commit: (input: Uint8Array) => concat(data, input)
   })
 
   /**
@@ -39,7 +40,7 @@ export namespace Operation {
   export const append = (data: Uint8Array) => ({
     toString: () => `Append ${stringify(data)}`,
     toJSON: () => [ 'append', stringify(data) ],
-    commit: async (input: Uint8Array) => new Uint8Array([ ...input, ...data ])
+    commit: (input: Uint8Array) => concat(input, data)
   })
 
   /**
@@ -48,7 +49,7 @@ export namespace Operation {
   export const sha256 = (): Operation => ({
     toString: () => 'SHA-256',
     toJSON: () => [ 'sha-256' ],
-    commit: async (input: Uint8Array) => createHash('SHA256')
+    commit: (input: Uint8Array) => createHash('SHA256')
       .update(input)
       .digest()
   })
