@@ -1,6 +1,7 @@
 import { stringify, parse } from './hex'
 import { createHash } from 'crypto'
 import { concat } from './bytes'
+import { blake2b as blake2bHash } from './blake2b'
 
 /**
  * Proof operation
@@ -52,5 +53,14 @@ export namespace Operation {
     commit: (input: Uint8Array) => createHash('SHA256')
       .update(input)
       .digest()
+  })
+
+  /**
+   * Blake2b-256 hash operation
+   */
+  export const blake2b = (): Operation => ({
+    toString: () => 'Blake2b-256',
+    toJSON: () => [ 'blake2b' ],
+    commit: (input: Uint8Array) => blake2bHash(input)
   })
 }
