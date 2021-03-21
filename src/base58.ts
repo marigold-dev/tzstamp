@@ -32,10 +32,10 @@ export function encode (bytes: Uint8Array): string {
   while (x > 0n) {
     const mod = Number(x % 58n)
     x = x / 58n
-    output.push(this.ALPHABET[mod])
+    output.push(ALPHABET[mod])
   }
   for (let i = 0; bytes[i] == 0; ++i)
-    output.push(this.ALPHABET[0])
+    output.push(ALPHABET[0])
   return output.reverse().join('')
 }
 
@@ -47,7 +47,7 @@ export function decode (input: string): Uint8Array {
     return new Uint8Array
   const bytes = [ 0 ]
   for (const char of input) {
-    const value = this.ALPHABET.indexOf(char)
+    const value = ALPHABET.indexOf(char)
     if (value == null) throw new Error(`Invalid base58 string`)
     for (const j in bytes) bytes[j] *= 58
     bytes[0] += value
