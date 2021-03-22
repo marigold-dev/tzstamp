@@ -1,36 +1,37 @@
 import { Operation } from './operation'
-import { parse } from './hex'
-import { validateChain, ValidationResult } from '@taquito/utils'
-import fetch from 'node-fetch'
+import { Block } from './block'
+import * as Bytes from './bytes'
+import * as Hex from './hex'
+import * as Base58 from './base58'
 
 /**
- * Proof constructor options
+ * Network ID prefix
  */
-export interface ProofOptions {
-  operations: Operation[],
-  chainID: string,
-  blockHash: string,
-  operationHash: string
-}
+const NETWORK_PREFIX = new Uint8Array([ 87, 82, 0 ]) // Net(15)
 
 /**
- * Verification result statuses
+ * JSON operation deserializer
  */
-export enum VerificationStatus {
-  SERVER_ERROR = "SERVER_ERROR",
-  BAD_SOURCE = "BAD_SOURCE",
-  DIFFERENT_ROOT = "DIFFERENT_ROOT",
-  VERIFIED = "VERIFIED"
-}
-
-/**
- * Result of attempted verification from on-chain record
- */
-export interface VerificationResult {
-  status: VerificationStatus,
-  root: Uint8Array,
-  publishedRoot?: Uint8Array
-  timestamp?: Date
+function toOperation (op: any): Operation {
+  if (!Array.isArray(op) || !op.length)
+    throw new Error(`Invalid operation`)
+  const id = op[0]
+  switch (op[0]) {
+    case 'prepend': {
+      const data = Hex.parse(op[1])
+      return Operation.prepend(data)
+    }
+    case 'append': {
+      const data = Hex.parse(op[1])
+      return Operation.append(data)
+    }
+    case 'sha-256':
+      return Operation.sha256()
+    case 'blake2b':
+      return Operation.blake2b()
+    default:
+      throw new Error(`Unsupported operation "${id}"`)
+  }
 }
 
 /**
@@ -47,63 +48,44 @@ export class Proof {
    * Deserialize a JSON proof
    */
   static parse (json: string): Proof {
-
-    // Parse JSON
     const data: any = JSON.parse(json)
-
-    // Validate proof data
-    if (!isObject(data))
-      throw new Error(`Invalid proof format`)
-    if (!isValidVersion(data.version))
-      throw new Error(`Invalid proof version "${data.version}"`)
-    if (data.version > Proof.VERSION)
-      throw new Error(`Unsupported proof version "${data.version}"`)
-
-    // Parse record reference
-    if (!Array.isArray(data.record))
-      throw new Error('Invalid record reference')
-    const [ chainID, blockHash, operationHash ] = data.record
-    if (validateChain(chainID) != ValidationResult.VALID)
-      throw new Error(`Invalid chain ID "${chainID}"`)
-    if (!isValidBlockHash(blockHash))
-      throw new Error(`Invalid block hash "${blockHash}"`)
-    if (!isValidOperationHash(operationHash))
-      throw new Error(`Invalid operation hash "${operationHash}"`)
-
-    // Parse operations list
-    if (!Array.isArray(data.ops))
-      throw new Error('Invalid operations list')
-    const operations = data.ops.map(toOperations)
-
-    return new Proof({ operations, chainID, blockHash, operationHash })
+    if (typeof data != 'object' || data == null)
+      throw new Error('Invalid proof format')
+    const { version, network, ops } = data
+    // Proof version 0 is unstable and subject to breaking changes
+    // Support for version 0 will be dropped on 1.0.0 release
+    if (typeof version != 'number' || !Number.isInteger(version) || version < 0)
+      throw new Error('Invalid proof version')
+    if (version > Proof.VERSION)
+      throw new Error(`Unsupported proof version "${version}"`)
+    return new Proof(network, ops.map(toOperation))
   }
 
   /**
-   * Commitment operations
+   * Tezos network
+   */
+  readonly network: string
+
+  /**
+   * Proof operations
    */
   readonly operations: Operation[]
 
-  /**
-   * Tezos chain ID
-   */
-  readonly chainID: string
+  constructor (network: string, operations: Operation[]) {
 
-  /**
-   * Tezos block hash
-   */
-  readonly blockHash: string
+    // Validate network ID
+    try {
+      const rawNetwork = Base58.decodeCheck(network)
+      if (rawNetwork.length != 7)
+        throw null
+      if (!Bytes.compare(rawNetwork.slice(0, 3), NETWORK_PREFIX))
+        throw null
+    } catch (_) {
+      throw new Error('Invalid network ID')
+    }
 
-  /**
-   * Tezos operation hash
-   */
-  readonly operationHash: string
-
-  constructor ({ operations, chainID, blockHash, operationHash }: ProofOptions) {
-    // TODO: validate notary references
+    this.network = network
     this.operations = operations
-    this.chainID = chainID
-    this.blockHash = blockHash
-    this.operationHash = operationHash
   }
 
   /**
@@ -112,119 +94,16 @@ export class Proof {
   toJSON (): Object {
     return {
       version: Proof.VERSION,
-      ops: this.operations,
-      record: [ this.chainID, this.blockHash, this.operationHash ]
+      network: this.network,
+      ops: this.operations
     }
   }
 
   /**
-   * Derive value from all operations
+   * Derive block hash from operations
    */
-  async derive (input: Uint8Array): Promise<Uint8Array> {
-    return this.operations.reduce(
-      async (current, operation) => operation.commit(await current),
-      Promise.resolve(input)
-    )
-  }
-
-  /**
-   * Verify derived value against on-chain record
-   */
-  async verify (input: Uint8Array, rpcURL: string | URL): Promise<VerificationResult> {
-    
-    const root = await this.derive(input)
-    
-    // Fetch block data
-    const blockEndpoint = new URL(`/chains/${this.chainID}/blocks/${this.blockHash}`, rpcURL)
-    const blockResponse = await fetch(blockEndpoint)
-    
-    // Bad response status
-    if (!blockResponse.ok) {
-      if (blockResponse.status == 400)
-        return { status: VerificationStatus.BAD_SOURCE, root }
-      else
-        return { status: VerificationStatus.SERVER_ERROR, root }
-    }
-
-    const block = await blockResponse.json()
-    const timestamp = new Date(block.header.timestamp)
-    
-    // Find operation
-    const operation = block.operations
-      .flat()
-      .find(op => op.hash == this.operationHash)
-    if (!operation)
-      return { status: VerificationStatus.BAD_SOURCE, root }
-    const publishedHex = operation
-      ?.contents
-      .find(c => c.kind == 'transaction')
-      ?.parameters
-      ?.value
-      ?.bytes
-    if (typeof publishedHex != 'string')
-      return { status: VerificationStatus.BAD_SOURCE, root }
-    try {
-      const publishedRoot = parse(publishedHex)
-      if (!compare(root, publishedRoot))
-        return { status: VerificationStatus.DIFFERENT_ROOT, root, publishedRoot }
-      return { status: VerificationStatus.VERIFIED, root, timestamp, publishedRoot }
-    } catch (parseError) {
-      return { status: VerificationStatus.BAD_SOURCE, root } 
-    }
+  derive (input: Uint8Array): Block {
+    const rawHash = this.operations.reduce((acc, op) => op.commit(acc), input)
+    return new Block(this.network, rawHash)
   }
 }
-
-/**
- * Determine if a value is a valid proof version
- */
-const isValidVersion = (value: any): boolean =>
-  typeof value == 'number' &&
-  Number.isInteger(value) &&
-  value >= 0
-
-/**
- * Determine if a value is a non-function object
- */
-const isObject = (value: any): boolean =>
-  typeof value == 'object' &&
-  value != null
-
-/**
- * Determine if a value is a valid tezos block hash
- */
-const isValidBlockHash = (value: any): boolean =>
-  typeof value == 'string'
-
-/**
- * Determine if a value is a valid tezos operation hash
- */
-const isValidOperationHash = (value: any): boolean =>
-  typeof value == 'string'
-
-/**
- * JSON operation deserializer
- */
-const toOperations = (op: any) => {
-
-  // Validate operation
-  if (!Array.isArray(op))
-    throw new Error(`Invalid operation "${JSON.stringify(op)}"`)
-  if (!op.length)
-    throw new Error('Empty operation')
-
-  // Revive operations
-  const id = op[0]
-  switch (op[0]) {
-    case 'prepend': return Operation.prepend(parse(op[1]))
-    case 'append': return Operation.append(parse(op[1]))
-    case 'sha-256': return Operation.sha256()
-    default: throw new Error(`Unsupported operation "${id}"`)
-  }
-}
-
-/**
- * Compare two byte arrays
- */
-const compare = (a: Uint8Array, b: Uint8Array): boolean =>
-  a.length == b.length &&
-  a.every((val, idx) => val == b[idx])
