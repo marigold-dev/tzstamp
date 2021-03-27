@@ -1,4 +1,5 @@
-const { Proof, Operation, Hex } = require('../dist/common')
+const { Hex } = require('@tzstamp/helpers')
+const { Proof, Operation } = require('../dist/common')
 const { createHash } = require('crypto')
 
 void async function () {

@@ -1,7 +1,5 @@
-import { stringify, parse } from './hex'
+import { Hex, concat, blake2b as blake2bHash } from '@tzstamp/helpers'
 import { createHash } from 'crypto'
-import { concat } from './bytes'
-import { blake2b as blake2bHash } from './blake2b'
 
 /**
  * Proof operation
@@ -30,8 +28,8 @@ export namespace Operation {
    * Prepend operation
    */
   export const prepend = (data: Uint8Array) => ({
-    toString: () => `Prepend ${stringify(data)}`,
-    toJSON: () => [ 'prepend', stringify(data) ],
+    toString: () => `Prepend ${Hex.stringify(data)}`,
+    toJSON: () => [ 'prepend', Hex.stringify(data) ],
     commit: (input: Uint8Array) => concat(data, input)
   })
 
@@ -39,8 +37,8 @@ export namespace Operation {
    * Append operation
    */
   export const append = (data: Uint8Array) => ({
-    toString: () => `Append ${stringify(data)}`,
-    toJSON: () => [ 'append', stringify(data) ],
+    toString: () => `Append ${Hex.stringify(data)}`,
+    toJSON: () => [ 'append', Hex.stringify(data) ],
     commit: (input: Uint8Array) => concat(input, data)
   })
 

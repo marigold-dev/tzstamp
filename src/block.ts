@@ -1,5 +1,4 @@
-import * as Base58 from './base58'
-import { concat } from './bytes'
+import { Base58, concat } from '@tzstamp/helpers'
 import fetch from 'node-fetch'
 
 /**

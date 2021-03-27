@@ -1,8 +1,6 @@
 import { Operation } from './operation'
 import { Block } from './block'
-import * as Bytes from './bytes'
-import * as Hex from './hex'
-import * as Base58 from './base58'
+import { compare, Hex, Base58 } from '@tzstamp/helpers'
 
 /**
  * Network ID prefix
@@ -78,7 +76,7 @@ export class Proof {
       const rawNetwork = Base58.decodeCheck(network)
       if (rawNetwork.length != 7)
         throw null
-      if (!Bytes.compare(rawNetwork.slice(0, 3), NETWORK_PREFIX))
+      if (!compare(rawNetwork.slice(0, 3), NETWORK_PREFIX))
         throw null
     } catch (_) {
       throw new Error('Invalid network ID')
