@@ -20,11 +20,17 @@ function sha256 (bytes: Uint8Array): Uint8Array {
 
 /**
  * The common base-58 alphabet
+ *
+ * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet}
+ * for details
  */
 export const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 /**
  * Encode byte array as base58 string
+ *
+ * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#encode|The Base58 Encoding Scheme}
+ * for details
  */
 export function encode (bytes: Uint8Array): string {
   let x = BigInt('0x' + Hex.stringify(bytes))
@@ -41,6 +47,9 @@ export function encode (bytes: Uint8Array): string {
 
 /**
  * Decode base58 string to byte array
+ *
+ * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#encode|The Base58 Encoding Scheme}
+ * for details
  */
 export function decode (input: string): Uint8Array {
   if (input.length == 0)
@@ -67,6 +76,9 @@ export function decode (input: string): Uint8Array {
 
 /**
  * Encode with checksum
+ *
+ * @see {@link https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L135|base58.cpp}
+ * for original C++ implementation
  */
 export function encodeCheck (bytes: Uint8Array): string {
   const checksum = sha256(sha256(bytes)).slice(0, 4)
@@ -75,6 +87,9 @@ export function encodeCheck (bytes: Uint8Array): string {
 
 /**
  * Decode with checksum
+ *
+ * @see {@link https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L144|base58.cpp}
+ * for original C++ implementation
  */
 export function decodeCheck (input: string): Uint8Array {
   const bytes = decode(input)
