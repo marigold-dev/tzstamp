@@ -4,6 +4,9 @@ import { compare, Hex, Base58 } from '@tzstamp/helpers'
 
 /**
  * Network ID prefix
+ *
+ * @see {@link https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml#L424|base58.ml}
+ * for details
  */
 const NETWORK_PREFIX = new Uint8Array([ 87, 82, 0 ]) // Net(15)
 
