@@ -1,4 +1,4 @@
-import { stringify, parse } from './hex'
+import { Hex, concat, blake2b as blake2bHash } from '@tzstamp/helpers'
 import { createHash } from 'crypto'
 
 /**
@@ -19,7 +19,7 @@ export interface Operation {
   /**
    * Commit operation to input
    */
-  commit (input: Uint8Array): Promise<Uint8Array>
+  commit (input: Uint8Array): Uint8Array
 }
 
 export namespace Operation {
@@ -28,18 +28,18 @@ export namespace Operation {
    * Prepend operation
    */
   export const prepend = (data: Uint8Array) => ({
-    toString: () => `Prepend ${stringify(data)}`,
-    toJSON: () => [ 'prepend', stringify(data) ],
-    commit: async (input: Uint8Array) => new Uint8Array([ ...data, ...input ])
+    toString: () => `Prepend ${Hex.stringify(data)}`,
+    toJSON: () => [ 'prepend', Hex.stringify(data) ],
+    commit: (input: Uint8Array) => concat(data, input)
   })
 
   /**
    * Append operation
    */
   export const append = (data: Uint8Array) => ({
-    toString: () => `Append ${stringify(data)}`,
-    toJSON: () => [ 'append', stringify(data) ],
-    commit: async (input: Uint8Array) => new Uint8Array([ ...input, ...data ])
+    toString: () => `Append ${Hex.stringify(data)}`,
+    toJSON: () => [ 'append', Hex.stringify(data) ],
+    commit: (input: Uint8Array) => concat(input, data)
   })
 
   /**
@@ -48,8 +48,17 @@ export namespace Operation {
   export const sha256 = (): Operation => ({
     toString: () => 'SHA-256',
     toJSON: () => [ 'sha-256' ],
-    commit: async (input: Uint8Array) => createHash('SHA256')
+    commit: (input: Uint8Array) => createHash('SHA256')
       .update(input)
       .digest()
+  })
+
+  /**
+   * Blake2b-256 hash operation
+   */
+  export const blake2b = (): Operation => ({
+    toString: () => 'Blake2b-256',
+    toJSON: () => [ 'blake2b' ],
+    commit: (input: Uint8Array) => blake2bHash(input)
   })
 }
