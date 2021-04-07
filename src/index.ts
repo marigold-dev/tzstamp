@@ -21,13 +21,6 @@ export class MerkleTree {
   #layers: Uint8Array[][] = [[]]
 
   /**
-   * Node layers
-   */
-  get layers (): Uint8Array[][] {
-    return this.#layers
-  }
-
-  /**
    * Root hash
    */
   get root (): Uint8Array {
