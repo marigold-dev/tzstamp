@@ -1,9 +1,12 @@
-import { blake2b, compare, concat } from '@tzstamp/helpers'
+import { blake2b, compare, concat, Hex } from '@tzstamp/helpers'
 
 /**
  * Relation to a sibling node
  */
-export enum Relation { LEFT, RIGHT }
+export enum Relation {
+  RIGHT = 0,
+  LEFT = 1
+}
 
 /**
  * Appendable Tezos Merkle tree
@@ -11,9 +14,9 @@ export enum Relation { LEFT, RIGHT }
 export class MerkleTree {
 
   /**
-   * Ordered list of data blocks in the tree
+   * Set of included leaves
    */
-  blocks: Uint8Array[] = []
+  #leaves: Set<string> = new Set
 
   /**
    * Layers of nodes
@@ -28,49 +31,47 @@ export class MerkleTree {
   }
 
   /**
+   * The size of the tree
+   */
+  get size (): number {
+    return this.#leaves.size
+  }
+
+  /**
    * Append data blocks to the tree
    */
   append (...blocks: Uint8Array[]): void {
     for (const block of blocks) {
 
-      // Deduplicate blocks already in tree
-      if (this.blocks.find(existingBlock => compare(existingBlock, block)))
-        continue
+      // Create leaf
+      const leaf = blake2b(block)
+      const leafHex = Hex.stringify(leaf)
 
-      // Remember block
-      this.blocks.push(block)
+      // Deduplicate leaves already in tree
+      if (this.#leaves.has(leafHex))
+        continue
+      this.#leaves.add(leafHex)
 
       // Create cursor variables
-      let index = this.blocks.length - 1
+      let index = this.#layers[0].length
       let height = 0
 
       // Create a "tail" variable, representing the repeated
       // leaf nodes extrapolated to the current layer height
-      let tail = blake2b(block)
+      let computeTail = true
+      let tail = leaf
 
-      // Create leaf corresponding to block
-      this.#layers[height][index] = tail
+      // Create leaf
+      this.#layers[0].push(leaf)
 
       // While the current layer doesn't contain the root
       while (this.#layers[height].length > 1) {
 
         // Calculate parent node
-        const parent = blake2b(
-          index % 2 == 0
-
-            // There is no sibling element (yet).
-            // Hash-concat the current node to the tail
-            ? concat(
-              this.#layers[height][index],
-              tail
-            )
-
-            // There is a previous sibling element
-            : concat(
-              this.#layers[height][index - 1],
-              this.#layers[height][index]
-            )
-        )
+        const concatenation = (index % 2)
+          ? concat(this.node(index - 1, height), this.node(index, height)) // Concat with left sibling
+          : concat(this.node(index, height), tail) // There is no  right sibling; concat with tail
+        const parent = blake2b(concatenation)
 
         // Advance cursor
         index = Math.floor(index / 2)
@@ -83,10 +84,34 @@ export class MerkleTree {
         // Store parent node
         this.#layers[height][index] = parent
 
+        // Stop computing the tail once the remaining layers are balanced
+        if (Math.log2(this.#layers[height].length) % 1 == 0)
+          computeTail = false
+
         // Advance tail
-        tail = blake2b(concat(tail, tail))
+        if (computeTail)
+          tail = blake2b(concat(tail, tail))
       }
     }
+  }
+
+  /**
+   * Check if a block is included in the tree
+   * @param block Data block corresponding to a leaf
+   */
+  has (block: Uint8Array): boolean {
+    const leaf = blake2b(block)
+    const leafHex = Hex.stringify(leaf)
+    return this.#leaves.has(leafHex)
+  }
+
+  /**
+   * Get a node from the layers of the tree
+   * @param index Index of now within layer
+   * @param height Height of layer
+   */
+  node (index: number, height: number): Uint8Array {
+    return this.#layers[height]?.[index]
   }
 
   /**
