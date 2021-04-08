@@ -69,8 +69,8 @@ export class MerkleTree {
 
         // Calculate parent node
         const concatenation = (index % 2)
-          ? concat(this.node(index - 1, height), this.node(index, height)) // Concat with left sibling
-          : concat(this.node(index, height), tail) // There is no  right sibling; concat with tail
+          ? concat(this.#layers[height][index - 1], this.#layers[height][index]) // Concat with left sibling
+          : concat(this.#layers[height][index], tail) // There is no  right sibling; concat with tail
         const parent = blake2b(concatenation)
 
         // Advance cursor
@@ -115,53 +115,39 @@ export class MerkleTree {
   }
 
   /**
-   * Determine the path from a block to the root
+   * Determine the path from the leaf at the given index to the root
    */
-  walk (block: Uint8Array): [Relation, Uint8Array][] {
+  *paths (index: number): Generator<[Relation, Uint8Array][]> {
+    for (const index in this.#layers[0]) {
 
-    // Create cursor variables
-    let index = this.blocks.findIndex(existingBlock => compare(existingBlock, block))
-    let height = 0
+      // Get leaf
+      const leaf = this.#layers[0][index]
 
-    // Block not in Merkle tree
-    if (index == -1)
-      throw new Error('Given block is not included in the Merkle tree')
+      // Resulting path
+      const result: [Relation, Uint8Array][] = []
 
-    // Create a "tail" variable, representing the repeated
-    // leaf nodes extrapolated to the current layer height
-    let tail = this.#layers[0][this.#layers[0].length - 1]
+      // Cursor and tail
+      let h = 0 // Height
+      let i = +index // Index
+      let t = this.#layers[0][this.#layers[0].length - 1] // Tail
 
-    // Resulting path
-    const result: [Relation, Uint8Array][] = []
+      // Step through each layer except the highest
+      while (h < this.#layers.length - 1) {
 
-    // Step through each layer
-    while (height < this.#layers.length - 1) {
-      result.push(
-        index % 2 == 0
+        // Add path step
+        const relation = i % 2
+        const node = relation
+          ? this.#layers[h][i - 1] // Left sibling
+          : this.#layers[h][i + 1] ?? t // Right sibling, or tail if absent
+        result.push([ relation, node ])
 
-          // Sibling is to the right
-          // If the element is at the end of a layer,
-          // the sibling is the tail
-          ? [
-            Relation.RIGHT,
-            this.#layers[height][index + 1] || tail
-          ]
+        // Advance cursor and tail
+        ++h
+        i = Math.floor(i / 2)
+        t = blake2b(concat(t, t))
+      }
 
-          // Sibling is to the left
-          : [
-            Relation.LEFT,
-            this.#layers[height][index - 1]
-          ]
-      )
-
-      // Advance cusor
-      index = Math.floor(index / 2)
-      ++height
-
-      // Advance tail
-      tail = blake2b(concat(tail, tail))
+      yield result
     }
-
-    return result
   }
 }

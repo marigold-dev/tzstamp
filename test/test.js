@@ -18,11 +18,11 @@ const blocks = [
 merkle.append(...blocks)
 console.log(Hex.stringify(merkle.root))
 
-const walks = blocks.map(block => merkle.walk(block))
-console.log(walks)
+const paths = Array.from(merkle.paths())
+console.log(paths)
 
-const roots = walks.map((walk, index) => {
-  return walk.reduce((acc, [ relation, sibling ]) => {
+const roots = paths.map((path, index) => {
+  return path.reduce((acc, [ relation, sibling ]) => {
     switch (relation) {
       case Relation.LEFT:
         return blake2b(concat(sibling, acc))
