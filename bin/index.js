@@ -27,15 +27,22 @@ void async function () {
                 await handleVerify(...subcommandArgs)
                 break;
             case "stamp":
-                await handleStamp(...subcommandArgs)
+                await handleStamp(Array(...subcommandArgs))
                 break;
             case "help":
             default:
                 handleHelp();
         }
     } catch (error) {
-        console.error(error.message)
-        process.exit(1)
+        if (error instanceof TypeError && subcommand === "stamp") {
+            console.error("No filepath to stamp provided, at least one required.")
+            console.error(subcommandArgs)
+            process.exit(1)
+        }
+        else {
+            console.error(error)
+            process.exit(1)
+        }
     }
 }()
 
@@ -105,17 +112,24 @@ async function handleVerify (hash_or_filep, proof_file_or_url) {
     console.log(`ROOT HASH DERIVED FROM PROOF AND LEAF HASH:\n${Hash.stringify(merkleRoot)}`)
 }
 
-async function handleStamp (filePathOrHash) {
-    const hash = sha256_p.test(filePathOrHash)
-        ? filePathOrHash
-        : Hash.stringify(await hashFile(filePathOrHash))
-    const response = await fetch(`${argv.server}/api/stamp`, {
-        method: 'POST',
-        headers: { "Content-type": "application/json" },
-        body: JSON.stringify({ hash })
-    })
-    const { url } = await response.json()
-    console.log(url)
+async function handleStamp (filePathsOrHashes) {
+    var hashes = []
+    for (const filePathOrHash of filePathsOrHashes) {
+        const hash = sha256_p.test(filePathOrHash)
+              ? filePathOrHash
+              : Hash.stringify(await hashFile(filePathOrHash))
+        hashes.push(hash)
+    }
+    for (const hash of hashes) {
+        const response = await fetch(`${argv.server}/api/stamp`, {
+            method: 'POST',
+            headers: { "Content-type": "application/json" },
+            body: JSON.stringify({ hash })
+        })
+
+        const { url } = await response.json()
+        console.log(url)
+    }
 }
 
 function handleHelp () {
