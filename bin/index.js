@@ -113,14 +113,10 @@ async function handleVerify (hash_or_filep, proof_file_or_url) {
 }
 
 async function handleStamp (filePathsOrHashes) {
-    var hashes = []
     for (const filePathOrHash of filePathsOrHashes) {
         const hash = sha256_p.test(filePathOrHash)
               ? filePathOrHash
               : Hash.stringify(await hashFile(filePathOrHash))
-        hashes.push(hash)
-    }
-    for (const hash of hashes) {
         const response = await fetch(`${argv.server}/api/stamp`, {
             method: 'POST',
             headers: { "Content-type": "application/json" },
