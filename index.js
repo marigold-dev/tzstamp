@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const fs = require('fs')
 require('dotenv-defaults').config()
 const {
   MerkleTree,
@@ -12,9 +12,8 @@ const {
   }
 } = require('@tzstamp/merkle')
 const express = require('express')
-const { InMemorySigner } = require('@taquito/signer')
 const { TezosToolkit } = require('@taquito/taquito')
-const { importKey } = require('@taquito/signer')
+const { InMemorySigner, importKey } = require('@taquito/signer')
 
 const {
   PORT,
@@ -26,14 +25,10 @@ const {
   RPC_URL
 } = process.env
 
-
 const key = getKey()
 
-tezos = new TezosToolkit(RPC_URL)
-
-
-
-// TODO: Implement remote signer(?) branch
+// Configure taquito
+const tezos = new TezosToolkit(RPC_URL)
 if (key.secret) {
   importKey(
     tezos,
@@ -44,35 +39,32 @@ if (key.secret) {
   )
 }
 
-
 let tree = new MerkleTree
 
 async function run () {
-    if (!key.secret) {
-        tezos.setProvider({signer: await InMemorySigner.fromSecretKey(key)})
-    }
-    express()
-        .use(express.json())
-        .use(express.static('static'))
-        .post('/api/stamp', postStamp)
-        .get('/api/proof/:id', getProof)
-        .use(errorHandler)
-        .listen(PORT, listenHandler)
-
-    setInterval(stampTree, INTERVAL * 1000)
+  if (!key.secret) {
+    const signer = await InMemorySigner.fromSecretKey(key)
+    tezos.setProvider({ signer })
+  }
+  express()
+    .use(express.json())
+    .use(express.static('static'))
+    .post('/api/stamp', postStamp)
+    .get('/api/proof/:id', getProof)
+    .use(errorHandler)
+    .listen(PORT, listenHandler)
+  setInterval(stampTree, INTERVAL * 1000)
 }
 
 function getKey () {
   if (FAUCET_KEY_PATH != null) {
-      const text = fs.readFileSync(FAUCET_KEY_PATH)
-      return JSON.parse(text)
+    const text = fs.readFileSync(FAUCET_KEY_PATH)
+    return JSON.parse(text)
   }
-  else if (TEZOS_WALLET_SECRET != null) {
-      return TEZOS_WALLET_SECRET
+  if (TEZOS_WALLET_SECRET != null) {
+    return TEZOS_WALLET_SECRET
   }
-  else {
-      throw new Error("Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET")
-  }
+  throw new Error("Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET")
 }
 
 function postStamp (req, res) {
@@ -81,19 +73,19 @@ function postStamp (req, res) {
   }
   if (req.body.hash == undefined) {
     throw new SyntaxError('Request body does not contain a hash field')
-  } else if (typeof(req.body.hash) == typeof({})) {
+  } else if (typeof req.body.hash == 'object') {
     throw new SyntaxError('Request body\'s hash field was empty.')
   } else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
     throw new SyntaxError(`${req.body.hash} is not a sha256 hash!`)
   }
   const digest = parse(req.body.hash)
   tree.append(hash(digest))
-  proof_id = stringify(hash(digest))
+  const proofId = stringify(hash(digest))
   res
     .status(202)
     .json({
       status: 'Stamp pending',
-      url: `${BASE_URL}/api/proof/${proof_id}`
+      url: `${BASE_URL}/api/proof/${proofId}`
     })
 }
 
@@ -117,7 +109,7 @@ function getProof (req, res) {
   }
 }
 
-function errorHandler (err, req, res, next) {
+function errorHandler (err, _, res) {
   if (err instanceof SyntaxError) {
     res.status(400)
   } else if (err instanceof ReferenceError) {
@@ -134,7 +126,9 @@ function listenHandler () {
 
 async function stampTree () {
   // Publish the current merkle root and inclusion proofs
-  if (tree.hash == null) return
+  if (tree.hash == null) {
+    return
+  }
   if (!fs.existsSync('proofs')) {
     fs.mkdirSync('proofs')
   }
@@ -151,7 +145,7 @@ async function stampTree () {
   // Generate proof files for tree in memory
   for (const leaf of staticLeaves) {
     // Strip custom .toJSON()...
-    var proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
+    let proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
     proof["operation"] = operation.hash
     proof = JSON.stringify(proof)
     const filename = `proofs/${stringify(leaf)}.json`
@@ -162,10 +156,10 @@ async function stampTree () {
   // Drop leaves before confirmation to prevent repeat commits during await
   tree = new MerkleTree
   try {
-      await operation.confirmation(3)
-      console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
+    await operation.confirmation(3)
+    console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
   } catch (error) {
-      console.error(`Error: ${error.message}`)
+    console.error(`Error: ${error.message}`)
   }
 }
 

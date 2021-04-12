@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests.js"
+    "test": "node tests.js",
+    "lint": "eslint index.js --fix"
   },
   "license": "MIT",
   "dependencies": {
@@ -14,5 +15,8 @@
     "dotenv-defaults": "^2.0.1",
     "express": "^4.17.1",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.24.0"
   }
 }
