@@ -31,6 +31,13 @@ export class MerkleTree {
   }
 
   /**
+   * Leaf hashes included in the tree
+   */
+  get leaves (): Uint8Array[] {
+    return this.#layers[0]
+  }
+
+  /**
    * Append data blocks to the tree
    */
   append (...blocks: Uint8Array[]): void {
