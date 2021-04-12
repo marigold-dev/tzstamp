@@ -9,8 +9,12 @@ const { Proof, _util: Hash } = require('@tzstamp/merkle')
 const argv = parseArgs(
     process.argv.slice(2),
     opts = {
+        alias: {
+            "root-format":"rootFormat",
+        },
         default: {
             server: "https://tzstamp.io",
+            rootFormat: "hex",
         }
     }
 )
@@ -83,6 +87,18 @@ async function fetchProofSerialization (url) {
     }
 }
 
+function rootFormat(merkleRoot) {
+    hexHash = Hash.stringify(merkleRoot);
+    switch (argv.rootFormat) {
+        case 'hex':
+            return hexHash;
+        case 'decimal':
+            return BigInt('0x' + hexHash)
+        case 'binary':
+            return BigInt('0x' + hexHash).toString(2)
+    }
+}
+
 async function handleVerify (hash_or_filep, proof_file_or_url) {
     if (hash_or_filep == undefined) {
         throw new Error("Hash to test for inclusion not given (first argument).")
@@ -109,7 +125,8 @@ async function handleVerify (hash_or_filep, proof_file_or_url) {
     } catch (_) {
         throw new Error('Unable to derive merkle root')
     }
-    console.log(`ROOT HASH DERIVED FROM PROOF AND LEAF HASH:\n${Hash.stringify(merkleRoot)}`)
+    
+    console.log(`ROOT HASH DERIVED FROM PROOF AND LEAF HASH:\n${rootFormat(merkleRoot)}`)
 }
 
 async function handleStamp (filePathsOrHashes) {
