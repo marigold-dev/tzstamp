@@ -109,7 +109,8 @@ function getProof (req, res) {
   }
 }
 
-function errorHandler (err, _, res) {
+// eslint-disable-next-line no-unused-vars
+function errorHandler (err, req, res, next) {
   if (err instanceof SyntaxError) {
     res.status(400)
   } else if (err instanceof ReferenceError) {
