@@ -16,18 +16,15 @@ test('Encode byte array as base-58 string', () => {
 test('Decode byte array from base-58 string', () => {
 
   // Decode valid base-58 encoding
-  const hello = 'Cn8eVZg'
-  expect(Base58.decode(hello))
+  expect(Base58.decode('Cn8eVZg'))
     .toEqual(new Uint8Array([ 104, 101, 108, 108, 111 ]))
 
   // Decode empty string
-  const empty = ''
-  expect(Base58.decode(empty))
+  expect(Base58.decode(''))
     .toEqual(new Uint8Array([]))
 
   // Decode invalid base-58 string
-  const malformed = 'malformed' // 'l' is not in the base-58 alphabet
-  expect(() => Base58.decode(malformed))
+  expect(() => Base58.decode('malformed')) // 'l' is not in the base-58 alphabet
     .toThrow(SyntaxError)
 })
 
@@ -47,22 +44,18 @@ test('Encode byte array as base-58 string with checksum', () => {
 test('Decode byte array from base-58 string with checksum', () => {
 
   // Checksum-decode valid base-58 encoding
-  const hello = '2L5B5yqsVG8Vt'
-  expect(Base58.decodeCheck(hello))
+  expect(Base58.decodeCheck('2L5B5yqsVG8Vt'))
     .toEqual(new Uint8Array([ 104, 101, 108, 108, 111 ]))
 
   // Checksum-decode valid base-58 encoding with bad checksum
-  const badChecksum = 'abcdefghij'
-  expect(() => Base58.decodeCheck(badChecksum))
+  expect(() => Base58.decodeCheck('abcdefghij'))
     .toThrow(Error)
 
   // Checksum-decode empty string
-  const empty = '3QJmnh'
-  expect(Base58.decodeCheck(empty))
+  expect(Base58.decodeCheck('3QJmnh'))
     .toEqual(new Uint8Array([]))
 
   // Checksim-decode invalid base-58 string
-  const malformed = 'malformed' // 'l' is not in the base-58 alphabet
-  expect(() => Base58.decodeCheck(malformed))
+  expect(() => Base58.decodeCheck('malformed')) // 'l' is not in the base-58 alphabet
     .toThrow(SyntaxError)
 })

@@ -9,7 +9,7 @@ test('Encode byte array as hex string', () => {
 
   // Encode empty byte array
   const empty = new Uint8Array([])
-  expect(Hex.stringify(bytes))
+  expect(Hex.stringify(empty))
     .toBe('')
 })
 
