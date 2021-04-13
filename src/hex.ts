@@ -13,9 +13,15 @@ export function stringify (bytes: Uint8Array): string {
  */
 export function parse (hex: string): Uint8Array {
 
+  // Empty string
+  if (hex.length == 0) {
+    return new Uint8Array([])
+  }
+
   // Validate hex string
-  if (!hex.match(/^[0-9a-fA-F]+$/))
-    throw new Error('Invalid hex string')
+  if (!hex.match(/^[0-9a-fA-F]+$/)) {
+    throw new SyntaxError('Invalid hex string')
+  }
 
   // Convert bytes to 2-digit
   const bytes = hex

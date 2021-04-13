@@ -33,6 +33,12 @@ export const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvw
  * for details
  */
 export function encode (bytes: Uint8Array): string {
+
+  // Empty array
+  if (bytes.length == 0) {
+    return ''
+  }
+
   let x = BigInt('0x' + Hex.stringify(bytes))
   let output = []
   while (x > 0n) {
@@ -40,8 +46,9 @@ export function encode (bytes: Uint8Array): string {
     x = x / 58n
     output.push(ALPHABET[mod])
   }
-  for (let i = 0; bytes[i] == 0; ++i)
+  for (let i = 0; bytes[i] == 0; ++i) {
     output.push(ALPHABET[0])
+  }
   return output.reverse().join('')
 }
 
@@ -52,12 +59,18 @@ export function encode (bytes: Uint8Array): string {
  * for details
  */
 export function decode (input: string): Uint8Array {
-  if (input.length == 0)
-    return new Uint8Array
+
+  // Empty string
+  if (input.length == 0) {
+    return new Uint8Array([])
+  }
+
   const bytes = [ 0 ]
   for (const char of input) {
     const value = ALPHABET.indexOf(char)
-    if (value == null) throw new Error(`Invalid base58 string`)
+    if (value == -1) {
+      throw new SyntaxError(`Invalid base58 string: The base-58 alphabet doesn't include the character "${char}"`)
+    }
     for (const j in bytes) bytes[j] *= 58
     bytes[0] += value
     let carry = 0
@@ -95,7 +108,8 @@ export function decodeCheck (input: string): Uint8Array {
   const bytes = decode(input)
   const payload = bytes.slice(0, -4)
   const checksum = sha256(sha256(payload)).slice(0, 4)
-  if (!compare(checksum, bytes.slice(-4)))
-    throw new Error(`Invalid base-58 checksum: ${bytes.slice(-4)} != ${checksum}`)
+  if (!compare(checksum, bytes.slice(-4))) {
+    throw new Error(`Base-58 checksum did not match`)
+  }
   return payload
 }
