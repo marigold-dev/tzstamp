@@ -11,6 +11,11 @@ test('Encode byte array as base-58 string', () => {
   const empty = new Uint8Array([])
   expect(Base58.encode(empty))
     .toBe('')
+
+  // Encode byte array with leading zeroes
+  const leadingZeroes = new Uint8Array([ 0, 0, 0, 10, 20, 30, 40 ])
+  expect(Base58.encode(leadingZeroes))
+    .toBe('111FwdkB')
 })
 
 test('Decode byte array from base-58 string', () => {
@@ -26,6 +31,10 @@ test('Decode byte array from base-58 string', () => {
   // Decode invalid base-58 string
   expect(() => Base58.decode('malformed')) // 'l' is not in the base-58 alphabet
     .toThrow(SyntaxError)
+
+  // Decode with leading zeroes
+  expect(Base58.decode('111FwdkB'))
+    .toEqual(new Uint8Array([ 0, 0, 0, 10, 20, 30, 40 ]))
 })
 
 test('Encode byte array as base-58 string with checksum', () => {
