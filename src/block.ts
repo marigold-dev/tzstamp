@@ -8,6 +8,9 @@ export class Block {
 
   /**
    * Block address prefix
+   *
+   * @see {@link https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml#L354|base58.ml}
+   * for details
    */
   static PREFIX = new Uint8Array([ 1, 52 ]) // B(51)
 

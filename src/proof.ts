@@ -14,9 +14,9 @@ const NETWORK_PREFIX = new Uint8Array([ 87, 82, 0 ]) // Net(15)
  * JSON operation deserializer
  */
 function toOperation (op: any): Operation {
-  if (!Array.isArray(op) || !op.length)
-    throw new Error(`Invalid operation`)
-  const id = op[0]
+  if (!Array.isArray(op) || op.length == 0) {
+    throw new Error(`Invalid operations array`)
+  }
   switch (op[0]) {
     case 'prepend': {
       const data = Hex.parse(op[1])
@@ -31,7 +31,7 @@ function toOperation (op: any): Operation {
     case 'blake2b':
       return Operation.blake2b()
     default:
-      throw new Error(`Unsupported operation "${id}"`)
+      throw new Error(`Unsupported operation "${op[0]}"`)
   }
 }
 
@@ -53,8 +53,15 @@ export class Proof {
     if (typeof data != 'object' || data == null)
       throw new Error('Invalid proof format')
     const { version, network, ops } = data
-    // Proof version 0 is unstable and subject to breaking changes
-    // Support for version 0 will be dropped on 1.0.0 release
+    if (version == null) {
+      throw new Error('Missing proof version')
+    }
+    if (network == null) {
+      throw new Error('Missing network ID')
+    }
+    if (ops == null) {
+      throw new Error('Missing operations array')
+    }
     if (typeof version != 'number' || !Number.isInteger(version) || version < 0)
       throw new Error('Invalid proof version')
     if (version > Proof.VERSION)
@@ -73,6 +80,11 @@ export class Proof {
   readonly operations: Operation[]
 
   constructor (network: string, operations: Operation[]) {
+
+    // Empty operations array
+    if (operations.length == 0) {
+      throw new Error('Empty operations array')
+    }
 
     // Validate network ID
     try {

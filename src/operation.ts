@@ -48,9 +48,11 @@ export namespace Operation {
   export const sha256 = (): Operation => ({
     toString: () => 'SHA-256',
     toJSON: () => [ 'sha-256' ],
-    commit: (input: Uint8Array) => createHash('SHA256')
-      .update(input)
-      .digest()
+    commit: (input: Uint8Array) => new Uint8Array(
+      createHash('SHA256')
+        .update(input)
+        .digest()
+    )
   })
 
   /**
