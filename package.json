@@ -1,5 +1,5 @@
 {
-  "name": "@tzstamp/merkle",
+  "name": "@tzstamp/tezos-merkle",
   "version": "0.1.0",
   "description": "Tezos Merkle trees",
   "main": "dist/index.js",
