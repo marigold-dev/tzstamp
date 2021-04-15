@@ -8,6 +8,5 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Minimal Tezos-style Merkle tree implementation
   - Fast element appends
   - Leaf-to-root paths generator
-- Minimal test convering root derivation from paths
 
 [0.1.0]: https://gitlab.com/tzstamp/helpers/-/tezos-merkle/0.1.0
