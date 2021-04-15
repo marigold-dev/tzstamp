@@ -1,9 +1,3 @@
-/*!
- * Portions of this module are copied from micro-base58,
- * Copyright (c) 2020 Paul Miller (https://paulmillr.com),
- * for use under the MIT license.
- */
-
 import * as Hex from './hex'
 import { concat, compare } from './bytes'
 import { createHash } from 'crypto'
@@ -33,16 +27,29 @@ export const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvw
  * for details
  */
 export function encode (bytes: Uint8Array): string {
-  let x = BigInt('0x' + Hex.stringify(bytes))
-  let output = []
-  while (x > 0n) {
-    const mod = Number(x % 58n)
-    x = x / 58n
-    output.push(ALPHABET[mod])
+
+  // Empty array
+  if (bytes.length == 0) {
+    return ''
   }
-  for (let i = 0; bytes[i] == 0; ++i)
-    output.push(ALPHABET[0])
-  return output.reverse().join('')
+
+  // Convert to integer
+  const int = BigInt('0x' + Hex.stringify(bytes))
+
+  let encoding = ''
+
+  // Encode as base-58
+  for (let n = int; n > 0n; n /= 58n) {
+    const mod = Number(n % 58n)
+    encoding = ALPHABET[mod] + encoding
+  }
+
+  // Prepend padding for leading zeroes in the byte array
+  for (let i = 0; bytes[i] == 0; ++i) {
+    encoding = ALPHABET[0] + encoding
+  }
+
+  return encoding
 }
 
 /**
@@ -52,25 +59,34 @@ export function encode (bytes: Uint8Array): string {
  * for details
  */
 export function decode (input: string): Uint8Array {
-  if (input.length == 0)
-    return new Uint8Array
-  const bytes = [ 0 ]
-  for (const char of input) {
-    const value = ALPHABET.indexOf(char)
-    if (value == null) throw new Error(`Invalid base58 string`)
-    for (const j in bytes) bytes[j] *= 58
-    bytes[0] += value
-    let carry = 0
-    for (const j in bytes) {
-      bytes[j] += carry
-      carry = bytes[j] >> 8
-      bytes[j] &= 0xff
-    }
-    while (carry > 0) {
-      bytes.push(carry & 0xff)
-      carry >>= 8
-    }
+
+  // Empty string
+  if (input.length == 0) {
+    return new Uint8Array([])
   }
+
+  // Convert to integer
+  let int = 0n
+  for (const char of input) {
+    const index = ALPHABET.indexOf(char)
+    if (index == -1) {
+      throw new SyntaxError(`Invalid base58 string: The base-58 alphabet doesn't include the character "${char}"`)
+    }
+    int = int * 58n + BigInt(index)
+  }
+
+  const bytes: number[] = []
+
+  // Construct byte array
+  for (let n = int; n > 0n; n /= 256n) {
+    bytes.push(Number(n % 256n))
+  }
+
+  // Prepend leading zeroes
+  for (let i = 0; input[i] == ALPHABET[0]; ++i) {
+    bytes.push(0)
+  }
+
   return new Uint8Array(bytes.reverse())
 }
 
@@ -95,7 +111,8 @@ export function decodeCheck (input: string): Uint8Array {
   const bytes = decode(input)
   const payload = bytes.slice(0, -4)
   const checksum = sha256(sha256(payload)).slice(0, 4)
-  if (!compare(checksum, bytes.slice(-4)))
-    throw new Error(`Invalid base-58 checksum: ${bytes.slice(-4)} != ${checksum}`)
+  if (!compare(checksum, bytes.slice(-4))) {
+    throw new Error(`Base-58 checksum did not match`)
+  }
   return payload
 }
