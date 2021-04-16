@@ -17,6 +17,7 @@
     "key-spacing": "error",
     "comma-style": "error",
     "comma-spacing": "error",
+    "quotes": [ "error", "single" ],
     "block-spacing": "error",
     "array-bracket-spacing": [ "error", "always" ],
     "no-trailing-spaces": "error",
