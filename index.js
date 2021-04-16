@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
+const fs = require('fs').promises
 require('dotenv-defaults').config()
 const {
   MerkleTree,
@@ -25,27 +25,35 @@ const {
   RPC_URL
 } = process.env
 
-const key = getKey()
-
-// Configure taquito
+// Tezos client
 const tezos = new TezosToolkit(RPC_URL)
-if (key.secret) {
-  importKey(
-    tezos,
-    key.email,
-    key.password,
-    key.mnemonic.join(' '),
-    key.secret
-  )
-}
 
+// Merkle tree
 let tree = new MerkleTree
+let pendingTree = tree
 
-async function run () {
-  if (!key.secret) {
-    const signer = await InMemorySigner.fromSecretKey(key)
+// Setup
+void async function () {
+
+  // Configure tezos client
+  if (FAUCET_KEY_PATH != null) {
+    const json = await fs.readFile(FAUCET_KEY_PATH, 'utf-8')
+    const faucet = JSON.parse(json)
+    importKey(
+      tezos,
+      faucet.email,
+      faucet.password,
+      faucet.mnemonic.join(' '),
+      faucet.secret
+    )
+  } else if (TEZOS_WALLET_SECRET != null) {
+    const signer = await InMemorySigner.fromSecretKey(TEZOS_WALLET_SECRET)
     tezos.setProvider({ signer })
+  } else {
+    throw new Error('Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET')
   }
+
+  // RESTful API
   express()
     .use(express.json())
     .use(express.static('static'))
@@ -53,19 +61,10 @@ async function run () {
     .get('/api/proof/:id', getProof)
     .use(errorHandler)
     .listen(PORT, listenHandler)
-  setInterval(stampTree, INTERVAL * 1000)
-}
 
-function getKey () {
-  if (FAUCET_KEY_PATH != null) {
-    const text = fs.readFileSync(FAUCET_KEY_PATH)
-    return JSON.parse(text)
-  }
-  if (TEZOS_WALLET_SECRET != null) {
-    return TEZOS_WALLET_SECRET
-  }
-  throw new Error("Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET")
-}
+  // Start publication interval
+  setInterval(stampTree, INTERVAL * 1000)
+}()
 
 function postStamp (req, res) {
   if (!req.is('json')) {
@@ -163,5 +162,3 @@ async function stampTree () {
     console.error(`Error: ${error.message}`)
   }
 }
-
-run()
