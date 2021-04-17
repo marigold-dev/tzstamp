@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 
-const fs = require('fs').promises
+const fs = require('fs/promises')
 require('dotenv-defaults').config()
 const {
   MerkleTree,
   _util: {
     parse,
-    hash,
+    hash: sha256,
     compare,
     stringify
   }
 } = require('@tzstamp/merkle')
-const express = require('express')
+const Koa = require('koa')
+const Router = require('@koa/router')
+const static = require('koa-static')
+const bodyParser = require('koa-bodyparser')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
 
@@ -25,12 +28,25 @@ const {
   RPC_URL
 } = process.env
 
+const HEX_STRING = /^[0-9a-fA-F]*$/
+
 // Tezos client
 const tezos = new TezosToolkit(RPC_URL)
 
 // Merkle tree
 let tree = new MerkleTree
-let pendingTree = tree
+let pendingTree = tree // eslint-disable-line
+
+// RESTful API
+const app = new Koa
+app.use(static('static'))
+app.use(bodyParser())
+const router = new Router
+router.post('/api/stamp', postStamp)
+router.get('/api/proof/:id', getProof)
+app.use(router.routes())
+app.use(router.allowedMethods())
+app.on('error', errorHandler)
 
 // Setup
 void async function () {
@@ -53,73 +69,89 @@ void async function () {
     throw new Error('Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET')
   }
 
-  // RESTful API
-  express()
-    .use(express.json())
-    .use(express.static('static'))
-    .post('/api/stamp', postStamp)
-    .get('/api/proof/:id', getProof)
-    .use(errorHandler)
-    .listen(PORT, listenHandler)
+  // Create HTTP server
+  app.listen(PORT, listenHandler)
 
   // Start publication interval
   setInterval(stampTree, INTERVAL * 1000)
 }()
 
-function postStamp (req, res) {
-  if (!req.is('json')) {
-    throw new SyntaxError('Request type is not JSON')
+/**
+ * POST /api/stamp route handler
+ */
+function postStamp (ctx) {
+
+  // Only allow JSON requests
+  if (!ctx.is('json')) {
+    ctx.throw(400, 'Reqest body must be JSON')
   }
-  if (req.body.hash == undefined) {
-    throw new SyntaxError('Request body does not contain a hash field')
-  } else if (typeof req.body.hash == 'object') {
-    throw new SyntaxError('Request body\'s hash field was empty.')
-  } else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
-    throw new SyntaxError(`${req.body.hash} is not a sha256 hash!`)
+
+  // Validate JSON
+  const hash = ctx.request.body.hash
+  if (hash == undefined) {
+    ctx.throw(400, 'Request body must contain a hash field')
   }
-  const digest = parse(req.body.hash)
-  tree.append(hash(digest))
-  const proofId = stringify(hash(digest))
-  res
-    .status(202)
-    .json({
-      status: 'Stamp pending',
-      url: `${BASE_URL}/api/proof/${proofId}`
-    })
+  if (typeof hash != 'string' || !hash.match(HEX_STRING)) {
+    ctx.throw(400, 'Hash field must be a hexidecimal string')
+  }
+
+  // Queue to publish
+  const digest = parse(hash)
+  tree.append(sha256(digest))
+  const proofId = stringify(sha256(digest))
+  ctx.body = {
+    status: 'Stamp pending',
+    url: `${BASE_URL}/api/proof/${proofId}`
+  }
 }
 
-function getProof (req, res) {
-  if (!req.params.id.match(/^[0-9a-fA-F]{64}$/)) {
-    throw new SyntaxError(`${req.params.id} is not a sha256 hash!`)
+/**
+ * GET /api/proof route handler
+ */
+async function getProof (ctx) {
+
+  // Validate proof IDs
+  const proofId = ctx.params.id
+  if (!proofId.match(HEX_STRING)) {
+    ctx.throw(400, `${proofId} is not a valid proof id`)
   }
-  const digest = parse(req.params.id)
+
+  // Fetch proof
+  const digest = parse(proofId)
   if (tree.leaves.find(leaf => compare(leaf, digest))) {
-    res
-      .status(202)
-      .json({ status: 'Stamp pending'})
+    ctx.status = 202
+    ctx.body = { status: 'Stamp pending' }
   } else {
-    const proofPath = `proofs/${req.params.id}.json`
-    if (fs.existsSync(proofPath)) {
-      const proof = JSON.parse(fs.readFileSync(proofPath))
-      res.status(200).json(proof)
-    } else {
-      throw new ReferenceError('Not found. Your proof is no longer in cache or unsubmitted.')
+    const proofPath = `proofs/${proofId}.json`
+    try {
+      const json = await fs.readFile(proofPath, 'utf-8')
+      ctx.body = JSON.parse(json)
+    } catch (error) {
+      if (error.code == 'ENOENT') {
+        ctx.throw(404, 'Proof not found')
+      } else {
+        ctx.throw(500, 'Error fetching proof')
+      }
     }
   }
 }
 
-// eslint-disable-next-line no-unused-vars
-function errorHandler (err, req, res, next) {
-  if (err instanceof SyntaxError) {
-    res.status(400)
-  } else if (err instanceof ReferenceError) {
-    res.status(404)
+/**
+ * Koa default error handler
+ */
+function errorHandler (err, ctx) {
+  if (ctx.accepts('json')) {
+    ctx.body = {
+      error: err.message
+    }
   } else {
-    res.status(500)
+    ctx.body = err.message
   }
-  res.json({ error: err.message })
 }
 
+/**
+ * HTTP server ready handler
+ */
 function listenHandler () {
   console.log(`Serving on port ${PORT}`)
 }
@@ -129,8 +161,12 @@ async function stampTree () {
   if (tree.hash == null) {
     return
   }
-  if (!fs.existsSync('proofs')) {
-    fs.mkdirSync('proofs')
+  try {
+    await fs.mkdir('proofs')
+  } catch (error) {
+    if (error.code != 'EEXIST') {
+      throw error
+    }
   }
   const root = tree.hash
   // Shallow copy leaves to avoid them changing during proof generation
@@ -146,11 +182,17 @@ async function stampTree () {
   for (const leaf of staticLeaves) {
     // Strip custom .toJSON()...
     let proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
-    proof["operation"] = operation.hash
+    proof['operation'] = operation.hash
     proof = JSON.stringify(proof)
     const filename = `proofs/${stringify(leaf)}.json`
-    if (!fs.existsSync(filename)) {
-      fs.writeFileSync(filename, proof)
+    try {
+      await fs.stat(filename)
+    } catch (error) {
+      if (error == 'ENOENT') {
+        await fs.writeFile(filename)
+      } else {
+        throw error
+      }
     }
   }
   // Drop leaves before confirmation to prevent repeat commits during await
