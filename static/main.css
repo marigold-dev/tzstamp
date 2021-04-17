@@ -34,10 +34,14 @@ main, header, footer {
 
 nav {
   display: flex;
-  margin-bottom: 4rem;
+  margin-bottom: 1.5rem;
   align-items: flex-start;
   gap: 1.4rem;
   font-weight: bold;
+}
+
+header p {
+  margin-bottom: 2.5rem;
 }
 
 a {
@@ -46,6 +50,16 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+#tzstamp h2 {
+  text-align: center;
+}
+
+form {
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
 }
 
 label {
@@ -91,6 +105,31 @@ button {
 }
 
 #proofs {
-  height: 40ch;
-  width: 60ch;
+  margin-top: 1em;
+}
+
+#proofs div {
+  display: flex;
+  flex-direction: column;
+  border: 1px black solid;
+  word-wrap: break-word;
+  max-width: 65ch;
+}
+
+#proofs div a {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+#no-stamps {
+  text-align: center;
+  opacity: 40%;
+}
+
+#instructions {
+  margin-left: auto;
+  margin-right: auto;
+  width: 80ch;
 }

@@ -36,19 +36,30 @@ stampButton.addEventListener('click', () => {
   })
     .then(res => res.json())
     .then(json => {
-          proofs = document.getElementById("proofs")
-          console.log(proofs.value)
-          proofs.value = proofs.value + "\n" + json.url }
-         )
+          proofs = document.getElementById("proof-urls")
+          if (document.getElementById("no-stamps")) {
+              const noStampsMsg = document.getElementById("no-stamps")
+              noStampsMsg.remove()
+          }
+          var proofLink = document.createElement("a")
+          proofLink.href = json.url
+          proofLink.target = "_blank"
+          var proofLinkText = document.createTextNode(json.url)
+          proofLink.appendChild(proofLinkText)
+          proofs.appendChild(proofLink)
+         })
   form.reset()
 })
 
 verifyButton.addEventListener('click', () => {
-  fetch('/api/proof', {
+  /* fetch('/api/proof', {
     method: 'GET'
   })
     .then(res => res.json())
     .then(console.log)
+  */
+  window.open("https://gitlab.com/tzstamp/cli#how-to-verify-an-inclusion-proof-on-debian-106",
+              "_blank")
   form.reset()
 })
 
