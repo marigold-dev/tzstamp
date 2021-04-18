@@ -1,16 +1,11 @@
 #!/usr/bin/env node
 
 const fs = require('fs/promises')
+const fetch = require('node-fetch')
 require('dotenv-defaults').config()
-const {
-  MerkleTree,
-  _util: {
-    parse,
-    hash: sha256,
-    compare,
-    stringify
-  }
-} = require('@tzstamp/merkle')
+const { MerkleTree } = require('@tzstamp/tezos-merkle')
+const { Hex, blake2b, Base58, concat } = require('@tzstamp/helpers')
+const { Proof, Operation } = require('@tzstamp/proof')
 const Koa = require('koa')
 const Router = require('@koa/router')
 const static = require('koa-static')
@@ -33,9 +28,12 @@ const HEX_STRING = /^[0-9a-fA-F]*$/
 // Tezos client
 const tezos = new TezosToolkit(RPC_URL)
 
+// Publication contract
+let contract
+
 // Merkle tree
 let tree = new MerkleTree
-let pendingTree = tree // eslint-disable-line
+const pendingProofs = new Set
 
 // RESTful API
 const app = new Koa
@@ -53,6 +51,7 @@ void async function () {
 
   // Configure tezos client
   if (FAUCET_KEY_PATH != null) {
+    console.log('Importing testnet key')
     const json = await fs.readFile(FAUCET_KEY_PATH, 'utf-8')
     const faucet = JSON.parse(json)
     importKey(
@@ -63,23 +62,28 @@ void async function () {
       faucet.secret
     )
   } else if (TEZOS_WALLET_SECRET != null) {
+    console.log('Configuring local signer')
     const signer = await InMemorySigner.fromSecretKey(TEZOS_WALLET_SECRET)
     tezos.setProvider({ signer })
   } else {
     throw new Error('Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET')
   }
 
+  // Fetch contract
+  console.log('Fetching publication contract')
+  contract = await tezos.contract.at(CONTRACT_ADDRESS)
+
   // Create HTTP server
   app.listen(PORT, listenHandler)
 
   // Start publication interval
-  setInterval(stampTree, INTERVAL * 1000)
+  setInterval(publishTree, INTERVAL * 1000)
 }()
 
 /**
  * POST /api/stamp route handler
  */
-function postStamp (ctx) {
+async function postStamp (ctx) {
 
   // Only allow JSON requests
   if (!ctx.is('json')) {
@@ -87,22 +91,27 @@ function postStamp (ctx) {
   }
 
   // Validate JSON
-  const hash = ctx.request.body.hash
-  if (hash == undefined) {
+  const hashHex = ctx.request.body.hash
+  if (hashHex == undefined) {
     ctx.throw(400, 'Request body must contain a hash field')
   }
-  if (typeof hash != 'string' || !hash.match(HEX_STRING)) {
+  if (typeof hashHex != 'string' || !hashHex.match(HEX_STRING) || hashHex.length == 0) {
     ctx.throw(400, 'Hash field must be a hexidecimal string')
   }
-
-  // Queue to publish
-  const digest = parse(hash)
-  tree.append(sha256(digest))
-  const proofId = stringify(sha256(digest))
-  ctx.body = {
-    status: 'Stamp pending',
-    url: `${BASE_URL}/api/proof/${proofId}`
+  if (hashHex.length > 128) {
+    ctx.throw(400, 'Hash cannot be larger than 64 bytes')
   }
+
+  const hash = Hex.parse(hashHex)
+  const proofId = Hex.stringify(blake2b(hash))
+
+  // Aggregate hash for publication
+  if (!pendingProofs.has(proofId)) {
+    tree.append(hash)
+    pendingProofs.add(proofId)
+  }
+
+  await pendingProof(ctx, proofId)
 }
 
 /**
@@ -117,21 +126,36 @@ async function getProof (ctx) {
   }
 
   // Fetch proof
-  const digest = parse(proofId)
-  if (tree.leaves.find(leaf => compare(leaf, digest))) {
-    ctx.status = 202
-    ctx.body = { status: 'Stamp pending' }
+  if (pendingProofs.has(proofId)) {
+    await pendingProof(ctx, proofId)
   } else {
-    const proofPath = `proofs/${proofId}.json`
-    try {
-      const json = await fs.readFile(proofPath, 'utf-8')
-      ctx.body = JSON.parse(json)
-    } catch (error) {
-      if (error.code == 'ENOENT') {
-        ctx.throw(404, 'Proof not found')
-      } else {
-        ctx.throw(500, 'Error fetching proof')
-      }
+    await fetchProof(ctx, proofId)
+  }
+}
+
+/**
+ * Respond that proof is pending
+ */
+async function pendingProof (ctx, proofId) {
+  ctx.status = 202
+  ctx.body = {
+    status: 'Stamp pending',
+    url: `${BASE_URL}/api/proof/${proofId}`
+  }
+}
+
+/**
+ * Respond with stored proof
+ */
+async function fetchProof (ctx, proofId) {
+  try {
+    const file = await fs.readFile(`proofs/${proofId}.json`, 'utf-8')
+    ctx.body = file
+  } catch (error) {
+    if (error.code == 'ENOENT') {
+      ctx.throw(404, 'Proof not found')
+    } else {
+      ctx.throw(500, 'Error fetching proof')
     }
   }
 }
@@ -156,51 +180,222 @@ function listenHandler () {
   console.log(`Serving on port ${PORT}`)
 }
 
-async function stampTree () {
-  // Publish the current merkle root and inclusion proofs
-  if (tree.hash == null) {
+/**
+ * Publish Merkle root to blockchain
+ */
+async function publishTree () {
+
+  // Skip if aggregator is empty
+  if (tree.size == 0) {
+    console.log('Aggregator is empty. Skipping publication')
     return
   }
+
+  // Create proofs directory
+  await ensureDirectory('proofs')
+
+  // Swap out live tree
+  const pendingTree = tree
+  tree = new MerkleTree
+
+  // Invoke contract and await confirmation
+  const payload = Hex.stringify(pendingTree.root)
+  console.log(`Publishing aggregator root "${payload}" (${pendingTree.size} leaves)`)
+  const operationGroup = await contract.methods.default(payload).send()
+  const level = await operationGroup.confirmation(3)
+
+  // Build and validate proof operations from aggregator root to block hash
+  const block = await tezos.rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
+  const highSteps = await buildSteps(block.hash, operationGroup.hash)
+
+  // Generate proofs
+  console.log(`Saving proofs for root "${payload}" (${pendingTree.size} leaves)`)
+  for (const path of pendingTree.paths()) {
+    const lowSteps = walkOperations(path)
+    const proof = new Proof(block.chain_id, lowSteps.concat(highSteps))
+    const json = JSON.stringify(proof)
+    const proofId = Hex.stringify(path.leaf)
+    const filename = `proofs/${proofId}.json`
+    try {
+      await fs.stat(filename)
+    } catch (error) {
+      if (error.code == 'ENOENT') {
+        await fs.writeFile(filename, json)
+      } else {
+        throw error
+      }
+    }
+    pendingProofs.delete(proofId)
+  }
+
+  console.log(`Operation for root "${payload}" injected: https://tzkt.io/${operationGroup.hash}`)
+}
+
+/**
+ * Ensure directory exists
+ */
+async function ensureDirectory (path) {
   try {
-    await fs.mkdir('proofs')
+    await fs.mkdir(path)
   } catch (error) {
     if (error.code != 'EEXIST') {
       throw error
     }
   }
-  const root = tree.hash
-  // Shallow copy leaves to avoid them changing during proof generation
-  const staticLeaves = tree.leaves.slice(0)
-  let operation = null
-  try {
-    const contract = await tezos.contract.at(CONTRACT_ADDRESS)
-    operation = await contract.methods.default(stringify(root)).send()
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
+}
+
+/**
+ * Build proof steps from aggregator to block hash
+ */
+async function buildSteps (blockHash, opHash) {
+  const steps = []
+  const [ opHashes, rawHeader ] = await Promise.all([
+    fetchOperationHashes(blockHash),
+    fetchRawHeader(blockHash)
+  ])
+
+  // console.log(
+  //   'DEBUG buildSteps:',
+  //   `blockHash: ${blockHash}`,
+  //   `opHash: ${opHash}`
+  // )
+
+  // Aggregator root to 4th-pass operation list hash
+  steps.push(...await tracePass(blockHash, opHashes, 3, opHash))
+
+  // 4rd-pass operation list hash to root operations hash
+  const pass12hash = blake2b(concat(
+    blake2b(passHash(opHashes[0])),
+    blake2b(passHash(opHashes[1]))
+  ))
+  const pass3hash = blake2b(passHash(opHashes[2]))
+  steps.push(
+    Operation.prepend(pass3hash),
+    Operation.prepend(pass12hash)
+  )
+
+  // Operations hash to block hash
+  const pass34hash = blake2b(concat(
+    pass3hash,
+    blake2b(passHash(opHashes[3]))
+  ))
+  const passesHash = blake2b(concat(
+    pass12hash,
+    pass34hash
+  ))
+  steps.push(
+    ...encasingOperations(rawHeader, passesHash),
+    Operation.blake2b()
+  )
+
+  return steps
+}
+
+/**
+ * Calculate the hash of a validation pass
+ */
+function passHash (list) {
+  if (list.length == 0) {
+    return blake2b(new Uint8Array)
   }
-  // Generate proof files for tree in memory
-  for (const leaf of staticLeaves) {
-    // Strip custom .toJSON()...
-    let proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
-    proof['operation'] = operation.hash
-    proof = JSON.stringify(proof)
-    const filename = `proofs/${stringify(leaf)}.json`
-    try {
-      await fs.stat(filename)
-    } catch (error) {
-      if (error == 'ENOENT') {
-        await fs.writeFile(filename)
-      } else {
-        throw error
-      }
+  const tree = new MerkleTree
+  for (const hash of list) {
+    const raw = Base58.decodeCheck(hash).slice(2)
+    tree.append(raw)
+  }
+  return tree.root
+}
+
+/**
+ * Trace a path through a validation pass
+ */
+async function tracePass (blockHash, operationsList, pass, targetHash) {
+  const tree = new MerkleTree
+  const steps = []
+  let leaf = -1
+  for (const index in operationsList[pass]) {
+    const hash = operationsList[pass][index]
+    const rawHash = Base58.decodeCheck(hash).slice(2)
+    tree.append(rawHash)
+    if (hash == targetHash) {
+      leaf = index
+      const rawOp = await fetchRawOperation(blockHash, pass, index)
+      steps.push(
+        ...encasingOperations(rawOp, rawHash),
+        Operation.blake2b()
+      )
     }
   }
-  // Drop leaves before confirmation to prevent repeat commits during await
-  tree = new MerkleTree
-  try {
-    await operation.confirmation(3)
-    console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
+  if (leaf == -1) {
+    throw new Error('Target operation not found in pass')
   }
+  const paths = tree.paths()
+  for (let i = 0; i < leaf; ++i) {
+    paths.next()
+  }
+  steps.push(...walkOperations(paths.next().value))
+  return steps
+}
+
+/**
+ * Fetch operation hashes list from Tezos RPC
+ */
+async function fetchOperationHashes (blockHash) {
+  const url = new URL(`chains/main/blocks/${blockHash}/operation_hashes`, RPC_URL)
+  const response = await fetch(url)
+  return await response.json()
+}
+
+/**
+ * Fetch Micheline-encoded operation group from Tezos RPC
+ */
+async function fetchRawOperation (blockHash, pass, index) {
+  const url = new URL(`chains/main/blocks/${blockHash}/operations/${pass}/${index}`, RPC_URL)
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/octet-stream' }
+  })
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+/**
+ * Fetch Micheline-encoded block header from Tezos RPC
+ */
+async function fetchRawHeader (blockHash) {
+  const url = new URL(`chains/main/blocks/${blockHash}/header`, RPC_URL)
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/octet-stream' }
+  })
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+/**
+ * Map a Merkle tree walk to proof operations
+ */
+function walkOperations (path) {
+  const ops = [ Operation.blake2b() ]
+  for (const [ relation, sibling ] of path.steps) {
+    ops.push(
+      relation
+        ? Operation.append(sibling)
+        : Operation.prepend(sibling),
+      Operation.blake2b()
+    )
+  }
+  return ops
+}
+
+/**
+ * Create a prepend-append operation pair representing a sub array encased in a larger bytes array
+ */
+function encasingOperations (raw, sub) {
+  const hexRaw = Hex.stringify(raw)
+  const hexSub = Hex.stringify(sub)
+  if (!hexRaw.includes(hexSub)) {
+    throw new Error('Sub byte array is not included in raw byte array')
+  }
+  const [ pre, post ] = hexRaw.split(RegExp(hexSub + '(.*)')) // Split string at first occurence only
+  return [
+    Operation.prepend(Hex.parse(pre)),
+    Operation.append(Hex.parse(post))
+  ]
 }
