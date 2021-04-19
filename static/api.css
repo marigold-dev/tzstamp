@@ -41,7 +41,6 @@ h3 {
 
 .example-param-value {
   opacity: 60%;
-  color:
 }
 
 .response-code {
@@ -66,13 +65,12 @@ h3 {
 }
 
 .params th {
-  font-family: helevetica, sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 0.9rem;
 }
 
 .params td {
   width: min-content;
-  
 }
 
 footer {
