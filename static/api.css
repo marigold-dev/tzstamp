@@ -8,23 +8,43 @@ html {
 
 h1 {
   font-family: Helvetica, sans-serif;
+  font-size: 2rem;
 }
 
 h2 {
   font-family: Helvetica, sans-serif;
+  font-size: 1.5rem;
 }
 
 h3 {
   font-family: Helvetica, sans-serif;
+  font-size: 1.1rem;
+}
+
+.endpoint {
+  width: max-content;
+  background-color: rgba(0,0,0,0.1);
 }
 
 .http-method {
+  font-family: monospace;
   color:blue;
 }
 
 .api-path {
   font-family: monospace;
-  font-size: 
+}
+
+.example-param-name {
+  color: blue;
+}
+
+.example-param-value {
+  opacity: 60%;
+}
+
+.response-code {
+  margin-left: 1.5rem;
 }
 
 .http-status-good {
@@ -44,9 +64,13 @@ h3 {
   margin-right: auto;
 }
 
+.params th {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
 .params td {
   width: min-content;
-  padding-left: 1em;
 }
 
 footer {

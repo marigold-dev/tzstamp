@@ -4,9 +4,9 @@
   </head>
   <body>
     <main>
-      <h1>API</h1>
+      <h1>TzStamp API</h1>
       <h2>Stamp A File</h2>
-      <p><span class="http-method">POST</span> <span class="api-path">/api/stamp/</span></p>
+      <p class="endpoint"><span class="http-method">POST</span> <span class="api-path">/api/stamp/</span></p>
 
       <p>Adds a hash to the next published merkle root.</p>
 
@@ -19,23 +19,30 @@
           <th>Description</th>
         </thead>
         <tr>
-          <td class="param-name">hash</td> 
-          <td class="param-type">string</td> 
+          <td class="param-name">hash</td>
+          <td class="param-type">string</td>
           <td class="param-description">SHA-256 hash to be included in the next merkle root.</td>
         </tr>
       </table>
 
+      <h3>Example</h3>
+      <blockquote class="post-example">
+        {<br>
+          <span class="example-param-name">"hash"</span>:<br>
+          <span class="example-param-value">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"40cb6ac0645f648a12d0aab7df480796fc4165609a65ea430018d9b3af68b76d"</span><br>}
+      </blockquote>
+
       <h2>Retrieve A Proof</h2>
 
-      <p><span class="http-method">GET</span> <span class="api-path">/api/proof/{id}</span></p>
+      <p class="endpoint"><span class="http-method">GET</span> <span class="api-path">/api/proof/{id}</span></p>
 
       <p>Get proof associated with hash {id}. Returns:</p>
 
-      <p><span class="http-status-good">200</span> if proof available.</p>
+      <p class="response-code"><span class="http-status-good">200</span> if proof available.</p>
 
-      <p><span class="http-status-notice">202</span> if proof waiting to be published.</p>
+      <p class="response-code"><span class="http-status-notice">202</span> if proof waiting to be published.</p>
 
-      <p><span class="http-status-error">404</span> if proof no longer in server cache.</p>
+      <p class="response-code"><span class="http-status-error">404</span> if proof no longer in server cache.</p>
 
     </main>
     <footer><a href="/">Return to main site</a></footer>
