@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 
 const fs = require('fs/promises')
-const fetch = require('node-fetch')
 require('dotenv-defaults').config()
 const { MerkleTree } = require('@tzstamp/tezos-merkle')
-const { Hex, blake2b, Base58, concat } = require('@tzstamp/helpers')
-const { Proof, Operation } = require('@tzstamp/proof')
+const { Hex, blake2b } = require('@tzstamp/helpers')
+const { Proof } = require('@tzstamp/proof')
 const Koa = require('koa')
 const Router = require('@koa/router')
 const static = require('koa-static')
 const bodyParser = require('koa-bodyparser')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
+const { ensureProofsDir, pendingProof, fetchProof, storeProof } = require('./lib/proof-storage')
+const { walkOperations, buildSteps } = require('./lib/tezos-merkle')
 
 const {
   PORT,
@@ -73,6 +74,8 @@ void async function () {
   console.log('Fetching publication contract')
   contract = await tezos.contract.at(CONTRACT_ADDRESS)
 
+  await ensureProofsDir()
+
   // Create HTTP server
   app.listen(PORT, listenHandler)
 
@@ -111,7 +114,7 @@ async function postStamp (ctx) {
     pendingProofs.add(proofId)
   }
 
-  await pendingProof(ctx, proofId)
+  await pendingProof(ctx, BASE_URL, proofId)
 }
 
 /**
@@ -127,36 +130,9 @@ async function getProof (ctx) {
 
   // Fetch proof
   if (pendingProofs.has(proofId)) {
-    await pendingProof(ctx, proofId)
+    await pendingProof(ctx, BASE_URL, proofId)
   } else {
     await fetchProof(ctx, proofId)
-  }
-}
-
-/**
- * Respond that proof is pending
- */
-async function pendingProof (ctx, proofId) {
-  ctx.status = 202
-  ctx.body = {
-    status: 'Stamp pending',
-    url: `${BASE_URL}/api/proof/${proofId}`
-  }
-}
-
-/**
- * Respond with stored proof
- */
-async function fetchProof (ctx, proofId) {
-  try {
-    const file = await fs.readFile(`proofs/${proofId}.json`, 'utf-8')
-    ctx.body = file
-  } catch (error) {
-    if (error.code == 'ENOENT') {
-      ctx.throw(404, 'Proof not found')
-    } else {
-      ctx.throw(500, 'Error fetching proof')
-    }
   }
 }
 
@@ -191,9 +167,6 @@ async function publishTree () {
     return
   }
 
-  // Create proofs directory
-  await ensureDirectory('proofs')
-
   // Swap out live tree
   const pendingTree = tree
   tree = new MerkleTree
@@ -206,196 +179,24 @@ async function publishTree () {
 
   // Build and validate proof operations from aggregator root to block hash
   const block = await tezos.rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
-  const highSteps = await buildSteps(block.hash, operationGroup.hash)
+  if (block.protocol != 'PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA') {
+    throw new Error(`Unsupported block protocol "${block.header.protocol}"`)
+  }
+  const highSteps = buildSteps(block, operationGroup.hash)
+  const highProof = new Proof(block.chain_id, highSteps)
+  if (highProof.derive(pendingTree.root).address != block.hash) {
+    throw new Error('Could not validate steps from aggregator to block')
+  }
 
   // Generate proofs
   console.log(`Saving proofs for root "${payload}" (${pendingTree.size} leaves)`)
   for (const path of pendingTree.paths()) {
     const lowSteps = walkOperations(path)
     const proof = new Proof(block.chain_id, lowSteps.concat(highSteps))
-    const json = JSON.stringify(proof)
     const proofId = Hex.stringify(path.leaf)
-    const filename = `proofs/${proofId}.json`
-    try {
-      await fs.stat(filename)
-    } catch (error) {
-      if (error.code == 'ENOENT') {
-        await fs.writeFile(filename, json)
-      } else {
-        throw error
-      }
-    }
+    storeProof(proof, proofId)
     pendingProofs.delete(proofId)
   }
 
   console.log(`Operation for root "${payload}" injected: https://tzkt.io/${operationGroup.hash}`)
-}
-
-/**
- * Ensure directory exists
- */
-async function ensureDirectory (path) {
-  try {
-    await fs.mkdir(path)
-  } catch (error) {
-    if (error.code != 'EEXIST') {
-      throw error
-    }
-  }
-}
-
-/**
- * Build proof steps from aggregator to block hash
- */
-async function buildSteps (blockHash, opHash) {
-  const steps = []
-  const [ opHashes, rawHeader ] = await Promise.all([
-    fetchOperationHashes(blockHash),
-    fetchRawHeader(blockHash)
-  ])
-
-  // console.log(
-  //   'DEBUG buildSteps:',
-  //   `blockHash: ${blockHash}`,
-  //   `opHash: ${opHash}`
-  // )
-
-  // Aggregator root to 4th-pass operation list hash
-  steps.push(...await tracePass(blockHash, opHashes, 3, opHash))
-
-  // 4rd-pass operation list hash to root operations hash
-  const pass12hash = blake2b(concat(
-    blake2b(passHash(opHashes[0])),
-    blake2b(passHash(opHashes[1]))
-  ))
-  const pass3hash = blake2b(passHash(opHashes[2]))
-  steps.push(
-    Operation.prepend(pass3hash),
-    Operation.prepend(pass12hash)
-  )
-
-  // Operations hash to block hash
-  const pass34hash = blake2b(concat(
-    pass3hash,
-    blake2b(passHash(opHashes[3]))
-  ))
-  const passesHash = blake2b(concat(
-    pass12hash,
-    pass34hash
-  ))
-  steps.push(
-    ...encasingOperations(rawHeader, passesHash),
-    Operation.blake2b()
-  )
-
-  return steps
-}
-
-/**
- * Calculate the hash of a validation pass
- */
-function passHash (list) {
-  if (list.length == 0) {
-    return blake2b(new Uint8Array)
-  }
-  const tree = new MerkleTree
-  for (const hash of list) {
-    const raw = Base58.decodeCheck(hash).slice(2)
-    tree.append(raw)
-  }
-  return tree.root
-}
-
-/**
- * Trace a path through a validation pass
- */
-async function tracePass (blockHash, operationsList, pass, targetHash) {
-  const tree = new MerkleTree
-  const steps = []
-  let leaf = -1
-  for (const index in operationsList[pass]) {
-    const hash = operationsList[pass][index]
-    const rawHash = Base58.decodeCheck(hash).slice(2)
-    tree.append(rawHash)
-    if (hash == targetHash) {
-      leaf = index
-      const rawOp = await fetchRawOperation(blockHash, pass, index)
-      steps.push(
-        ...encasingOperations(rawOp, rawHash),
-        Operation.blake2b()
-      )
-    }
-  }
-  if (leaf == -1) {
-    throw new Error('Target operation not found in pass')
-  }
-  const paths = tree.paths()
-  for (let i = 0; i < leaf; ++i) {
-    paths.next()
-  }
-  steps.push(...walkOperations(paths.next().value))
-  return steps
-}
-
-/**
- * Fetch operation hashes list from Tezos RPC
- */
-async function fetchOperationHashes (blockHash) {
-  const url = new URL(`chains/main/blocks/${blockHash}/operation_hashes`, RPC_URL)
-  const response = await fetch(url)
-  return await response.json()
-}
-
-/**
- * Fetch Micheline-encoded operation group from Tezos RPC
- */
-async function fetchRawOperation (blockHash, pass, index) {
-  const url = new URL(`chains/main/blocks/${blockHash}/operations/${pass}/${index}`, RPC_URL)
-  const response = await fetch(url, {
-    headers: { 'Accept': 'application/octet-stream' }
-  })
-  return new Uint8Array(await response.arrayBuffer())
-}
-
-/**
- * Fetch Micheline-encoded block header from Tezos RPC
- */
-async function fetchRawHeader (blockHash) {
-  const url = new URL(`chains/main/blocks/${blockHash}/header`, RPC_URL)
-  const response = await fetch(url, {
-    headers: { 'Accept': 'application/octet-stream' }
-  })
-  return new Uint8Array(await response.arrayBuffer())
-}
-
-/**
- * Map a Merkle tree walk to proof operations
- */
-function walkOperations (path) {
-  const ops = [ Operation.blake2b() ]
-  for (const [ relation, sibling ] of path.steps) {
-    ops.push(
-      relation
-        ? Operation.append(sibling)
-        : Operation.prepend(sibling),
-      Operation.blake2b()
-    )
-  }
-  return ops
-}
-
-/**
- * Create a prepend-append operation pair representing a sub array encased in a larger bytes array
- */
-function encasingOperations (raw, sub) {
-  const hexRaw = Hex.stringify(raw)
-  const hexSub = Hex.stringify(sub)
-  if (!hexRaw.includes(hexSub)) {
-    throw new Error('Sub byte array is not included in raw byte array')
-  }
-  const [ pre, post ] = hexRaw.split(RegExp(hexSub + '(.*)')) // Split string at first occurence only
-  return [
-    Operation.prepend(Hex.parse(pre)),
-    Operation.append(Hex.parse(post))
-  ]
 }

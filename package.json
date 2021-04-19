@@ -18,8 +18,7 @@
     "dotenv-defaults": "^2.0.1",
     "koa": "^2.13.1",
     "koa-bodyparser": "^4.3.0",
-    "koa-static": "^5.0.0",
-    "node-fetch": "^2.6.1"
+    "koa-static": "^5.0.0"
   },
   "devDependencies": {
     "eslint": "^7.24.0"
