@@ -51,7 +51,11 @@ app.on('error', errorHandler)
 void async function () {
 
   // Configure tezos client
-  if (FAUCET_KEY_PATH != null) {
+  if (TEZOS_WALLET_SECRET != null) {
+    console.log('Configuring local signer')
+    const signer = await InMemorySigner.fromSecretKey(TEZOS_WALLET_SECRET)
+    tezos.setProvider({ signer })
+  } else if (FAUCET_KEY_PATH != null) {
     console.log('Importing testnet key')
     const json = await fs.readFile(FAUCET_KEY_PATH, 'utf-8')
     const faucet = JSON.parse(json)
@@ -62,10 +66,6 @@ void async function () {
       faucet.mnemonic.join(' '),
       faucet.secret
     )
-  } else if (TEZOS_WALLET_SECRET != null) {
-    console.log('Configuring local signer')
-    const signer = await InMemorySigner.fromSecretKey(TEZOS_WALLET_SECRET)
-    tezos.setProvider({ signer })
   } else {
     throw new Error('Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET')
   }
