@@ -29,6 +29,9 @@ void async function () {
     case 'derive':
       await handleDerive(...subcommandArgs)
       break
+    case 'verify':
+      await handleVerify(...subcommandArgs)
+      break
     case 'stamp':
       await handleStamp(subcommandArgs)
       break
@@ -94,6 +97,33 @@ async function handleDerive (target, proofLocation) {
   console.log(`Block hash derived from proof:\n${block.address}`)
 }
 
+async function handleVerify (target, proofLocation) {
+  if (target == undefined) {
+    throw new Error('Hash to test for inclusion not given (first argument).')
+  }
+  if (proofLocation == undefined) {
+    throw new Error('Proof to test inclusion against not given (second argument).')
+  }
+  const hash = await getHash(target)
+  const proof = await getProof(proofLocation)
+  const block = proof.derive(hash)
+  const steps = proof.operations
+    .map((op, idx) => `${idx + 1}. ${op}`)
+    .join('\n')
+  const chainviewer = getChainviewer(block.network)
+
+  console.group('Manual derivation:')
+  console.log(steps)
+  console.log(`Yields: block "${block.address}" on network "${block.network}"`)
+  if (chainviewer) {
+    console.log('Chainviewer:', new URL(block.address, chainviewer).href)
+  }
+  if (block.network != 'NetXdQprcVkpaWU') {
+    console.warn('Be careful: timestamp is committed to an alternative network!')
+  }
+  console.groupEnd()
+}
+
 /**
  * Get a file hash
  * @param {string} target Filepath or file hash
@@ -132,6 +162,20 @@ async function fetchProof (url) {
       throw new Error('Requested proof could not be found')
     default:
       throw new Error('Could not fetch proof: ' + response.statusText)
+  }
+}
+
+/**
+ * Get an appropriate chainviewer for a given network
+ * @param {string} network Tezos network identifier
+ * @returns {string} Chainviewer base URL
+ */
+function getChainviewer (network) {
+  switch (network) {
+    case 'NetXSgo1ZT2DRUG':
+      return 'https://edo2net.tzkt.io'
+    case 'NetXdQprcVkpaWU':
+      return 'https://tzkt.io'
   }
 }
 
