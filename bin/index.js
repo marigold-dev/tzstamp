@@ -68,15 +68,6 @@ function hashFile (path) {
   return sha256Async(stream)
 }
 
-async function fetchProofSerialization (url) {
-  const response = await fetch(url)
-  if (response.status == 404) {
-    throw new Error(`Requested proof "${url}" hasn't been posted to tzstamp server or has expired`)
-  } else if (response.status == 202) {
-    throw new Error(`Requested proof "${url}" will be posted with the next merkle root`)
-  }
-}
-
 function rootFormat (merkleRoot) {
   const hexHash = Hex.stringify(merkleRoot)
   switch (argv.rootFormat) {
@@ -89,24 +80,59 @@ function rootFormat (merkleRoot) {
   }
 }
 
-async function handleDerive (hashOrFilepath, proofFileOrURL) {
-  if (hashOrFilepath == undefined) {
+async function handleDerive (target, proofLocation) {
+  if (target == undefined) {
     throw new Error('Hash to test for inclusion not given (first argument).')
   }
-  if (proofFileOrURL == undefined) {
+  if (proofLocation == undefined) {
     throw new Error('Proof to test inclusion against not given (second argument).')
   }
-  // Determine what arguments we've been passed
-  const hash = hashOrFilepath.match(SHA256_REGEX)
-    ? Hex.parse(hashOrFilepath)
-    : await hashFile(hashOrFilepath)
-  const proofSerialization = proofFileOrURL.match(HTTP_REGEX)
-    ? await fetchProofSerialization(proofFileOrURL)
-    : await fs.readFile(proofFileOrURL, 'utf-8')
-  const proof = Proof.parse(proofSerialization)
+  const hash = await getHash(target)
+  const proof = await getProof(proofLocation)
   const block = proof.derive(hash)
 
   console.log(`Block hash derived from proof:\n${block.address}`)
+}
+
+/**
+ * Get a file hash
+ * @param {string} target Filepath or file hash
+ */
+async function getHash (target) {
+  return target.match(SHA256_REGEX)
+    ? Hex.parse(target)
+    : await hashFile(target)
+}
+
+/**
+ * Get a proof
+ * @param {string} location Filepath or URL
+ */
+async function getProof (location) {
+  const json = location.match(HTTP_REGEX)
+    ? await fetchProof(location)
+    : await fs.readFile(location, 'utf-8')
+  return Proof.parse(json)
+}
+
+/**
+ * Fetch a proof
+ * @param {string | URL} url URL
+ */
+async function fetchProof (url) {
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/json' }
+  })
+  switch (response.status) {
+    case 200:
+      return await response.json()
+    case 202:
+      throw new Error('Requested proof is pending publication')
+    case 404:
+      throw new Error('Requested proof could not be found')
+    default:
+      throw new Error('Could not fetch proof: ' + response.statusText)
+  }
 }
 
 /**
