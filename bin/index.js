@@ -22,29 +22,18 @@ const httpRegex = /^https?:\/\//
 const [ subcommand, ...subcommandArgs ] = argv._
 
 void async function () {
-  try {
-    switch (subcommand) {
+  switch (subcommand) {
     case 'verify':
       await handleVerify(...subcommandArgs)
       break
     case 'stamp':
-      await handleStamp(Array(...subcommandArgs))
+      await handleStamp(subcommandArgs)
       break
     case 'help':
     default:
       handleHelp()
-    }
-  } catch (error) {
-    if (error instanceof TypeError && subcommand === 'stamp') {
-      console.error('No filepath to stamp provided, at least one required.')
-      console.error(subcommandArgs)
-      process.exit(1)
-    } else {
-      console.error(error)
-      process.exit(1)
-    }
   }
-}()
+}().catch(handleError)
 
 /**
  * Asynchronously SHA-256 hash a read stream
@@ -145,4 +134,19 @@ async function handleStamp (filePathsOrHashes) {
 
 function handleHelp () {
   console.log('Was not a recognized subcommand.')
+}
+
+/**
+ * Print error messages
+ *
+ * @param {Error} error Thrown error
+ * @returns {never} Terminate script with exit code 1
+ */
+function handleError (error) {
+  // if (error instanceof TypeError && subcommand === 'stamp') {
+  //   console.error('No filepath to stamp provided, at least one required.')
+  //   console.error(subcommandArgs)
+  // }
+  console.error(error.message)
+  process.exit(1)
 }
