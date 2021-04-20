@@ -48,6 +48,9 @@ void async function () {
 
 /**
  * Asynchronously SHA-256 hash a read stream
+ *
+ * @param {ReadableStream} stream Readable stream
+ * @returns {Promise<Uint8Array>} SHA-256 digest
  */
 function sha256Async (stream) {
   return new Promise((resolve, reject) => {
@@ -64,16 +67,13 @@ function sha256Async (stream) {
 
 /**
  * Asynchronously hash a file from read stream
+ *
+ * @param {string} path File path
+ * @return {Promise<Uint8Array>} SHA-256 digest
  */
-async function hashFile (path) {
+function hashFile (path) {
   const stream = fs.createReadStream(path)
-  try {
-    const hash = await sha256Async(stream) // returns Uint8Array
-    return hash
-  } catch (error) {
-    // Something went wrong with reading the file
-    // Do something with the error
-  }
+  return sha256Async(stream)
 }
 
 async function fetchProofSerialization (url) {
