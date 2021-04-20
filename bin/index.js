@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
+const fs = require('fs/promises')
+const { createReadStream } = require('fs')
 const fetch = require('node-fetch')
 const parseArgs = require('minimist')
 const { createHash } = require('crypto')
-const { Proof, _util: Hash } = require('@tzstamp/merkle')
+const { Proof } = require('@tzstamp/proof')
+const { Hex, Base58 } = require('@tzstamp/helpers')
 
 const argv = parseArgs(process.argv.slice(2), {
   alias: {
@@ -12,19 +14,20 @@ const argv = parseArgs(process.argv.slice(2), {
   },
   default: {
     server: 'https://tzstamp.io',
-    rootFormat: 'hex'
+    rootFormat: 'base58'
   }
 })
 
-const sha256Regex = /^[0-9a-fA-F]{64}$/
-const httpRegex = /^https?:\/\//
+const SHA256_REGEX = /^[0-9a-fA-F]{64}$/
+const HTTP_REGEX = /^https?:\/\//
 
 const [ subcommand, ...subcommandArgs ] = argv._
 
+// Subcommand delegation
 void async function () {
   switch (subcommand) {
-    case 'verify':
-      await handleVerify(...subcommandArgs)
+    case 'derive':
+      await handleDerive(...subcommandArgs)
       break
     case 'stamp':
       await handleStamp(subcommandArgs)
@@ -61,7 +64,7 @@ function sha256Async (stream) {
  * @return {Promise<Uint8Array>} SHA-256 digest
  */
 function hashFile (path) {
-  const stream = fs.createReadStream(path)
+  const stream = createReadStream(path)
   return sha256Async(stream)
 }
 
@@ -75,18 +78,18 @@ async function fetchProofSerialization (url) {
 }
 
 function rootFormat (merkleRoot) {
-  const hexHash = Hash.stringify(merkleRoot)
+  const hexHash = Hex.stringify(merkleRoot)
   switch (argv.rootFormat) {
-  case 'hex':
-    return hexHash
-  case 'decimal':
-    return BigInt('0x' + hexHash)
-  case 'binary':
-    return BigInt('0x' + hexHash).toString(2)
+    case 'hex':
+      return hexHash
+    case 'decimal':
+      return BigInt('0x' + hexHash)
+    case 'binary':
+      return BigInt('0x' + hexHash).toString(2)
   }
 }
 
-async function handleVerify (hashOrFilepath, proofFileOrURL) {
+async function handleDerive (hashOrFilepath, proofFileOrURL) {
   if (hashOrFilepath == undefined) {
     throw new Error('Hash to test for inclusion not given (first argument).')
   }
@@ -94,33 +97,28 @@ async function handleVerify (hashOrFilepath, proofFileOrURL) {
     throw new Error('Proof to test inclusion against not given (second argument).')
   }
   // Determine what arguments we've been passed
-  const hash = hashOrFilepath.match(sha256Regex)
-    ? Hash.parse(hashOrFilepath)
+  const hash = hashOrFilepath.match(SHA256_REGEX)
+    ? Hex.parse(hashOrFilepath)
     : await hashFile(hashOrFilepath)
-  const proofSerialization = proofFileOrURL.match(httpRegex)
+  const proofSerialization = proofFileOrURL.match(HTTP_REGEX)
     ? await fetchProofSerialization(proofFileOrURL)
-    : fs.readFileSync(proofFileOrURL, 'utf-8')
-  let proof
-  try {
-    proof = Proof.parse(proofSerialization)
-  } catch (_) {
-    throw new Error('Unable to parse proof')
-  }
-  let merkleRoot
-  try {
-    merkleRoot = proof.derive(Hash.hash(hash))
-  } catch (_) {
-    throw new Error('Unable to derive merkle root')
-  }
+    : await fs.readFile(proofFileOrURL, 'utf-8')
+  const proof = Proof.parse(proofSerialization)
+  const block = proof.derive(hash)
 
-  console.log(`ROOT HASH DERIVED FROM PROOF AND LEAF HASH:\n${rootFormat(merkleRoot)}`)
+  console.log(`Block hash derived from proof:\n${block.address}`)
 }
 
+/**
+ * Post file hash to a TzStamp server to be timestamped
+ *
+ * @param {string} filePathsOrHashes Array of file paths or hashes
+ */
 async function handleStamp (filePathsOrHashes) {
   for (const filePathOrHash of filePathsOrHashes) {
-    const hash = sha256Regex.test(filePathOrHash)
+    const hash = SHA256_REGEX.test(filePathOrHash)
       ? filePathOrHash
-      : Hash.stringify(await hashFile(filePathOrHash))
+      : Hex.stringify(await hashFile(filePathOrHash))
     const response = await fetch(`${argv.server}/api/stamp`, {
       method: 'POST',
       headers: { 'Content-type': 'application/json' },
