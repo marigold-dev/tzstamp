@@ -1,0 +1,29 @@
+image: node:latest
+
+stages:
+  - build
+  - lint
+  - test
+
+cache:
+  paths:
+    - node_modules/
+    - faucet.json
+    - .env
+
+setup:
+  stage: build
+  script:
+    - npm install
+    - mv $TESTNET_FAUCET faucet.json
+    - mv $CONFIG .env
+
+lint:
+  stage: lint
+  script: npm run lint
+
+test:
+  stage: test
+  script:
+    - rm -rf proofs
+    - npm run test

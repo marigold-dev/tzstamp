@@ -1,19 +1,18 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
+const fs = require('fs/promises')
 require('dotenv-defaults').config()
-const {
-  MerkleTree,
-  _util: {
-    parse,
-    hash,
-    compare,
-    stringify
-  }
-} = require('@tzstamp/merkle')
-const express = require('express')
+const { MerkleTree } = require('@tzstamp/tezos-merkle')
+const { Hex, blake2b } = require('@tzstamp/helpers')
+const { Proof } = require('@tzstamp/proof')
+const Koa = require('koa')
+const Router = require('@koa/router')
+const static = require('koa-static')
+const bodyParser = require('koa-bodyparser')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
+const { ensureProofsDir, pendingProof, fetchProof, storeProof } = require('./lib/proof-storage')
+const { walkOperations, buildSteps } = require('./lib/tezos-merkle')
 
 const {
   PORT,
@@ -25,143 +24,179 @@ const {
   RPC_URL
 } = process.env
 
-const key = getKey()
+const HEX_STRING = /^[0-9a-fA-F]*$/
 
-// Configure taquito
+// Tezos client
 const tezos = new TezosToolkit(RPC_URL)
-if (key.secret) {
-  importKey(
-    tezos,
-    key.email,
-    key.password,
-    key.mnemonic.join(' '),
-    key.secret
-  )
-}
 
+// Publication contract
+let contract
+
+// Merkle tree
 let tree = new MerkleTree
+const pendingProofs = new Set
 
-async function run () {
-  if (!key.secret) {
-    const signer = await InMemorySigner.fromSecretKey(key)
-    tezos.setProvider({ signer })
-  }
-  express()
-    .use(express.json())
-    .use(express.static('static'))
-    .post('/api/stamp', postStamp)
-    .get('/api/proof/:id', getProof)
-    .use(errorHandler)
-    .listen(PORT, listenHandler)
-  setInterval(stampTree, INTERVAL * 1000)
-}
+// RESTful API
+const app = new Koa
+app.use(static('static'))
+app.use(bodyParser())
+const router = new Router
+router.post('/api/stamp', postStamp)
+router.get('/api/proof/:id', getProof)
+app.use(router.routes())
+app.use(router.allowedMethods())
+app.on('error', errorHandler)
 
-function getKey () {
-  if (FAUCET_KEY_PATH != null) {
-    const text = fs.readFileSync(FAUCET_KEY_PATH)
-    return JSON.parse(text)
-  }
+// Setup
+void async function () {
+
+  // Configure tezos client
   if (TEZOS_WALLET_SECRET != null) {
-    return TEZOS_WALLET_SECRET
-  }
-  throw new Error("Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET")
-}
-
-function postStamp (req, res) {
-  if (!req.is('json')) {
-    throw new SyntaxError('Request type is not JSON')
-  }
-  if (req.body.hash == undefined) {
-    throw new SyntaxError('Request body does not contain a hash field')
-  } else if (typeof req.body.hash == 'object') {
-    throw new SyntaxError('Request body\'s hash field was empty.')
-  } else if (!req.body.hash.match(/^[0-9a-fA-F]{64}$/)) {
-    throw new SyntaxError(`${req.body.hash} is not a sha256 hash!`)
-  }
-  const digest = parse(req.body.hash)
-  tree.append(hash(digest))
-  const proofId = stringify(hash(digest))
-  res
-    .status(202)
-    .json({
-      status: 'Stamp pending',
-      url: `${BASE_URL}/api/proof/${proofId}`
-    })
-}
-
-function getProof (req, res) {
-  if (!req.params.id.match(/^[0-9a-fA-F]{64}$/)) {
-    throw new SyntaxError(`${req.params.id} is not a sha256 hash!`)
-  }
-  const digest = parse(req.params.id)
-  if (tree.leaves.find(leaf => compare(leaf, digest))) {
-    res
-      .status(202)
-      .json({ status: 'Stamp pending'})
+    console.log('Configuring local signer')
+    const signer = await InMemorySigner.fromSecretKey(TEZOS_WALLET_SECRET)
+    tezos.setProvider({ signer })
+  } else if (FAUCET_KEY_PATH != null) {
+    console.log('Importing testnet key')
+    const json = await fs.readFile(FAUCET_KEY_PATH, 'utf-8')
+    const faucet = JSON.parse(json)
+    importKey(
+      tezos,
+      faucet.email,
+      faucet.password,
+      faucet.mnemonic.join(' '),
+      faucet.secret
+    )
   } else {
-    const proofPath = `proofs/${req.params.id}.json`
-    if (fs.existsSync(proofPath)) {
-      const proof = JSON.parse(fs.readFileSync(proofPath))
-      res.status(200).json(proof)
-    } else {
-      throw new ReferenceError('Not found. Your proof is no longer in cache or unsubmitted.')
+    throw new Error('Must provide either FAUCET_KEY_PATH or TEZOS_WALLET_SECRET')
+  }
+
+  // Fetch contract
+  console.log('Fetching publication contract')
+  contract = await tezos.contract.at(CONTRACT_ADDRESS)
+
+  await ensureProofsDir()
+
+  // Create HTTP server
+  app.listen(PORT, listenHandler)
+
+  // Start publication interval
+  setInterval(publishTree, INTERVAL * 1000)
+}()
+
+/**
+ * POST /api/stamp route handler
+ */
+async function postStamp (ctx) {
+
+  // Only allow JSON requests
+  if (!ctx.is('json')) {
+    ctx.throw(400, 'Reqest body must be JSON')
+  }
+
+  // Validate JSON
+  const hashHex = ctx.request.body.hash
+  if (hashHex == undefined) {
+    ctx.throw(400, 'Request body must contain a hash field')
+  }
+  if (typeof hashHex != 'string' || !hashHex.match(HEX_STRING) || hashHex.length == 0) {
+    ctx.throw(400, 'Hash field must be a hexidecimal string')
+  }
+  if (hashHex.length > 128) {
+    ctx.throw(400, 'Hash cannot be larger than 64 bytes')
+  }
+
+  const hash = Hex.parse(hashHex)
+  const proofId = Hex.stringify(blake2b(hash))
+
+  // Aggregate hash for publication
+  if (!pendingProofs.has(proofId)) {
+    tree.append(hash)
+    pendingProofs.add(proofId)
+  }
+
+  await pendingProof(ctx, BASE_URL, proofId)
+}
+
+/**
+ * GET /api/proof route handler
+ */
+async function getProof (ctx) {
+
+  // Validate proof IDs
+  const proofId = ctx.params.id
+  if (!proofId.match(HEX_STRING)) {
+    ctx.throw(400, `${proofId} is not a valid proof id`)
+  }
+
+  // Fetch proof
+  if (pendingProofs.has(proofId)) {
+    await pendingProof(ctx, BASE_URL, proofId)
+  } else {
+    await fetchProof(ctx, proofId)
+  }
+}
+
+/**
+ * Koa default error handler
+ */
+function errorHandler (err, ctx) {
+  if (ctx.accepts('json')) {
+    ctx.body = {
+      error: err.message
     }
-  }
-}
-
-// eslint-disable-next-line no-unused-vars
-function errorHandler (err, req, res, next) {
-  if (err instanceof SyntaxError) {
-    res.status(400)
-  } else if (err instanceof ReferenceError) {
-    res.status(404)
   } else {
-    res.status(500)
+    ctx.body = err.message
   }
-  res.json({ error: err.message })
 }
 
+/**
+ * HTTP server ready handler
+ */
 function listenHandler () {
   console.log(`Serving on port ${PORT}`)
 }
 
-async function stampTree () {
-  // Publish the current merkle root and inclusion proofs
-  if (tree.hash == null) {
+/**
+ * Publish Merkle root to blockchain
+ */
+async function publishTree () {
+
+  // Skip if aggregator is empty
+  if (tree.size == 0) {
+    console.log('Aggregator is empty. Skipping publication')
     return
   }
-  if (!fs.existsSync('proofs')) {
-    fs.mkdirSync('proofs')
-  }
-  const root = tree.hash
-  // Shallow copy leaves to avoid them changing during proof generation
-  const staticLeaves = tree.leaves.slice(0)
-  let operation = null
-  try {
-    const contract = await tezos.contract.at(CONTRACT_ADDRESS)
-    operation = await contract.methods.default(stringify(root)).send()
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
-  }
-  // Generate proof files for tree in memory
-  for (const leaf of staticLeaves) {
-    // Strip custom .toJSON()...
-    let proof = JSON.parse(JSON.stringify(tree.prove(leaf)))
-    proof["operation"] = operation.hash
-    proof = JSON.stringify(proof)
-    const filename = `proofs/${stringify(leaf)}.json`
-    if (!fs.existsSync(filename)) {
-      fs.writeFileSync(filename, proof)
-    }
-  }
-  // Drop leaves before confirmation to prevent repeat commits during await
-  tree = new MerkleTree
-  try {
-    await operation.confirmation(3)
-    console.log(`Operation injected: https://delphi.tzstats.com/${operation.hash}`)
-  } catch (error) {
-    console.error(`Error: ${error.message}`)
-  }
-}
 
-run()
+  // Swap out live tree
+  const pendingTree = tree
+  tree = new MerkleTree
+
+  // Invoke contract and await confirmation
+  const payload = Hex.stringify(pendingTree.root)
+  console.log(`Publishing aggregator root "${payload}" (${pendingTree.size} leaves)`)
+  const operationGroup = await contract.methods.default(payload).send()
+  const level = await operationGroup.confirmation(3)
+
+  // Build and validate proof operations from aggregator root to block hash
+  const block = await tezos.rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
+  if (block.protocol != 'PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA') {
+    throw new Error(`Unsupported block protocol "${block.header.protocol}"`)
+  }
+  const highSteps = buildSteps(block, operationGroup.hash)
+  const highProof = new Proof(block.chain_id, highSteps)
+  if (highProof.derive(pendingTree.root).address != block.hash) {
+    throw new Error('Could not validate steps from aggregator to block')
+  }
+
+  // Generate proofs
+  console.log(`Saving proofs for root "${payload}" (${pendingTree.size} leaves)`)
+  for (const path of pendingTree.paths()) {
+    const lowSteps = walkOperations(path)
+    const proof = new Proof(block.chain_id, lowSteps.concat(highSteps))
+    const proofId = Hex.stringify(path.leaf)
+    storeProof(proof, proofId)
+    pendingProofs.delete(proofId)
+  }
+
+  console.log(`Operation for root "${payload}" injected: https://tzkt.io/${operationGroup.hash}`)
+}
