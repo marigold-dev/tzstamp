@@ -6,7 +6,7 @@ const fetch = require('node-fetch')
 const parseArgs = require('minimist')
 const { createHash } = require('crypto')
 const { Proof } = require('@tzstamp/proof')
-const { Hex, Base58 } = require('@tzstamp/helpers')
+const { Hex } = require('@tzstamp/helpers')
 
 const argv = parseArgs(process.argv.slice(2), {
   alias: {
@@ -77,7 +77,7 @@ async function fetchProofSerialization (url) {
   }
 }
 
-function rootFormat (merkleRoot) {
+function rootFormat (merkleRoot) { // eslint-disable-line no-unused-vars
   const hexHash = Hex.stringify(merkleRoot)
   switch (argv.rootFormat) {
     case 'hex':
