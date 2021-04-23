@@ -235,6 +235,7 @@ function handleHelp (command) {
       console.groupEnd()
       console.group(em('Examples:'))
       console.log('tzstamp derive myFile.text myFile.txt.proof.json')
+      // eslint-disable-next-line max-len
       console.log('tzstamp derive file0.dat https://tzstamp.io/api/proof/ca66c425ba36802651386b0f5632c915df54ab626828af1a89238455a689eee3')
       console.log('tzstamp derive 87ca3a133d348045abc294582bd3a2eeadcc51eccd5d19d2b14199e5ad49f075 LOG-8494.proof.json')
       break
