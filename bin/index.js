@@ -6,7 +6,7 @@ const fetch = require('node-fetch')
 const parseArgs = require('minimist')
 const { createHash } = require('crypto')
 const { Proof } = require('@tzstamp/proof')
-const { Hex, Base58 } = require('@tzstamp/helpers')
+const { Hex } = require('@tzstamp/helpers')
 
 const argv = parseArgs(process.argv.slice(2), {
   alias: {
@@ -71,7 +71,7 @@ function hashFile (path) {
   return sha256Async(stream)
 }
 
-function rootFormat (merkleRoot) {
+function rootFormat (merkleRoot) { // eslint-disable-line no-unused-vars
   const hexHash = Hex.stringify(merkleRoot)
   switch (argv.rootFormat) {
     case 'hex':
@@ -139,23 +139,23 @@ async function getHash (target) {
  * @param {string} location Filepath or URL
  */
 async function getProof (location) {
-  const json = location.match(HTTP_REGEX)
-    ? await fetchProof(location)
+  const text = location.match(HTTP_REGEX)
+    ? await fetchProofText(location)
     : await fs.readFile(location, 'utf-8')
-  return Proof.parse(json)
+  return Proof.parse(text)
 }
 
 /**
  * Fetch a proof
  * @param {string | URL} url URL
  */
-async function fetchProof (url) {
+async function fetchProofText (url) {
   const response = await fetch(url, {
     headers: { 'Accept': 'application/json' }
   })
   switch (response.status) {
     case 200:
-      return await response.json()
+      return await response.text()
     case 202:
       throw new Error('Requested proof is pending publication')
     case 404:
