@@ -7,7 +7,7 @@
     "tzstamp": "./bin/index.js"
   },
   "scripts": {
-    "lint": "eslint **/*.js --fix",
+    "lint": "npx --yes eslint **/*.js --fix",
     "test": "node test/test.js"
   },
   "repository": {
@@ -31,8 +31,5 @@
     "@tzstamp/proof": "^0.1.0",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
-  },
-  "devDependencies": {
-    "eslint": "^7.24.0"
   }
 }
