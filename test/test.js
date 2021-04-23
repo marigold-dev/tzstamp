@@ -14,33 +14,43 @@ const HTTP_STRING = /^https?:\/\//
 void async function () {
 
   // Setup temp storage directory
+  // This will be a folder with random suffix,
+  // in the format of "tzstamp-xxxxxx" in your OS's default temp directory
   console.log('Creating temporary directory')
   const tempPath = path.join(os.tmpdir(), 'tzstamp-')
   const tempDir = await fs.mkdtemp(tempPath)
   console.log(`Created temporary directory at "${tempPath}"`)
 
   // Create and store mock files
+  // Files are named "fileN.dat" and stored in the temp directory
+  // Each file is 1KB of random bytes
   console.log('Generating mock files')
   const files = []
   for (let i = 0; i < 6; ++i) {
     const contents = Uint8Array.from(randomBytes(1024))
     const fileName = `file${i}.dat`
     const filePath = path.join(tempDir, fileName)
+
+    // File entries
     files.push({
       name: fileName,
       path: filePath,
       hash: Hex.stringify(blake2b(contents)),
       contents
     })
+
+    // Write to temp dir
     await fs.writeFile(filePath, contents)
   }
 
   // Stamp files
+  // Invoke "stamp" subcommand with variety of argument types
+  // Move on once all commands have completed
   console.log('Stamping files')
   const proofURLs = await Promise.all([
-    stamp('stamping single file', files[0].path),
-    stamp('stamping single file hash', files[1].hash),
-    stamp(
+    stamp('stamping single file', files[0].path), // $ tzstamp stamp <file>
+    stamp('stamping single file hash', files[1].hash), // $ tzstamp stamp <fileHash>
+    stamp( // $ tzstamp stamp <file> <file> <fileHash> <fileHash>
       'stamping multiple files and hashes',
       files[2].path,
       files[3].path,
@@ -53,6 +63,8 @@ void async function () {
   const mixedProofURLs = proofURLs[2]
 
   // Wait for publication
+  // Check for status 200 on each proof every 30 seconds
+  // Move on once JSON of all proofs has been fetched
   console.log('Waiting for publication')
   const [
     fileProof,
@@ -65,6 +77,9 @@ void async function () {
   ])
 
   // Store proofs
+  // These will be stored in the temp dir alongside the mock files
+  // Name format is "fileN.dat.proof.json", corresponding with the original files
+  // Move on once all files are parsed and stored
   console.log('Storing proofs')
   await Promise.all([
     storeProof(files[0].path, fileProof),
@@ -73,24 +88,26 @@ void async function () {
   ])
 
   // Verify proofs
+  // Invoke "derive" subcommand with a variety of argument types
   console.log('Verifying proofs')
   await Promise.all([
-    verify(
+    verify( // $ tzstamp derive <file> <file>
       'file proof from storage',
       files[0].path,
       files[0].path + '.proof.json'
     ),
-    verify(
+    verify( // $ tzstamp derive <fileHash> <file>
       'hash proof from storage',
       files[1].hash,
       files[1].path + '.proof.json'
     ),
-    verify(
+    verify( // $ tzstamp derive <file> <url>
       'file proof from URL',
       files[2].path,
       mixedProofURLs[0]
     ),
-    verify(
+    verify( // $ tzstamp derive <file> <url>
+            // (using a file passed as a fileHash in the multiple file test)
       'hash proof from URL',
       files[4].path,
       mixedProofURLs[2]
