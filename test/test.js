@@ -58,6 +58,7 @@ void async function () {
       files[5].hash
     )
   ])
+  stamp('stamping with wait flag', files[0].path) // $ tzstamp --wait stamp <file>
   const fileProofURL = proofURLs[0][0]
   const hashProofURL = proofURLs[1][0]
   const mixedProofURLs = proofURLs[2]
@@ -107,7 +108,7 @@ void async function () {
       mixedProofURLs[0]
     ),
     verify( // $ tzstamp derive <file> <url>
-            // (using a file passed as a fileHash in the multiple file test)
+      // (using a file passed as a fileHash in the multiple file test)
       'hash proof from URL',
       files[4].path,
       mixedProofURLs[2]

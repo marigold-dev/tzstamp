@@ -10,8 +10,10 @@ const { Hex } = require('@tzstamp/helpers')
 
 const argv = parseArgs(process.argv.slice(2), {
   alias: {
-    'root-format': 'rootFormat'
+    'root-format': 'rootFormat',
+    'wait': 'w'
   },
+  boolean: [ 'wait' ],
   default: {
     server: 'https://tzstamp.io',
     rootFormat: 'base58'
@@ -196,8 +198,43 @@ async function handleStamp (filePathsOrHashes) {
     })
 
     const { url } = await response.json()
+    if (argv.wait) {
+      await longPollProof(url)
+    }
     console.log(url)
   }
+}
+
+/**
+ * Long poll for proof publication
+ */
+function longPollProof (url) {
+  return new Promise((resolve, reject) => {
+
+    // Query every 30 seconds
+    const inteval = setInterval(async () => {
+      const response = await fetch(url)
+      switch (response.status) {
+        case 200:
+          clearInterval(inteval)
+          resolve()
+          break
+        case 202:
+          break
+        case 404:
+          reject('Requested proof could not be found')
+          break
+        default:{
+          try {
+            const text = await response.text()
+            throw new Error(text)
+          } catch (_) {
+            throw new Error(response.statusText)
+          }
+        }
+      }
+    }, 30000)
+  })
 }
 
 function handleHelp () {
@@ -211,10 +248,6 @@ function handleHelp () {
  * @returns {never} Terminate script with exit code 1
  */
 function handleError (error) {
-  // if (error instanceof TypeError && subcommand === 'stamp') {
-  //   console.error('No filepath to stamp provided, at least one required.')
-  //   console.error(subcommandArgs)
-  // }
   console.error(error.message)
   process.exit(1)
 }
