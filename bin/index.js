@@ -13,7 +13,7 @@ const argv = parseArgs(process.argv.slice(2), {
     'root-format': 'rootFormat'
   },
   default: {
-    server: 'https://tzstamp.io',
+    server: 'https://tzstamp.io/api',
     rootFormat: 'base58'
   }
 })
@@ -36,6 +36,8 @@ void async function () {
       await handleStamp(subcommandArgs)
       break
     case 'help':
+      handleHelp(...subcommandArgs)
+      break
     default:
       handleHelp()
   }
@@ -84,11 +86,8 @@ function rootFormat (merkleRoot) { // eslint-disable-line no-unused-vars
 }
 
 async function handleDerive (target, proofLocation) {
-  if (target == undefined) {
-    throw new Error('Hash to test for inclusion not given (first argument).')
-  }
-  if (proofLocation == undefined) {
-    throw new Error('Proof to test inclusion against not given (second argument).')
+  if (target == undefined || proofLocation == undefined) {
+    return handleHelp('derive')
   }
   const hash = await getHash(target)
   const proof = await getProof(proofLocation)
@@ -98,11 +97,8 @@ async function handleDerive (target, proofLocation) {
 }
 
 async function handleVerify (target, proofLocation) {
-  if (target == undefined) {
-    throw new Error('Hash to test for inclusion not given (first argument).')
-  }
-  if (proofLocation == undefined) {
-    throw new Error('Proof to test inclusion against not given (second argument).')
+  if (target == undefined || proofLocation == undefined) {
+    return handleHelp('verify')
   }
   const hash = await getHash(target)
   const proof = await getProof(proofLocation)
@@ -185,6 +181,9 @@ function getChainviewer (network) {
  * @param {string} filePathsOrHashes Array of file paths or hashes
  */
 async function handleStamp (filePathsOrHashes) {
+  if (filePathsOrHashes.length == 0) {
+    return handleHelp('stamp')
+  }
   for (const filePathOrHash of filePathsOrHashes) {
     const hash = SHA256_REGEX.test(filePathOrHash)
       ? filePathOrHash
@@ -200,8 +199,78 @@ async function handleStamp (filePathsOrHashes) {
   }
 }
 
-function handleHelp () {
-  console.log('Was not a recognized subcommand.')
+/**
+ * Wrap string with emphasizing terminal styling escape codes
+ */
+function em (string) {
+  return '\n\u001B[1;4m' + string + '\u001B[0m'
+}
+
+/**
+ * Print command usage
+ *
+ * @param {string} command Command name
+ */
+function handleHelp (command) {
+  switch (command) {
+    case 'stamp':
+      console.log('Submit a hash to a tzstamp server for aggregation')
+      console.log('File hashes must be 64-digit hex strings (256 bits)')
+      console.log('Prints out a pending proof URL for each file or hash aggregated')
+      console.group(em('Usage:'))
+      console.log('tzstamp stamp <file|hash> [...<file|hash>]')
+      console.groupEnd()
+      console.group(em('Examples:'))
+      console.log('tzstamp --server https://api.example.com stamp myFile.txt')
+      console.log('tzstamp stamp a06281f90dcbc6676a107a6ffd84430769f875019aaff0e6ad68320efa997cc6')
+      console.log('tzstamp stamp file0.dat file1.dat file2.dat')
+      console.groupEnd()
+      break
+    case 'derive':
+      console.log('Derive a block address from a proof')
+      console.log('An incorrect input will still produce a valid block address')
+      console.log('Usage a chainviewer to verify that the block hash is commited to a network')
+      console.group(em('Usage:'))
+      console.log('tzstamp derive <file|hash> <proofFile|URL>')
+      console.groupEnd()
+      console.group(em('Examples:'))
+      console.log('tzstamp derive myFile.text myFile.txt.proof.json')
+      console.log('tzstamp derive file0.dat https://tzstamp.io/api/proof/ca66c425ba36802651386b0f5632c915df54ab626828af1a89238455a689eee3')
+      console.log('tzstamp derive 87ca3a133d348045abc294582bd3a2eeadcc51eccd5d19d2b14199e5ad49f075 LOG-8494.proof.json')
+      break
+    case 'verify':
+      console.log('Print manual root derivation from a proof')
+      console.log('Interface is identical to the derive subcommand')
+      console.log('See "tzstamp help derive" for examples')
+      console.group(em('Usage:'))
+      console.log('tzstamp verify <file|hash> <proofFile|URL>')
+      console.groupEnd()
+      break
+    case 'help':
+      console.log('Print command usage')
+      console.group(em('Usage:'))
+      console.log('tzstamp help <command>')
+      console.groupEnd()
+      break
+    default:
+      console.log(`Unknown command "${command}"\n`) // eslint-disable no-fallthrough
+    case undefined:
+      console.log('Tezos timestamping utility')
+      console.group(em('Usage:'))
+      console.log('tzstamp [global options] <command>')
+      console.log('Use "tzstamp help <command>" for detailed command usage')
+      console.groupEnd()
+      console.group(em('Commands:'))
+      console.log('tzstamp stamp      Submit a hash to a tzstamp server for aggregation')
+      console.log('tzstamp derive     Derive a block address from a proof')
+      console.log('tzstamp verify     Print manual block hash derivation from a proof')
+      console.log('tzstamp help       Print command usage')
+      console.groupEnd()
+      console.group(em('Global options:'))
+      console.log('--root-format      Set root display format. Values are: hex, binary, decimal')
+      console.log('--server           Set tzstamp server URL. Default is "https://tzstamp.io"')
+      console.groupEnd()
+  }
 }
 
 /**
