@@ -10,10 +10,12 @@ const { Hex } = require('@tzstamp/helpers')
 
 const argv = parseArgs(process.argv.slice(2), {
   alias: {
-    'root-format': 'rootFormat'
+    'root-format': 'rootFormat',
+    'wait': 'w'
   },
+  boolean: [ 'wait' ],
   default: {
-    server: 'https://tzstamp.io/api',
+    server: 'https://tzstamp.io',
     rootFormat: 'base58'
   }
 })
@@ -184,6 +186,7 @@ async function handleStamp (filePathsOrHashes) {
   if (filePathsOrHashes.length == 0) {
     return handleHelp('stamp')
   }
+  const proofURLs = []
   for (const filePathOrHash of filePathsOrHashes) {
     const hash = SHA256_REGEX.test(filePathOrHash)
       ? filePathOrHash
@@ -195,8 +198,44 @@ async function handleStamp (filePathsOrHashes) {
     })
 
     const { url } = await response.json()
-    console.log(url)
+    const proofURL = argv.wait
+      ? longPollProof(url)
+      : Promise.resolve(url)
+    proofURLs.push(proofURL)
   }
+  console.log((await Promise.all(proofURLs)).join('\n'))
+}
+
+/**
+ * Long poll for proof publication
+ */
+function longPollProof (url) {
+  return new Promise((resolve, reject) => {
+
+    // Query every 30 seconds
+    const inteval = setInterval(async () => {
+      const response = await fetch(url)
+      switch (response.status) {
+        case 200:
+          clearInterval(inteval)
+          resolve(url)
+          break
+        case 202:
+          break
+        case 404:
+          reject('Requested proof could not be found')
+          break
+        default:{
+          try {
+            const text = await response.text()
+            throw new Error(text)
+          } catch (_) {
+            throw new Error(response.statusText)
+          }
+        }
+      }
+    }, 30000)
+  })
 }
 
 /**
@@ -218,7 +257,10 @@ function handleHelp (command) {
       console.log('File hashes must be 64-digit hex strings (256 bits)')
       console.log('Prints out a pending proof URL for each file or hash aggregated')
       console.group(em('Usage:'))
-      console.log('tzstamp stamp <file|hash> [...<file|hash>]')
+      console.log('tzstamp stamp [options] <file|hash> [...<file|hash>]')
+      console.groupEnd()
+      console.group(em('Options:'))
+      console.log('--wait,-w          Wait until all proofs are published before printing output')
       console.groupEnd()
       console.group(em('Examples:'))
       console.log('tzstamp --server https://api.example.com stamp myFile.txt')
@@ -281,10 +323,6 @@ function handleHelp (command) {
  * @returns {never} Terminate script with exit code 1
  */
 function handleError (error) {
-  // if (error instanceof TypeError && subcommand === 'stamp') {
-  //   console.error('No filepath to stamp provided, at least one required.')
-  //   console.error(subcommandArgs)
-  // }
   console.error(error.message)
   process.exit(1)
 }
