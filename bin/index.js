@@ -203,7 +203,7 @@ async function handleStamp (filePathsOrHashes) {
       : Promise.resolve(url)
     proofURLs.push(proofURL)
   }
-  console.log(await Promise.all(proofURLs))
+  console.log((await Promise.all(proofURLs)).join('\n'))
 }
 
 /**
