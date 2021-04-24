@@ -260,7 +260,7 @@ function handleHelp (command) {
       console.log('tzstamp stamp [options] <file|hash> [...<file|hash>]')
       console.groupEnd()
       console.group(em('Options:'))
-      console.log('--wait,-w          Wait until all proofs is published before printing output')
+      console.log('--wait,-w          Wait until all proofs are published before printing output')
       console.groupEnd()
       console.group(em('Examples:'))
       console.log('tzstamp --server https://api.example.com stamp myFile.txt')
