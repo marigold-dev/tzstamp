@@ -186,6 +186,7 @@ async function handleStamp (filePathsOrHashes) {
   if (filePathsOrHashes.length == 0) {
     return handleHelp('stamp')
   }
+  const proofURLs = []
   for (const filePathOrHash of filePathsOrHashes) {
     const hash = SHA256_REGEX.test(filePathOrHash)
       ? filePathOrHash
@@ -197,11 +198,12 @@ async function handleStamp (filePathsOrHashes) {
     })
 
     const { url } = await response.json()
-    if (argv.wait) {
-      await longPollProof(url)
-    }
-    console.log(url)
+    const proofURL = argv.wait
+      ? longPollProof(url)
+      : Promise.resolve(url)
+    proofURLs.push(proofURL)
   }
+  console.log(await Promise.all(proofURLs))
 }
 
 /**
@@ -216,7 +218,7 @@ function longPollProof (url) {
       switch (response.status) {
         case 200:
           clearInterval(inteval)
-          resolve()
+          resolve(url)
           break
         case 202:
           break
