@@ -7,7 +7,6 @@ const { Hex, blake2b } = require('@tzstamp/helpers')
 const { Proof } = require('@tzstamp/proof')
 const Koa = require('koa')
 const Router = require('@koa/router')
-const static = require('koa-static')
 const bodyParser = require('koa-bodyparser')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
@@ -38,7 +37,6 @@ const pendingProofs = new Set
 
 // RESTful API
 const app = new Koa
-app.use(static('static'))
 app.use(bodyParser())
 const router = new Router
 router.post('/api/stamp', postStamp)
