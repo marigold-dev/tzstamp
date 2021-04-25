@@ -17,8 +17,7 @@
     "@tzstamp/tezos-merkle": "^0.1.0",
     "dotenv-defaults": "^2.0.1",
     "koa": "^2.13.1",
-    "koa-bodyparser": "^4.3.0",
-    "koa-static": "^5.0.0"
+    "koa-bodyparser": "^4.3.0"
   },
   "devDependencies": {
     "eslint": "^7.24.0"
