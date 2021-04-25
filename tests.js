@@ -10,6 +10,12 @@ const {
   RPC_URL
 } = process.env
 
+/** API endpoints */
+const API = {
+  stamp: () => new URL('/stamp', BASE_URL),
+  proof: (proofId) => new URL('/proof/' + proofId, BASE_URL)
+}
+
 // UTF-8 text decoder
 const decoder = new TextDecoder('utf-8')
 
@@ -78,8 +84,8 @@ async function runTests () {
 // Fetch a non-existant proof
 async function fetchMissingProof (fileHash) {
   const proofId = Hex.stringify(fileHash)
-  const url = new URL(`/api/proof/${proofId}`, BASE_URL)
-  const response = await fetch(url, {
+  const endpoint = API.proof(proofId)
+  const response = await fetch(endpoint, {
     headers: { 'Accept': 'application/json' }
   })
   expect(response.status == 404, 'Fetching a non-existant proof did not yield a response status of 404')
@@ -90,8 +96,8 @@ async function fetchMissingProof (fileHash) {
 async function postFiles (fileHashes) {
   const proofURLs = []
   for (const fileHash of fileHashes) {
-    const url = new URL(`/api/stamp`, BASE_URL)
-    const response = await fetch(url, {
+    const endpoint = API.stamp()
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

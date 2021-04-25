@@ -39,8 +39,8 @@ const pendingProofs = new Set
 const app = new Koa
 app.use(bodyParser())
 const router = new Router
-router.post('/api/stamp', postStamp)
-router.get('/api/proof/:id', getProof)
+router.post('/stamp', postStamp)
+router.get('/proof/:id', getProof)
 app.use(router.routes())
 app.use(router.allowedMethods())
 app.on('error', errorHandler)
@@ -82,7 +82,7 @@ void async function () {
 }()
 
 /**
- * POST /api/stamp route handler
+ * POST /stamp route handler
  */
 async function postStamp (ctx) {
 
@@ -116,7 +116,7 @@ async function postStamp (ctx) {
 }
 
 /**
- * GET /api/proof route handler
+ * GET /proof route handler
  */
 async function getProof (ctx) {
 
