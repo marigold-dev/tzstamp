@@ -27,6 +27,8 @@ const fetch = require('node-fetch')
 
 const crypto = require('crypto')
 
+const { Hex } = require('@tzstamp/helpers')
+
 const { TezosToolkit } = require('@taquito/taquito')
 
 const { InMemorySigner } = require('@taquito/signer')
@@ -82,15 +84,20 @@ async function isTzStamp (addr) {
     return TZSTAMP_VERSIONS.has(await getContractHash(addr))
 }
 
-async function deploy (contractName) {
+async function readContract(contractName) {
     var contracts = fs.readdirSync("contracts")
-    var contract_tz = fs.readFileSync(
+    var contractTz = fs.readFileSync(
         "contracts/" +
             contracts[contracts.indexOf(`${contractName}` + ".tz")],
         {"encoding":"utf8"}
     )
     const p = new Parser()
-    var contract = p.parseScript(contract_tz)
+    var contract = p.parseScript(contractTz)
+    return contract
+}
+
+async function deploy (contractName) {
+    const contract = readContract(contractName)
     Tezos.contract.originate({
         code: contract,
         init: "{}",
@@ -142,6 +149,35 @@ async function viewStorage(network, kt1) {
     .then(body => JSON.parse(body))
 }
 
+async function estimate (contractName, kt1) {
+    /* Estimate cost of:
+       - Originating contracts
+       - Uploading hash to a contract
+    */
+    var contract = await Tezos.contract.at(kt1)
+    const fakeUploadHash = Hex.stringify(crypto.randomBytes(64))
+    const truncatedKt1 = kt1.slice(0,6) + "..." + kt1.slice(30)
+    const operation = await Tezos.estimate.transfer(
+        contract.methods.default(fakeUploadHash).toTransferParams({})
+    )
+    const baseCost = operation.totalCost / 1000000
+    console.log(`Upload a merkle root to ${truncatedKt1}: ${baseCost.toPrecision(5)}ꜩ`)
+    console.log(`Upload daily root to ${truncatedKt1} for a month: ${(baseCost * 30).toPrecision(5)}ꜩ`)
+    console.log(`Upload daily root to ${truncatedKt1} for a year: ${(baseCost * 365).toPrecision(5)}ꜩ`)
+    console.log(`Upload to ${truncatedKt1} on fastest schedule for a month: ${(baseCost * 60 * 24 * 30).toPrecision(5)}ꜩ`)
+    console.log(`Upload to ${truncatedKt1} on fastest schedule for a year: ${(baseCost * 60 * 24 * 365).toPrecision(5)}ꜩ`)
+    var contract = await readContract(contractName)
+    try {
+        const originationOp = await Tezos.estimate.originate({
+            code: contract,
+            init: "{}",
+        })
+        console.log(`Originate ${contractName} contract: ${originationOp.totalCost / 1000000}ꜩ`)
+    } catch (error) {
+        console.error(error.message)
+    }
+}
+
 async function view () {
     switch (argv._[3]) {
         case 'stats':
@@ -181,6 +217,9 @@ async function run () {
             break;
         case 'upload-hash':
             await upload(argv._[3], argv._[4])
+            break;
+        case 'estimate':
+            await estimate(argv._[3], argv._[4])
             break;
         case 'view':
             await view()
