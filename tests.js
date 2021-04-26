@@ -123,7 +123,6 @@ async function queryPendingProofs (proofURLs) {
     })
     expect(response.status == 202, 'Fetching a pending proof did not yield a response status of 202')
     const json = await response.json()
-    expect(json.status == 'Stamp pending', 'Pending proof query showed wrong status')
     expect(json.url == url, 'Pending proof query showed contradictory proof URL')
   }
   console.log(`Queried ${proofURLs.length} pending proofs`)

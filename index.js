@@ -7,11 +7,11 @@ const { Hex, blake2b } = require('@tzstamp/helpers')
 const { Proof } = require('@tzstamp/proof')
 const Koa = require('koa')
 const Router = require('@koa/router')
-const bodyParser = require('koa-bodyparser')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
 const { ensureProofsDir, pendingProof, fetchProof, storeProof } = require('./lib/proof-storage')
 const { walkOperations, buildSteps } = require('./lib/tezos-merkle')
+const { parseBody } = require('./lib/parse-body')
 
 const {
   PORT,
@@ -37,13 +37,13 @@ const pendingProofs = new Set
 
 // RESTful API
 const app = new Koa
-app.use(bodyParser())
+app.use(errorHandler)
+app.use(parseBody)
 const router = new Router
 router.post('/stamp', postStamp)
 router.get('/proof/:id', getProof)
 app.use(router.routes())
-app.use(router.allowedMethods())
-app.on('error', errorHandler)
+app.use(router.allowedMethods({ throw: true }))
 
 // Setup
 void async function () {
@@ -86,22 +86,16 @@ void async function () {
  */
 async function postStamp (ctx) {
 
-  // Only allow JSON requests
-  if (!ctx.is('json')) {
-    ctx.throw(400, 'Reqest body must be JSON')
-  }
-
-  // Validate JSON
-  const hashHex = ctx.request.body.hash
-  if (hashHex == undefined) {
-    ctx.throw(400, 'Request body must contain a hash field')
-  }
-  if (typeof hashHex != 'string' || !hashHex.match(HEX_STRING) || hashHex.length == 0) {
-    ctx.throw(400, 'Hash field must be a hexidecimal string')
-  }
-  if (hashHex.length > 128) {
-    ctx.throw(400, 'Hash cannot be larger than 64 bytes')
-  }
+  // Validate input
+  const body = ctx.request.body
+  const hashHex = body.data == undefined
+    ? body.hash
+    : body.data
+  ctx.assert(hashHex != undefined, 400, 'Data field is missing')
+  ctx.assert(typeof hashHex == 'string', 400, 'Data field is wrong type')
+  ctx.assert(hashHex.length, 400, 'Data field is empty')
+  ctx.assert(hashHex.match(HEX_STRING), 400, 'Data field is not a hexidecimal string')
+  ctx.assert(hashHex.length <= 128, 400, 'Data field is larger than 64 bytes')
 
   const hash = Hex.parse(hashHex)
   const proofId = Hex.stringify(blake2b(hash))
@@ -122,9 +116,7 @@ async function getProof (ctx) {
 
   // Validate proof IDs
   const proofId = ctx.params.id
-  if (!proofId.match(HEX_STRING)) {
-    ctx.throw(400, `${proofId} is not a valid proof id`)
-  }
+  ctx.assert(proofId.match(HEX_STRING), 400, 'Invalid proof ID')
 
   // Fetch proof
   if (pendingProofs.has(proofId)) {
@@ -137,13 +129,24 @@ async function getProof (ctx) {
 /**
  * Koa default error handler
  */
-function errorHandler (err, ctx) {
-  if (ctx.accepts('json')) {
-    ctx.body = {
-      error: err.message
+async function errorHandler (ctx, next) {
+  try {
+    await next()
+    if (ctx.status == 404) {
+      ctx.throw(404, 'Not found')
     }
-  } else {
-    ctx.body = err.message
+  } catch (error) {
+    const acceptedType = ctx.accepts('text/plain', 'application/json')
+    ctx.status = error.status || 500
+    switch (acceptedType) {
+      default:
+      case 'text/plain':
+        ctx.body = error.message + '\n'
+        break
+      case 'application/json':
+        ctx.body = { error: error.message }
+        break
+    }
   }
 }
 
