@@ -12,6 +12,7 @@
     "@taquito/michel-codec": "^7.1.0-beta.0",
     "@taquito/signer": "^7.1.0-beta.0",
     "@taquito/taquito": "^7.1.0-beta.0",
+    "@tzstamp/helpers": "^0.1.1",
     "dotenv": "^8.2.0",
     "dotenv-defaults": "^2.0.1",
     "minimist": "^1.2.5",
