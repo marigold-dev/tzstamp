@@ -160,40 +160,22 @@ async function estimate (contractName, kt1) {
     const operation = await Tezos.estimate.transfer(
         contract.methods.default(fakeUploadHash).toTransferParams({})
     )
-    .then((op) => {
-        const baseCost = op.totalCost / 1000000
-        console.log(
-            `Upload a merkle root to ${truncatedKt1}: ` +
-            String(baseCost.toPrecision(5)) + "ꜩ"
-        )
-        console.log(
-            `Upload daily root to ${truncatedKt1} for a month: ` +
-            String((baseCost * 30).toPrecision(5)) + "ꜩ"
-        )
-        console.log(
-            `Upload daily root to ${truncatedKt1} for a year: ` +
-            String((baseCost * 365).toPrecision(5)) + "ꜩ"
-        )
-        console.log(
-            `Uupload to ${truncatedKt1} on fastest schedule for a month: ` +
-            String((baseCost * 60 * 24 * 30).toPrecision(5)) + "ꜩ"
-        )
-        console.log(
-            `Upload to ${truncatedKt1} on fastest schedule for a year: ` +
-            String((baseCost * 60 * 24 * 365).toPrecision(5)) + "ꜩ"
-        )
-    })
+    const baseCost = operation.totalCost / 1000000
+    console.log(`Upload a merkle root to ${truncatedKt1}: ${baseCost.toPrecision(5)}ꜩ`)
+    console.log(`Upload daily root to ${truncatedKt1} for a month: ${(baseCost * 30).toPrecision(5)}ꜩ`)
+    console.log(`Upload daily root to ${truncatedKt1} for a year: ${(baseCost * 365).toPrecision(5)}ꜩ`)
+    console.log(`Upload to ${truncatedKt1} on fastest schedule for a month: ${(baseCost * 60 * 24 * 30).toPrecision(5)}ꜩ`)
+    console.log(`Upload to ${truncatedKt1} on fastest schedule for a year: ${(baseCost * 60 * 24 * 365).toPrecision(5)}ꜩ`)
     var contract = await readContract(contractName)
-    await Tezos.estimate.originate({
-        code: contract,
-        init: "{}",
-    })
-    .then((originationOp) => {
-        console.log(`Originate ${contractName} contract: ` +
-                    String(originationOp.totalCost / 1000000)
-                    + "ꜩ")
-    })
-    .catch((error) => {console.log(error)})
+    try {
+        const originationOp = await Tezos.estimate.originate({
+            code: contract,
+            init: "{}",
+        })
+        console.log(`Originate ${contractName} contract: ${originationOp.totalCost / 1000000}ꜩ`)
+    } catch (error) {
+        console.error(error.message)
+    }
 }
 
 async function view () {
