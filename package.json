@@ -17,5 +17,8 @@
     "dotenv-defaults": "^2.0.1",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.25.0"
   }
 }
