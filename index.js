@@ -96,7 +96,7 @@ async function readContract (contractName) {
 }
 
 async function deploy (contractName) {
-  const contract = readContract(contractName)
+  const contract = await readContract(contractName)
   Tezos.contract.originate({
     code: contract,
     init: '{}'
@@ -117,7 +117,7 @@ async function upload (kt1, uploadHash) {
     await operation.confirmation(3)
     console.log(`Operation injected: https://better-call.dev/${argv.network}/opg/${operation.hash}/contents`)
   } catch (error) {
-    console.error(`Error: ${error.message}`)
+    console.error(`Error: ${error}`)
   }
 }
 
@@ -207,21 +207,33 @@ async function run () {
   if (!argv.faucet && SECRET) {
     Tezos = await keySetup()
   }
-  switch (argv._[2]) {
+  const subcommand = argv._[2]
+  switch (subcommand) {
     case 'is-tzstamp':
       if (argv._[3].length != 36) {
         throw `'${argv._[3]}' doesn't seem to be a kt1 address (wrong length)`
       }
       console.log(await isTzStamp(`${argv._[3]}`))
       break
-    case 'deploy':
-      await deploy(argv._[3])
+    case 'deploy': {
+      const contractName = argv._[3]
+      await deploy(contractName)
+    }
       break
-    case 'upload-hash':
-      await upload(argv._[3], argv._[4])
+    case 'upload-hash': {
+      if (argv._[3].length != 36) {
+        throw `'${argv._[3]}' doesn't seem to be a kt1 address (wrong length)`
+      }
+      const kt1 = argv._[3]
+      const uploadHash = argv._[4]
+      await upload(kt1, uploadHash)
+    }
       break
-    case 'estimate':
-      await estimate(argv._[3], argv._[4])
+    case 'estimate': {
+      const contractName = argv._[3]
+      const kt1 = argv._[4]
+      await estimate(contractName, kt1)
+    }
       break
     case 'view':
       await view()

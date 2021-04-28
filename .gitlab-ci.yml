@@ -1,0 +1,30 @@
+image: node:latest
+
+stages:
+  - build
+  - lint
+  - test
+
+cache:
+  paths:
+    - .npm/
+    - .server/
+
+build:
+  stage: build
+  script:
+    - npm ci --cache .npm --prefer-offline
+
+lint:
+  stage: lint
+  script:
+    - npx eslint index.js
+    - npx eslint test/test.js
+
+test:
+  stage: test
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+    - mv $TESTNET_FAUCET faucet.json
+  script:
+    - npm test
