@@ -19,7 +19,7 @@ void async function () {
   console.log('Creating temporary directory')
   const tempPath = path.join(os.tmpdir(), 'tzstamp-')
   const tempDir = await fs.mkdtemp(tempPath)
-  console.log(`Created temporary directory at "${tempPath}"`)
+  console.log(`Created temporary directory at "${tempDir}"`)
 
   // Create and store mock files
   // Files are named "fileN.dat" and stored in the temp directory
@@ -107,7 +107,7 @@ void async function () {
       mixedProofURLs[0]
     ),
     verify( // $ tzstamp derive <file> <url>
-            // (using a file passed as a fileHash in the multiple file test)
+      // (using a file passed as a fileHash in the multiple file test)
       'hash proof from URL',
       files[4].path,
       mixedProofURLs[2]

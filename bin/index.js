@@ -13,7 +13,7 @@ const argv = parseArgs(process.argv.slice(2), {
     'root-format': 'rootFormat'
   },
   default: {
-    server: 'https://tzstamp.io/api',
+    server: 'https://api.tzstamp.io',
     rootFormat: 'base58'
   }
 })
@@ -185,13 +185,16 @@ async function handleStamp (filePathsOrHashes) {
     return handleHelp('stamp')
   }
   for (const filePathOrHash of filePathsOrHashes) {
-    const hash = SHA256_REGEX.test(filePathOrHash)
+    const data = SHA256_REGEX.test(filePathOrHash)
       ? filePathOrHash
       : Hex.stringify(await hashFile(filePathOrHash))
-    const response = await fetch(`${argv.server}/api/stamp`, {
+    const response = await fetch(`${argv.server}/stamp`, {
       method: 'POST',
-      headers: { 'Content-type': 'application/json' },
-      body: JSON.stringify({ hash })
+      headers: {
+        'Content-type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ data })
     })
 
     const { url } = await response.json()
@@ -236,7 +239,7 @@ function handleHelp (command) {
       console.group(em('Examples:'))
       console.log('tzstamp derive myFile.text myFile.txt.proof.json')
       // eslint-disable-next-line max-len
-      console.log('tzstamp derive file0.dat https://tzstamp.io/api/proof/ca66c425ba36802651386b0f5632c915df54ab626828af1a89238455a689eee3')
+      console.log('tzstamp derive file0.dat https://api.tzstamp.io/proof/ca66c425ba36802651386b0f5632c915df54ab626828af1a89238455a689eee3')
       console.log('tzstamp derive 87ca3a133d348045abc294582bd3a2eeadcc51eccd5d19d2b14199e5ad49f075 LOG-8494.proof.json')
       break
     case 'verify':
@@ -269,7 +272,7 @@ function handleHelp (command) {
       console.groupEnd()
       console.group(em('Global options:'))
       console.log('--root-format      Set root display format. Values are: hex, binary, decimal')
-      console.log('--server           Set tzstamp server URL. Default is "https://tzstamp.io"')
+      console.log('--server           Set tzstamp server URL. Default is "https://api.tzstamp.io"')
       console.groupEnd()
   }
 }
