@@ -9,7 +9,7 @@ before_script:
   - npm ci --cache .npm --prefer-offline
   - export DENO_INSTALL=$PWD/.deno
   - export PATH=$DENO_INSTALL/bin:$PATH
-  - [ ! -f $DENO_INSTALL/bin/deno ] && curl -fsSL https://deno.land/x/install/install.sh | sh
+  - "[ ! -f $DENO_INSTALL/bin/deno ] && curl -fsSL https://deno.land/x/install/install.sh | sh"
 
 cache:
   paths:
