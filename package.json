@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "node tests.js",
-    "lint": "eslint index.js --fix"
+    "lint": "npx eslint index.js lib/**/*.js --fix"
   },
   "license": "MIT",
   "dependencies": {
@@ -16,10 +16,6 @@
     "@tzstamp/proof": "^0.1.0",
     "@tzstamp/tezos-merkle": "^0.1.0",
     "dotenv-defaults": "^2.0.1",
-    "koa": "^2.13.1",
-    "koa-bodyparser": "^4.3.0"
-  },
-  "devDependencies": {
-    "eslint": "^7.24.0"
+    "koa": "^2.13.1"
   }
 }
