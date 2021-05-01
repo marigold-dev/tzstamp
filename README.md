@@ -1,8 +1,9 @@
 # TzStamp Helper Functions
 
 ## Usage
+
 ```js
-import { Hex, Base58, blake2b, concat, compare } from '@tzstamp/helpers'
+import { Base58, blake2b, compare, concat, Hex } from "@tzstamp/helpers";
 ```
 
 ### Functions
@@ -21,9 +22,10 @@ import { Hex, Base58, blake2b, concat, compare } from '@tzstamp/helpers'
 
 ### Constants
 
-| Accessor       | Description                  | Type     |
-| -------------- | ---------------------------- | -------- |
-| `Hex.ALPHABET` | The common base-58 alphabet. | `string` |
+| Accessor          | Description                  | Type     |
+| ----------------- | ---------------------------- | -------- |
+| `Base58.ALPHABET` | The common base-58 alphabet. | `string` |
 
 ## License
+
 [MIT](LICENSE.txt)

@@ -1,10 +1,13 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+This project adheres to [Semantic Versioning].
 
 ## [0.1.1] - 2021-04-14
+
 ### Fixed
+
 - Parse empty hex string to empty byte array
 - Base-58 encode an empty byte array as an empty string
 - Check for invalid characters when base-58 encoding
@@ -12,7 +15,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Improve error messages
 
 ## [0.1.0] - 2021-03-24
+
 ### Added
+
 - Hex string helpers
   - Encode from Uint8Array byte array
   - Decode from string
@@ -27,3 +32,4 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 [0.1.0]: https://gitlab.com/tzstamp/helpers/-/releases/0.1.0
 [0.1.1]: https://gitlab.com/tzstamp/helpers/-/releases/0.1.1
+[Semantic Versioning]: https://semver.org/spec/v2.0.0.html
