@@ -58,6 +58,7 @@ void async function () {
       files[5].hash
     )
   ])
+  stamp('stamping with wait flag', files[0].path) // $ tzstamp --wait stamp <file>
   const fileProofURL = proofURLs[0][0]
   const hashProofURL = proofURLs[1][0]
   const mixedProofURLs = proofURLs[2]
