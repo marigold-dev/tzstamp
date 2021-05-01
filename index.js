@@ -88,7 +88,7 @@ async function postStamp (ctx) {
 
   // Validate input
   const body = ctx.request.body
-  const hashHex = body.data == undefined
+  const hashHex = body.data == undefined // "hash" is an alias for "data"
     ? body.hash
     : body.data
   ctx.assert(hashHex != undefined, 400, 'Data field is missing')
