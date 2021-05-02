@@ -1,14 +1,18 @@
 {
-  "name": "tzstamp-cli",
-  "version": "0.0.1",
-  "description": "Command line application to make trusted timestamps using the Tezos blockchain.",
+  "name": "@tzstamp/cli",
+  "version": "0.1.0",
+  "description": "Command line tool to cryptographically timestamp files on the Tezos blockchain",
   "main": "bin/index.js",
   "bin": {
     "tzstamp": "./bin/index.js"
   },
+  "files": [
+    "bin"
+  ],
   "scripts": {
     "lint": "npx --yes eslint **/*.js --fix",
-    "test": "node test/test.js"
+    "test": "node test/test.js",
+    "build": "npx pkg . --bytecode false"
   },
   "repository": {
     "type": "git",
@@ -31,5 +35,13 @@
     "@tzstamp/proof": "^0.1.0",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
+  },
+  "pkg": {
+    "targets": [
+      "node16-linux-x64",
+      "node16-macos-x64",
+      "node16-win-x64"
+    ],
+    "outputPath": "dist"
   }
 }
