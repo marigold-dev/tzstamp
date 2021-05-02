@@ -24,7 +24,10 @@
     "tezos",
     "cli"
   ],
-  "author": "John David Pressman",
+  "contributors": [
+    "John David Pressman",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://gitlab.com/JD-P/tzstamp/issues"
