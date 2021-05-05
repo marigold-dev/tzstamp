@@ -4,32 +4,32 @@ import {
   assertEquals,
 } from "https://deno.land/std@0.95.0/testing/asserts.ts";
 
-Deno.test("Concatenate two byte arrays", () => {
-  // Concatenate two filled arrays
+Deno.test("Concatenation", () => {
+  // Concatenate bytes arrays
   assertEquals(
     concat(
       new Uint8Array([1, 2]),
-      new Uint8Array([3, 4]),
+      new Uint8Array([3, 4, 5]),
+      new Uint8Array([]),
     ),
-    new Uint8Array([1, 2, 3, 4]),
+    new Uint8Array([1, 2, 3, 4, 5]),
   );
 
-  // Concatenate a filled array with an empty array
+  // Concatenate numbers
   assertEquals(
-    concat(
-      new Uint8Array([1, 2]),
-      new Uint8Array([]),
-    ),
-    new Uint8Array([1, 2]),
+    concat(0, -0, 1, 2, 3, 277, -12),
+    new Uint8Array([0, 0, 1, 2, 3, 21, 244]),
   );
 
-  // Concatenate two empty arrays
+  // Concatenate mix of numbers and byte arrays
   assertEquals(
     concat(
-      new Uint8Array([]),
-      new Uint8Array([]),
+      new Uint8Array([6, 7, 8]),
+      1,
+      new Uint8Array([54, 55, 56]),
+      255,
     ),
-    new Uint8Array([]),
+    new Uint8Array([6, 7, 8, 1, 54, 55, 56, 255]),
   );
 });
 

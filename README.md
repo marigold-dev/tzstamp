@@ -17,8 +17,7 @@ import { Base58, blake2b, compare, concat, Hex } from "@tzstamp/helpers";
 | `Base58.encodeCheck` | Encode a byte array as a base-58 string with a checksum.     | `Uint8Array`               | `string`     |
 | `Base58.decodeCheck` | Decore a byte array from a base-58 string with a checksum.   | `string`                   | `Uint8Array` |
 | `blake2b`            | Produce a 256-bit Blake2b hash digest of a given byte array. | `Uint8Array`               | `Uint8Array` |
-| `concat`             | Join two byte arrays.                                        | `Uint8Array`, `Uint8Array` | `Uint8Array` |
-| `compare`            | Determine the equality of two byte arrays                    | `Uint8Array`, `Uint8Array` | `boolean`    |
+| `concat`             | Join byte arrays and numbers.                                | `...(Uint8Array            | number)`     |
 
 ### Constants
 
