@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
+## Unreleased
+
+### Added
+
+- Regular expression for testing valid hex strings
+
 ## [0.1.1] - 2021-04-14
 
 ### Fixed

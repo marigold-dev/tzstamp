@@ -1,34 +1,52 @@
 /**
  * Serialize unsigned 8-bit integer array as hexadecimal string
+ *
+ * @param bytes Bytes array
  */
 export function stringify(bytes: Uint8Array): string {
   return Array
     .from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, "0")) // Map each byte to a 2-digit hex string
+    .map((byte) =>
+      // Map each byte to a 2-digit hex string
+      byte
+        .toString(16)
+        .padStart(2, "0")
+    )
     .join("");
 }
 
 /**
- * Parse hexadecimal string as unsigned 8-bit integer array
+ * Hexidecimal string regular expression
  */
-export function parse(hex: string): Uint8Array {
+export const HEX_STRING = /^[0-9a-fA-F]+$/;
+
+/**
+ * Parse hexadecimal string as unsigned 8-bit integer array
+ *
+ * @param input Hexidecimal string
+ * @return Byte array corresponding to hexidecimal string
+ */
+export function parse(input: string): Uint8Array {
   // Empty string
-  if (hex.length == 0) {
+  if (input.length == 0) {
     return new Uint8Array([]);
   }
 
   // Validate hex string
-  if (!hex.match(/^[0-9a-fA-F]+$/)) {
-    throw new SyntaxError("Invalid hex string");
+  if (!HEX_STRING.test(input)) {
+    throw new SyntaxError("Invalid hexidecimal string");
   }
 
-  // Convert bytes to 2-digit
-  const bytePairs = hex
-    .padStart(hex.length + hex.length % 2, "0") // ensure even number of characters
-    .match(/.{2}/g) as RegExpMatchArray; // split into 2-digit hex strings
+  // Setup byte array
+  const byteCount = Math.ceil(input.length / 2);
+  const bytes = new Uint8Array(byteCount);
 
-  // Convert each 2-digit hex string to a number
-  const bytes = bytePairs.map((byte) => parseInt(byte, 16));
+  // Populate byte array
+  for (let index = 0; index < input.length / 2; ++index) {
+    const offset = index * 2 - input.length % 2;
+    const hexByte = input.substring(offset, offset + 2);
+    bytes[index] = parseInt(hexByte, 16);
+  }
 
-  return new Uint8Array(bytes);
+  return bytes;
 }
