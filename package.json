@@ -8,9 +8,12 @@
     "dist"
   ],
   "scripts": {
-    "lint": "deno lint --unstable src/* tests/* && deno fmt README.md CHANGELOG.md src/* tests/*",
+    "lint": "deno lint --unstable src/* tests/*",
+    "postlint": "deno fmt README.md CHANGELOG.md src/* tests/*",
     "build": "npx deno2node src/tsconfig.json",
-    "test": "deno test --unstable --coverage=coverage && deno coverage --unstable coverage"
+    "pretest": "rm -f coverage/*",
+    "test": "deno test --unstable --coverage=coverage tests/",
+    "posttest": "deno coverage --unstable coverage"
   },
   "author": {
     "name": "Benjamin Herman",
