@@ -1,7 +1,11 @@
-import { compare, concat } from "../src/mod.ts";
+import { compare, concat, readStream } from "../src/mod.ts";
+import { Readable } from "https://deno.land/std@0.95.0/node/stream.ts";
+
 import {
   assert,
   assertEquals,
+  AssertionError,
+  assertThrowsAsync,
 } from "https://deno.land/std@0.95.0/testing/asserts.ts";
 
 Deno.test("Concatenation", () => {
@@ -73,4 +77,39 @@ Deno.test("Compare two byte arrays", () => {
       new Uint8Array([]),
     ),
   );
+});
+
+Deno.test("Read stream collector", async () => {
+  // Read mixed types
+  assertEquals(
+    await readStream(
+      new Readable({
+        read() {
+          this.push(new Uint8Array([1, 2, 3]));
+          this.push("hello");
+          this.push("060708", "hex");
+          this.push(null);
+        },
+      }),
+    ),
+    new Uint8Array([1, 2, 3, 104, 101, 108, 108, 111, 6, 7, 8]),
+  );
+
+  // Stream must not be in object mode
+  assertThrowsAsync(async () => {
+    await readStream(
+      new Readable({ objectMode: true }),
+    );
+  }, AssertionError);
+
+  // Reject on emitted error
+  assertThrowsAsync(async () => {
+    await readStream(
+      new Readable({
+        read() {
+          this.destroy(new Error("test"));
+        },
+      }),
+    );
+  }, Error);
 });

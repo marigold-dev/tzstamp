@@ -1,3 +1,6 @@
+import { Readable } from "./deps.deno.ts";
+import { assert } from "./deps.deno.ts";
+
 /**
  * Compare two byte arrays
  */
@@ -46,4 +49,34 @@ export function concat(...chunks: (number | Uint8Array)[]): Uint8Array {
   }
 
   return result;
+}
+
+/**
+ * Collect Node readable stream into a byte array
+ *
+ * @param stream Node readable stream
+ */
+export function readStream(stream: Readable): Promise<Uint8Array> {
+  // Filter for streams in object mode
+  assert(!stream.readableObjectMode, "Cannot read streams in object mode");
+
+  // Promisify callbacks
+  return new Promise((resolve, reject) => {
+    const chunks: Uint8Array[] = [];
+
+    // Read data into buffer
+    stream.on("data", (chunk: Uint8Array) => {
+      chunks.push(chunk);
+    });
+
+    // Reject on error
+    stream.on("error", (error) => {
+      reject(error);
+    });
+
+    // Resolve byte array on stream end
+    stream.on("end", () => {
+      resolve(concat(...chunks));
+    });
+  });
 }

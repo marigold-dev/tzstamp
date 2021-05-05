@@ -19,6 +19,7 @@ import { Base58, blake2b, compare, concat, Hex } from "@tzstamp/helpers";
 | `blake2b`            | Produce a 256-bit Blake2b hash digest of a given byte array. | `Uint8Array`               | `Uint8Array` |
 | `concat`             | Join byte arrays and numbers.                                | `...(Uint8Array            | number)`     |
 | `compare`            | Determine the equality of two byte arrays.                   | `Uint8Array`, `Uint8Array` | `boolean`    |
+| `readStream`         | Collect Node read-stream into byte array.                    | `Readable` (Node)          | `Uint8Array` |
 
 ### Constants
 
