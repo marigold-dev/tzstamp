@@ -2,7 +2,19 @@
  * Compare two byte arrays
  */
 export function compare(a: Uint8Array, b: Uint8Array): boolean {
-  return a.length == b.length && a.every((val, idx) => val == b[idx]);
+  // Mismatched length
+  if (a.length != b.length) {
+    return false;
+  }
+
+  // Mismatched bytes
+  for (const index in a) {
+    if (a[index] != b[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
