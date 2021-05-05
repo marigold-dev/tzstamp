@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
+## Unreleased
+
+### Added
+
+- Blake2b class
+- Variable Blake2b digest lengths and keying
+
 ## [0.1.1] - 2021-04-14
 
 ### Fixed
