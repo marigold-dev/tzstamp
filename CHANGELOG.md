@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning].
 ### Added
 
 - Regular expression for testing valid hex strings
-=======
+
 - Node read-stream collection helper
 
 ### Changed
