@@ -1,6 +1,15 @@
 import { assert } from "./deps.deno.ts";
 import { blake2bWasm } from "./blake2b-wasm.ts";
 
+const instance = new WebAssembly.Instance(blake2bWasm);
+const instanceMemory = instance.exports.memory as WebAssembly.Memory;
+let memory = new Uint8Array(instanceMemory.buffer);
+const {
+  "blake2b_init": blake2bInit,
+  "blake2b_update": blake2bUpdate,
+  "blake2b_final": blake2bFinal,
+} = instance.exports as Record<string, CallableFunction>;
+
 /**
  * Minimum digest length in bytes
  */
@@ -21,17 +30,48 @@ export const KEY_BYTES_MIN = 16;
  */
 export const KEY_BYTES_MAX = 64;
 
+// Memory management
+let head = 64;
+const freeList: number[] = [];
+const STATE_SIZE = 216;
+const PAGE_SIZE = 65536;
+
+/**
+ * Get a pointer to a free 216 byte block of memory
+ */
+function getPointer(): number {
+  // Grow instance memory if necessary
+  if (head + STATE_SIZE > memory.length) {
+    growMemory(head + STATE_SIZE);
+  }
+
+  // Create a pointers on-demand
+  if (!freeList.length) {
+    freeList.push(head);
+    head += 216;
+  }
+
+  // Return a free pointer
+  return freeList.pop() as number;
+}
+
+/**
+ * Grow instance memory by 1 page (64KiB)
+ */
+function growMemory(size: number) {
+  const pages = Math.ceil(
+    Math.abs(size - memory.length) / PAGE_SIZE,
+  );
+  instanceMemory.grow(pages);
+  memory = new Uint8Array(instanceMemory.buffer);
+}
+
 /**
  * Blake2b hash algorithm
  */
 export class Blake2b {
-  #instance = new WebAssembly.Instance(blake2bWasm);
-  #instanceMemory = this.#instance.exports.memory as WebAssembly.Memory;
-  #memory = new Uint8Array(this.#instanceMemory.buffer);
-  #init = this.#instance.exports["blake2b_init"] as CallableFunction;
-  #update = this.#instance.exports["blake2b_update"] as CallableFunction;
-  #final = this.#instance.exports["blake2b_final"] as CallableFunction;
   #finalized = false;
+  #pointer = getPointer();
 
   /**
    * Length of digest in bytes
@@ -72,18 +112,18 @@ export class Blake2b {
     this.digestLength = digestLength;
 
     // Initialize
-    this.#memory.fill(0, 0, 64);
-    this.#memory.set([
+    memory.fill(0, 0, 64);
+    memory.set([
       this.digestLength,
       key ? key.length : 0,
       1, // fanout
       1, // depth
     ]);
-    this.#init(64, this.digestLength);
+    blake2bInit(this.#pointer, this.digestLength);
     if (key) {
       this.update(key);
-      this.#memory.fill(0, 280, 280 + key.length); // whiteout key
-      this.#memory[264] = 128;
+      memory.fill(0, head, head + key.length); // whiteout key
+      memory[this.#pointer + 200] = 128;
     }
   }
 
@@ -93,8 +133,11 @@ export class Blake2b {
    */
   update(input: Uint8Array) {
     assert(this.#finalized == false, "Hash instance finalized");
-    this.#memory.set(input, 280);
-    this.#update(64, 280, 280 + input.length);
+    if (head + input.length > memory.length) {
+      growMemory(head + input.length);
+    }
+    memory.set(input, head);
+    blake2bUpdate(this.#pointer, head, head + input.length);
     return this;
   }
 
@@ -104,8 +147,12 @@ export class Blake2b {
   digest() {
     assert(this.#finalized === false, "Hash instance finalized");
     this.#finalized = true;
-    this.#final(64);
-    return this.#memory.slice(192, 192 + this.digestLength);
+    freeList.push(this.#pointer);
+    blake2bFinal(this.#pointer);
+    return memory.slice(
+      this.#pointer + 128,
+      this.#pointer + 128 + this.digestLength,
+    );
   }
 }
 
