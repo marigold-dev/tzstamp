@@ -36,6 +36,8 @@ export const Base58 = {
    * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#encode
    */
   encode(bytes: Uint8Array): string {
+    assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
+
     // Empty array
     if (bytes.length == 0) {
       return "";
@@ -75,6 +77,8 @@ export const Base58 = {
    * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#decode
    */
   decode(input: string): Uint8Array {
+    assert(typeof input == "string", "input must be a string");
+
     // Validate string
     if (!Base58.validator.test(input)) {
       throw new SyntaxError(`Invalid Base58 string`);
@@ -119,6 +123,7 @@ export const Base58 = {
    * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L135
    */
   encodeCheck(bytes: Uint8Array): string {
+    assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
     const checksum = sha256(sha256(bytes)).slice(0, 4);
     return Base58.encode(concat(bytes, checksum));
   },
@@ -136,13 +141,17 @@ export const Base58 = {
    * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L144
    */
   decodeCheck(input: string): Uint8Array {
+    assert(typeof input == "string", "input must be a string");
+
     const bytes = Base58.decode(input);
     const payload = bytes.slice(0, -4);
     const checksum = sha256(sha256(payload)).slice(0, 4);
+
     assert(
       compare(checksum, bytes.slice(-4)),
       "Base58 checksum did not match",
     );
+
     return payload;
   },
 };

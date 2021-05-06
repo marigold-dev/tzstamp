@@ -1,3 +1,5 @@
+import { assert } from "./deps.deno.ts";
+
 /**
  * Hexidecimal encoding scheme helpers.
  */
@@ -20,6 +22,8 @@ export const Hex = {
    * @param bytes Byte array
    */
   stringify(bytes: Uint8Array): string {
+    assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
+
     return Array
       .from(bytes)
       .map((byte) =>
@@ -43,6 +47,8 @@ export const Hex = {
    * @param input Hexidecimal string
    */
   parse(input: string): Uint8Array {
+    assert(typeof input == "string", "input must be a string");
+
     // Empty string
     if (input.length == 0) {
       return new Uint8Array([]);
