@@ -8,8 +8,9 @@ This project adheres to [Semantic Versioning].
 
 ### Added
 
+- Blake2b class
+- Variable Blake2b digest lengths and keying
 - Regular expression for testing valid hex strings
-
 - Node read-stream collection helper
 
 ### Changed
