@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
+## Unreleased
+
+### Added
+
+- Node read-stream collection helper
+
+### Changed
+
+- Concatenation helper accepts any number of inputs and can process bare numbers
+
 ## [0.1.1] - 2021-04-14
 
 ### Fixed
