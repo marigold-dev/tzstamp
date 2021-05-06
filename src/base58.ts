@@ -1,6 +1,6 @@
 import * as Hex from "./hex.ts";
 import { compare, concat } from "./bytes.ts";
-import { createHash } from "./deps.deno.ts";
+import { assert, createHash } from "./deps.deno.ts";
 
 /**
  * SHA-256 hash helper
@@ -120,9 +120,10 @@ export const Base58 = {
     const bytes = Base58.decode(input);
     const payload = bytes.slice(0, -4);
     const checksum = sha256(sha256(payload)).slice(0, 4);
-    if (!compare(checksum, bytes.slice(-4))) {
-      throw new Error(`Base-58 checksum did not match`);
-    }
+    assert(
+      compare(checksum, bytes.slice(-4)),
+      "Base58 checksum did not match",
+    );
     return payload;
   },
 };
