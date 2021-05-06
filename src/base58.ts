@@ -13,16 +13,21 @@ function sha256(bytes: Uint8Array): Uint8Array {
 }
 
 /**
+ * The common base-58 alphabet
+ *
+ * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet}
+ * for details
+ */
+const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/**
  * Base58 Encoding Scheme helpers
  */
 export const Base58 = {
   /**
-   * The common base-58 alphabet
-   *
-   * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet}
-   * for details
+   * Base58 validation regular expression
    */
-  ALPHABET: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+  validator: /^[1-9A-HJ-NP-Za-km-z]*$/,
 
   /**
    * Encode byte array as base58 string
@@ -44,12 +49,12 @@ export const Base58 = {
     // Encode as base-58
     for (let n = int; n > 0n; n /= 58n) {
       const mod = Number(n % 58n);
-      encoding = Base58.ALPHABET[mod] + encoding;
+      encoding = ALPHABET[mod] + encoding;
     }
 
     // Prepend padding for leading zeroes in the byte array
     for (let i = 0; bytes[i] == 0; ++i) {
-      encoding = Base58.ALPHABET[0] + encoding;
+      encoding = ALPHABET[0] + encoding;
     }
 
     return encoding;
@@ -62,6 +67,11 @@ export const Base58 = {
    * for details
    */
   decode(input: string): Uint8Array {
+    // Validate string
+    if (!Base58.validator.test(input)) {
+      throw new SyntaxError(`Invalid Base58 string`);
+    }
+
     // Empty string
     if (input.length == 0) {
       return new Uint8Array([]);
@@ -70,12 +80,7 @@ export const Base58 = {
     // Convert to integer
     let int = 0n;
     for (const char of input) {
-      const index = Base58.ALPHABET.indexOf(char);
-      if (index == -1) {
-        throw new SyntaxError(
-          `Invalid base58 string: The base-58 alphabet doesn't include the character "${char}"`,
-        );
-      }
+      const index = ALPHABET.indexOf(char);
       int = int * 58n + BigInt(index);
     }
 
@@ -87,7 +92,7 @@ export const Base58 = {
     }
 
     // Prepend leading zeroes
-    for (let i = 0; input[i] == Base58.ALPHABET[0]; ++i) {
+    for (let i = 0; input[i] == ALPHABET[0]; ++i) {
       bytes.push(0);
     }
 
