@@ -1,16 +1,23 @@
 /**
- * Hexidecimal encoding scheme helpers
+ * Hexidecimal encoding scheme helpers.
  */
 export const Hex = {
   /**
-   * Hexidecimal string validation regular expression
+   * Hexidecimal string validation regular expression.
+   * Matches strings comprised of only the 16 hexidecimal symbols,
+   * case-insensitively.
    */
   validator: /^[0-9a-fA-F]+$/,
 
   /**
-   * Serialize unsigned 8-bit integer array as hexadecimal string
+   * Creates a hexidecimal string from a byte array.
    *
-   * @param bytes Bytes array
+   * ```js
+   * Hex.stringify(new Uint8Array([49, 125, 7]));
+   * // "317d07"
+   * ```
+   *
+   * @param bytes Byte array
    */
   stringify(bytes: Uint8Array): string {
     return Array
@@ -25,10 +32,15 @@ export const Hex = {
   },
 
   /**
-   * Parse hexadecimal string as unsigned 8-bit integer array
+   * Parses a hexadecimal string to a byte array.
+   * Throws `SyntaxError` if the hexidecimal string is invalid.
+   *
+   * ```js
+   * Hex.parse("395f001");
+   * // Uint8Array(4) [ 3, 149, 240, 1 ]
+   * ```
    *
    * @param input Hexidecimal string
-   * @return Byte array corresponding to hexidecimal string
    */
   parse(input: string): Uint8Array {
     // Empty string
