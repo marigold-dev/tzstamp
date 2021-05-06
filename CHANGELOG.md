@@ -10,6 +10,12 @@ This project adheres to [Semantic Versioning].
 
 - Blake2b class
 - Variable Blake2b digest lengths and keying
+- Regular expression for testing valid hex strings
+- Node read-stream collection helper
+
+### Changed
+
+- Concatenation helper accepts any number of inputs and can process bare numbers
 
 ## [0.1.1] - 2021-04-14
 
