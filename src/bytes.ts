@@ -1,5 +1,4 @@
-import { Readable } from "./deps.deno.ts";
-import { assert } from "./deps.deno.ts";
+import { assert, Readable } from "./deps.deno.ts";
 
 /**
  * Compare two byte arrays
