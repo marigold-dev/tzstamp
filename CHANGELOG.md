@@ -16,7 +16,8 @@ This project adheres to [Semantic Versioning].
 
 ### Changed
 
-- Base58 helpers are namespaced
+- Base58 and hex string helpers are namespaced
+- Renamed `Hex.HEX_TEST` regular expression to `Hex.validator`
 - Concatenation helper accepts any number of inputs and can process bare numbers
 
 ## Removed

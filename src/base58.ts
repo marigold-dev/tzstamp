@@ -1,4 +1,4 @@
-import * as Hex from "./hex.ts";
+import { Hex } from "./hex.ts";
 import { compare, concat } from "./bytes.ts";
 import { assert, createHash } from "./deps.deno.ts";
 
