@@ -10,26 +10,6 @@ const {
   "blake2b_final": blake2bFinal,
 } = instance.exports as Record<string, CallableFunction>;
 
-/**
- * Minimum digest length in bytes
- */
-export const DIGEST_BYTES_MIN = 16;
-
-/**
- * Maximum digest length in bytes
- */
-export const DIGEST_BYTES_MAX = 64;
-
-/**
- * Minium key length in bytes
- */
-export const KEY_BYTES_MIN = 16;
-
-/**
- * Maximum key length in bytes
- */
-export const KEY_BYTES_MAX = 64;
-
 // Memory management
 let head = 64;
 const freeList: number[] = [];
@@ -70,6 +50,11 @@ function growMemory(size: number) {
  * Blake2b hash algorithm
  */
 export class Blake2b {
+  static MIN_DIGEST_BYTES = 1;
+  static MAX_DIGEST_BYTES = 64;
+  static MIN_KEY_BYTES = 1;
+  static MAX_KEY_BYTES = 64;
+
   #finalized = false;
   #pointer = getPointer();
 
@@ -91,21 +76,21 @@ export class Blake2b {
    */
   constructor(digestLength: number = 32, key?: Uint8Array) {
     assert(
-      digestLength >= DIGEST_BYTES_MIN,
-      `digestLength must be at least ${DIGEST_BYTES_MIN}, was given ${digestLength}`,
+      digestLength >= Blake2b.MIN_DIGEST_BYTES,
+      `digestLength must be at least ${Blake2b.MIN_DIGEST_BYTES}, was given ${digestLength}`,
     );
     assert(
-      digestLength <= DIGEST_BYTES_MAX,
-      `digestLength must be at most ${DIGEST_BYTES_MAX}, was given ${digestLength}`,
+      digestLength <= Blake2b.MAX_DIGEST_BYTES,
+      `digestLength must be at most ${Blake2b.MAX_DIGEST_BYTES}, was given ${digestLength}`,
     );
     if (key != undefined) {
       assert(
-        key.length >= KEY_BYTES_MIN,
-        `key length must be at least ${KEY_BYTES_MIN}, was given key of length ${key.length}`,
+        key.length >= Blake2b.MIN_KEY_BYTES,
+        `key length must be at least ${Blake2b.MIN_KEY_BYTES}, was given key of length ${key.length}`,
       );
       assert(
-        key.length <= KEY_BYTES_MAX,
-        `key length must be at most ${KEY_BYTES_MAX}, was given key length of ${key.length}`,
+        key.length <= Blake2b.MAX_KEY_BYTES,
+        `key length must be at most ${Blake2b.MAX_KEY_BYTES}, was given key length of ${key.length}`,
       );
     }
 

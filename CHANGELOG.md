@@ -19,6 +19,8 @@ This project adheres to [Semantic Versioning].
 - Base58 and hex string helpers are namespaced
 - Renamed `Hex.HEX_TEST` regular expression to `Hex.validator`
 - Concatenation helper accepts any number of inputs and can process bare numbers
+- Move the BLAKE2b min/max byte constants into the `Blake2b` class as static
+  constants
 
 ## Removed
 
