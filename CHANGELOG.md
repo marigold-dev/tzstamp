@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning].
 
 ### Changed
 
+- Base58 helpers are namespaced
 - Concatenation helper accepts any number of inputs and can process bare numbers
 
 ## [0.1.1] - 2021-04-14
