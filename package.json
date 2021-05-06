@@ -13,16 +13,18 @@
     "build": "npx deno2node src/tsconfig.json",
     "pretest": "rm -f coverage/*",
     "test": "deno test --unstable --coverage=coverage tests/",
-    "posttest": "deno coverage --unstable coverage"
-  },
-  "author": {
-    "name": "Benjamin Herman",
-    "email": "benjamin@metanomial.com",
-    "url": "https://metanomial.com"
+    "posttest": "deno coverage --unstable coverage/"
   },
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/tzstamp/helpers.git"
+  },
+  "contributors": [
+    "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
+  "bugs": {
+    "url": "https://gitlab.com/tzstamp/helpers/issues"
   },
   "homepage": "https://gitlab.com/tzstamp/helpers",
   "license": "MIT",
