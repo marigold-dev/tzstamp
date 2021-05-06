@@ -16,9 +16,7 @@ const freeList: number[] = [];
 const STATE_SIZE = 216;
 const PAGE_SIZE = 65536;
 
-/**
- * Get a pointer to a free 216 byte block of memory
- */
+// Get a pointer to a free 216 byte block of memory
 function getPointer(): number {
   // Grow instance memory if necessary
   if (head + STATE_SIZE > memory.length) {
@@ -35,9 +33,7 @@ function getPointer(): number {
   return freeList.pop() as number;
 }
 
-/**
- * Grow instance memory by 1 page (64KiB)
- */
+// Grow instance memory by 1 page (64Kib)
 function growMemory(size: number) {
   const pages = Math.ceil(
     Math.abs(size - memory.length) / PAGE_SIZE,
@@ -47,7 +43,17 @@ function growMemory(size: number) {
 }
 
 /**
- * Blake2b hash algorithm
+ * [BLAKE2b] hash algorithm implemented in WebAssembly.
+ *
+ * ```js
+ * const message = new TextEncoder().encode("hello")
+ * new Blake2b(32)
+ *   .update(message)
+ *   .digest();
+ * // Uint8Array(32) [ 50, 77, 207, ... ]
+ * ```
+ *
+ * [BLAKE2b]: https://www.blake2.net/blake2.pdf
  */
 export class Blake2b {
   static MIN_DIGEST_BYTES = 1;
@@ -59,19 +65,19 @@ export class Blake2b {
   #pointer = getPointer();
 
   /**
-   * Length of digest in bytes
+   * Length of digest in bytes.
    */
   readonly digestLength: number;
 
   /**
-   * Status of algorithm
+   * Returns true if the hash algorithm is finalized.
    */
   get finalized() {
     return this.#finalized;
   }
 
   /**
-   * @param digestLength Length of digest in bytes
+   * @param digestLength Length of digest in bytes, defaulting to 32
    * @param key Cryptographic key
    */
   constructor(digestLength: number = 32, key?: Uint8Array) {
@@ -113,7 +119,8 @@ export class Blake2b {
   }
 
   /**
-   * Feed input into hash algorithm
+   * Feeds input into the hash algorithm.
+   *
    * @param input Input bytes
    */
   update(input: Uint8Array) {
@@ -127,7 +134,7 @@ export class Blake2b {
   }
 
   /**
-   * Produce final digest
+   * Finalizes the hash algorithm and produces a digest.
    */
   digest() {
     assert(this.#finalized === false, "Hash instance finalized");
@@ -142,7 +149,8 @@ export class Blake2b {
 }
 
 /**
- * Blake2b convenience method
+ * Produces a BLAKE2b digest.
+ *
  * @param input Input bytes
  * @param digestLength Digest length in bytes
  */

@@ -8,8 +8,8 @@ This project adheres to [Semantic Versioning].
 
 ### Added
 
-- Blake2b class
-- Variable Blake2b digest lengths and keying
+- `Blake2b` class
+- Variable BLAKE2b digest lengths and keying
 - Regular expression for testing valid hex strings
 - Node read-stream collection helper
 - Base58 validator regular expression
@@ -48,7 +48,7 @@ This project adheres to [Semantic Versioning].
   - Encode from Uint8Array byte array
   - Decode from string
   - Encode and decode with SHA-256 checksum
-- Blake2b 32-byte hashing helper
+- BLAKE2b 32-byte hashing helper
 - Concatenate Uint8Arrays helper
 - Compare Uint8Arrays helper
 
