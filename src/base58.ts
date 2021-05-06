@@ -2,9 +2,6 @@ import * as Hex from "./hex.ts";
 import { compare, concat } from "./bytes.ts";
 import { assert, createHash } from "./deps.deno.ts";
 
-/**
- * SHA-256 hash helper
- */
 function sha256(bytes: Uint8Array): Uint8Array {
   const digest = createHash("sha256")
     .update(bytes)
@@ -12,12 +9,6 @@ function sha256(bytes: Uint8Array): Uint8Array {
   return new Uint8Array(digest);
 }
 
-/**
- * The common base-58 alphabet
- *
- * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet}
- * for details
- */
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /**
@@ -25,15 +16,24 @@ const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
  */
 export const Base58 = {
   /**
-   * Base58 validation regular expression
+   * Base58 string validation regular expression.
+   * Tests a string against the common Base58 alphabet
+   * as defined in the the [Base58 Encoding Scheme].
+   *
+   * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet
    */
   validator: /^[1-9A-HJ-NP-Za-km-z]*$/,
 
   /**
-   * Encode byte array as base58 string
+   * Encodes a byte array as a Base58 string as
+   * described in the [Base58 Encoding Scheme].
    *
-   * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#encode|The Base58 Encoding Scheme}
-   * for details
+   * ```js
+   * Base58.encode(new Uint8Array([55, 66, 77]));
+   * // "KZXr"
+   * ```
+   *
+   * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#encode
    */
   encode(bytes: Uint8Array): string {
     // Empty array
@@ -61,10 +61,18 @@ export const Base58 = {
   },
 
   /**
-   * Decode base58 string to byte array
+   * Decodes a Base58 string to a byte array
+   * as described in the [Base58 Encoding Scheme].
+   * Throws `SyntaxError` if the input string contains letters
+   * not included in the [Base58 Alphabet].
    *
-   * @see {@link https://tools.ietf.org/id/draft-msporny-base58-01.html#encode|The Base58 Encoding Scheme}
-   * for details
+   * ```js
+   * Base58.decode("u734C");
+   * // Uint8Array(4) [ 35, 37, 31, 49 ]
+   * ```
+   *
+   * [Base58 Alphabet]: https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet
+   * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#decode
    */
   decode(input: string): Uint8Array {
     // Validate string
@@ -100,10 +108,15 @@ export const Base58 = {
   },
 
   /**
-   * Encode with checksum
+   * Encodes a byte array as a Base58 string with a checksum.
+   * See the [Bitcoin source code] for the original C++ implementation.
    *
-   * @see {@link https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L135|base58.cpp}
-   * for original C++ implementation
+   * ```js
+   * Base58.encodeCheck(new Uint8Array([55, 66, 77]));
+   * // "36TSqepyLV"
+   * ```
+   *
+   * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L135
    */
   encodeCheck(bytes: Uint8Array): string {
     const checksum = sha256(sha256(bytes)).slice(0, 4);
@@ -111,10 +124,16 @@ export const Base58 = {
   },
 
   /**
-   * Decode with checksum
+   * Decodes and validates a Base58 string with a checksum to a byte array.
+   * Throws `AssertionError` if the checksum does not match.
+   * See the [Bitcoin source code] for the original C++ implementation.
    *
-   * @see {@link https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L144|base58.cpp}
-   * for original C++ implementation
+   * ```js
+   * Base58.decodeCheck("6sx8oP1Sgpe");
+   * // Uint8Array(4) [ 35, 37, 31, 49 ]
+   * ```
+   *
+   * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L144
    */
   decodeCheck(input: string): Uint8Array {
     const bytes = Base58.decode(input);
