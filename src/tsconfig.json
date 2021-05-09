@@ -2,8 +2,11 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "target": "ES2020",
+    "target": "esnext",
     "declaration": true,
-    "outDir": "dist"
+    "outDir": "../dist"
+  },
+  "deno2node": {
+    "shim": "./shim.node.ts"
   }
 }
