@@ -1,9 +1,25 @@
+import { assert } from "./deps.deno.ts";
+
 /**
- * Serialize unsigned 8-bit integer array as hexadecimal string
+ * Hexidecimal string validation regular expression.
+ * Matches strings comprised of only the 16 hexidecimal symbols,
+ * case-insensitively.
+ */
+export const validator = /^[0-9a-fA-F]+$/;
+
+/**
+ * Creates a hexidecimal string from a byte array.
  *
- * @param bytes Bytes array
+ * ```js
+ * Hex.stringify(new Uint8Array([49, 125, 7]));
+ * // "317d07"
+ * ```
+ *
+ * @param bytes Byte array
  */
 export function stringify(bytes: Uint8Array): string {
+  assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
+
   return Array
     .from(bytes)
     .map((byte) =>
@@ -16,24 +32,26 @@ export function stringify(bytes: Uint8Array): string {
 }
 
 /**
- * Hexidecimal string regular expression
- */
-export const HEX_STRING = /^[0-9a-fA-F]+$/;
-
-/**
- * Parse hexadecimal string as unsigned 8-bit integer array
+ * Parses a hexadecimal string to a byte array.
+ * Throws `SyntaxError` if the hexidecimal string is invalid.
+ *
+ * ```js
+ * Hex.parse("395f001");
+ * // Uint8Array(4) [ 3, 149, 240, 1 ]
+ * ```
  *
  * @param input Hexidecimal string
- * @return Byte array corresponding to hexidecimal string
  */
 export function parse(input: string): Uint8Array {
+  assert(typeof input == "string", "input must be a string");
+
   // Empty string
   if (input.length == 0) {
     return new Uint8Array([]);
   }
 
   // Validate hex string
-  if (!HEX_STRING.test(input)) {
+  if (!validator.test(input)) {
     throw new SyntaxError("Invalid hexidecimal string");
   }
 

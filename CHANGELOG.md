@@ -8,14 +8,23 @@ This project adheres to [Semantic Versioning].
 
 ### Added
 
-- Blake2b class
-- Variable Blake2b digest lengths and keying
+- `Blake2b` class
+- Variable BLAKE2b digest lengths and keying
 - Regular expression for testing valid hex strings
 - Node read-stream collection helper
+- Base58 validator regular expression
 
 ### Changed
 
+- Base58 and hex string helpers are namespaced
+- Renamed `Hex.HEX_TEST` regular expression to `Hex.validator`
 - Concatenation helper accepts any number of inputs and can process bare numbers
+- Move the BLAKE2b min/max byte constants into the `Blake2b` class as static
+  constants
+
+## Removed
+
+- The Base58 alphabet constant
 
 ## [0.1.1] - 2021-04-14
 
@@ -39,7 +48,7 @@ This project adheres to [Semantic Versioning].
   - Encode from Uint8Array byte array
   - Decode from string
   - Encode and decode with SHA-256 checksum
-- Blake2b 32-byte hashing helper
+- BLAKE2b 32-byte hashing helper
 - Concatenate Uint8Arrays helper
 - Compare Uint8Arrays helper
 

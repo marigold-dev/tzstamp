@@ -1,8 +1,15 @@
-import { Readable } from "./deps.deno.ts";
-import { assert } from "./deps.deno.ts";
+import { assert, Readable } from "./deps.deno.ts";
 
 /**
- * Compare two byte arrays
+ * Compares two byte arrays.
+ *
+ * ```js
+ * compare(
+ *   new Uint8Array([104, 101, 108, 108, 111]),
+ *   new TextEncoder().encode("hello")
+ * );
+ * // true
+ * ```
  */
 export function compare(a: Uint8Array, b: Uint8Array): boolean {
   // Mismatched length
@@ -21,11 +28,17 @@ export function compare(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 /**
- * Concatenate a list of bytes or byte arrays
+ * Concatenates numbers or byte arrays into a single byte array.
+ * Numbers out of the range [0, 256) will wrap.
  *
- * @param  {...number|Uint8Array} chunks Individual bytes or byte arrays
- *
- * Numbers larger than 255 or smaller than 0 will wrap around.
+ * ```js
+ * concat(
+ *   new Uint8Array([1, 2, 3]),
+ *   4,
+ *   new Uint8Array([5, 6]),
+ * );
+ * // Uint8Array (6) [ 1, 2, 3, 4, 5, 6 ]
+ * ```
  */
 export function concat(...chunks: (number | Uint8Array)[]): Uint8Array {
   // Calculate size of resulting array
@@ -52,7 +65,16 @@ export function concat(...chunks: (number | Uint8Array)[]): Uint8Array {
 }
 
 /**
- * Collect Node readable stream into a byte array
+ * Collects Node readable stream into a byte array.
+ * Rejects if the stream emits an error.
+ * See [Node Stream] for details.
+ *
+ * ```js
+ * const stream = getReadableStreamSomehow();
+ * await readStream(stream); // stream bytes
+ * ```
+ *
+ * [Node Stream]: https://nodejs.org/api/stream.html#stream_class_stream_readable
  *
  * @param stream Node readable stream
  */

@@ -10,35 +10,13 @@ const {
   "blake2b_final": blake2bFinal,
 } = instance.exports as Record<string, CallableFunction>;
 
-/**
- * Minimum digest length in bytes
- */
-export const DIGEST_BYTES_MIN = 16;
-
-/**
- * Maximum digest length in bytes
- */
-export const DIGEST_BYTES_MAX = 64;
-
-/**
- * Minium key length in bytes
- */
-export const KEY_BYTES_MIN = 16;
-
-/**
- * Maximum key length in bytes
- */
-export const KEY_BYTES_MAX = 64;
-
 // Memory management
 let head = 64;
 const freeList: number[] = [];
 const STATE_SIZE = 216;
 const PAGE_SIZE = 65536;
 
-/**
- * Get a pointer to a free 216 byte block of memory
- */
+// Get a pointer to a free 216 byte block of memory
 function getPointer(): number {
   // Grow instance memory if necessary
   if (head + STATE_SIZE > memory.length) {
@@ -55,9 +33,7 @@ function getPointer(): number {
   return freeList.pop() as number;
 }
 
-/**
- * Grow instance memory by 1 page (64KiB)
- */
+// Grow instance memory by 1 page (64Kib)
 function growMemory(size: number) {
   const pages = Math.ceil(
     Math.abs(size - memory.length) / PAGE_SIZE,
@@ -67,45 +43,60 @@ function growMemory(size: number) {
 }
 
 /**
- * Blake2b hash algorithm
+ * [BLAKE2b] hash algorithm implemented in WebAssembly.
+ *
+ * ```js
+ * const message = new TextEncoder().encode("hello")
+ * new Blake2b(32)
+ *   .update(message)
+ *   .digest();
+ * // Uint8Array(32) [ 50, 77, 207, ... ]
+ * ```
+ *
+ * [BLAKE2b]: https://www.blake2.net/blake2.pdf
  */
 export class Blake2b {
+  static MIN_DIGEST_BYTES = 1;
+  static MAX_DIGEST_BYTES = 64;
+  static MIN_KEY_BYTES = 1;
+  static MAX_KEY_BYTES = 64;
+
   #finalized = false;
   #pointer = getPointer();
 
   /**
-   * Length of digest in bytes
+   * Length of digest in bytes.
    */
   readonly digestLength: number;
 
   /**
-   * Status of algorithm
+   * Returns true if the hash algorithm is finalized.
    */
   get finalized() {
     return this.#finalized;
   }
 
   /**
-   * @param digestLength Length of digest in bytes
+   * @param digestLength Length of digest in bytes, defaulting to 32
    * @param key Cryptographic key
    */
   constructor(digestLength: number = 32, key?: Uint8Array) {
     assert(
-      digestLength >= DIGEST_BYTES_MIN,
-      `digestLength must be at least ${DIGEST_BYTES_MIN}, was given ${digestLength}`,
+      digestLength >= Blake2b.MIN_DIGEST_BYTES,
+      `digestLength must be at least ${Blake2b.MIN_DIGEST_BYTES}, was given ${digestLength}`,
     );
     assert(
-      digestLength <= DIGEST_BYTES_MAX,
-      `digestLength must be at most ${DIGEST_BYTES_MAX}, was given ${digestLength}`,
+      digestLength <= Blake2b.MAX_DIGEST_BYTES,
+      `digestLength must be at most ${Blake2b.MAX_DIGEST_BYTES}, was given ${digestLength}`,
     );
     if (key != undefined) {
       assert(
-        key.length >= KEY_BYTES_MIN,
-        `key length must be at least ${KEY_BYTES_MIN}, was given key of length ${key.length}`,
+        key.length >= Blake2b.MIN_KEY_BYTES,
+        `key length must be at least ${Blake2b.MIN_KEY_BYTES}, was given key of length ${key.length}`,
       );
       assert(
-        key.length <= KEY_BYTES_MAX,
-        `key length must be at most ${KEY_BYTES_MAX}, was given key length of ${key.length}`,
+        key.length <= Blake2b.MAX_KEY_BYTES,
+        `key length must be at most ${Blake2b.MAX_KEY_BYTES}, was given key length of ${key.length}`,
       );
     }
 
@@ -128,7 +119,8 @@ export class Blake2b {
   }
 
   /**
-   * Feed input into hash algorithm
+   * Feeds input into the hash algorithm.
+   *
    * @param input Input bytes
    */
   update(input: Uint8Array) {
@@ -142,7 +134,7 @@ export class Blake2b {
   }
 
   /**
-   * Produce final digest
+   * Finalizes the hash algorithm and produces a digest.
    */
   digest() {
     assert(this.#finalized === false, "Hash instance finalized");
@@ -157,7 +149,8 @@ export class Blake2b {
 }
 
 /**
- * Blake2b convenience method
+ * Produces a BLAKE2b digest.
+ *
  * @param input Input bytes
  * @param digestLength Digest length in bytes
  */
