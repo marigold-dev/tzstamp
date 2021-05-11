@@ -1133,9 +1133,9 @@ const Base58 = {
     return payload;
   }
 };
-const Hex = {
+export const Hex = {
   validator: /^[0-9a-fA-F]+$/,
-  parse() {
+  parse(input) {
     if (input.length == 0) {
       return new Uint8Array([]);
     }
@@ -1151,6 +1151,16 @@ const Hex = {
     }
     return bytes;
   },
+  stringify(bytes) {
+    return Array
+      .from(bytes)
+      .map((byte) =>
+        byte
+          .toString(16)
+          .padStart(2, "0")
+      )
+      .join("");
+  }
 };
 export class Block {
   static PREFIX = new Uint8Array([1, 52]);

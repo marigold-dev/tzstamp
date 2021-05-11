@@ -1,6 +1,7 @@
-import { Proof } from "./proof.js";
+import { Proof, Hex } from "./proof.js";
 
 let proofs = loadProofs();
+let uploadedProof;
 
 document.addEventListener("DOMContentLoaded", () => {
   initNavToggle();
@@ -133,9 +134,60 @@ function renderProof(url) {
 }
 
 function initVerifyForm() {
-  // const form = document.forms.verify;
-  // form.elements["verify-file"].addEventListener("change", handleVerifyFileChange);
-  // form.elements["verify-hash"].addEventListener("change", updateVerifyButton);
-  // form.elements["verify-proof"].addEventListener("change", handleVerifyProofChange);
-  // form.elements["verify-button"].addEventListener("click", submitVerify);
+  const form = document.forms.verify;
+  form.elements["verify-file"].addEventListener("change", handleVerifyFileChange);
+  form.elements["verify-hash"].addEventListener("change", updateVerifyButton);
+  form.elements["verify-proof"].addEventListener("change", handleVerifyProofChange);
+  form.elements["verify-button"].addEventListener("click", submitVerify);
+}
+
+async function handleVerifyFileChange() {
+  const fileInput = document.getElementById("verify-file");
+  const hashInput = document.getElementById("verify-hash");
+  if (fileInput.files.length) {
+    const buffer = await fileInput.files[0].arrayBuffer();
+    const digest = await window.crypto.subtle.digest("SHA-256", buffer);
+    const hash = Array
+      .from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    hashInput.value = hash;
+  }
+  updateVerifyButton();
+}
+
+function updateVerifyButton() {
+  const hashInput = document.getElementById("verify-hash");
+  const button = document.getElementById("verify-button");
+  button.disabled = !hashInput.checkValidity() ||
+    !uploadedProof;
+}
+
+async function handleVerifyProofChange() {
+  const proofInput = document.getElementById("verify-proof");
+  if (proofInput.files.length) {
+    const text = await proofInput.files[0].text();
+    try {
+      uploadedProof = Proof.parse(text);
+    } catch (error) {
+      uploadedProof = undefined;
+      proofInput.value = null;
+      console.error(error);
+      alert("Count not parse proof.");
+    }
+  }
+  updateVerifyButton();
+}
+
+async function submitVerify() {
+  const hashInput = document.getElementById("verify-hash");
+  const block = uploadedProof.derive(Hex.parse(hashInput.value));
+  try {
+    const time = await block.lookup("https://mainnet.smartpy.io");
+    alert(`Verified. File existed at ${time.toISOString()}.`);
+  } catch (error) {
+    console.error(error);
+    alert("Could not verify file hash.");
+  }
+  document.forms.verify.reset();
 }

@@ -48,7 +48,7 @@
   <section>
     <div class="content">
       <h2>Timestamp Files</h2>
-      <p>Choose a file to calculate its SHA-256 hash locally in your browser. Alternatively, <a href="https://linux.die.net/man/1/sha256sum" rel="noopener noreferrer">hash the file yourself</a> and paste the hexidecimal representation into the field below. Submit the hash to the <code>api.tzstamp.io</code> aggregator server, which will include your file hash in its next publication. Once published to the blockchain, your timestamp proof will become available to download below.</p>
+      <p>Choose a file to calculate its SHA-256 hash locally in your browser. Alternatively, <a href="https://linux.die.net/man/1/sha256sum" rel="noopener noreferrer">hash the file yourself</a> and paste the hexidecimal representation into the field below. Submitting will send the hash to the <code>api.tzstamp.io</code> aggregator server, which will include your file hash in its next publication. Once published to the blockchain, your timestamp proof will become available to download below.</p>
       <p><b>The aggregator root is published every six hours.</b></p>
       <form id="stamp">
         <label for="stamp-file">Target File</label>
@@ -72,12 +72,12 @@
       <p>Choose a file (or enter its SHA-256 hash) and a corresponding timestamp proof. Send a request to the <code>mainnet.smartpy.io</code> public Tezos node to verify the proof and display the timestamp.</p>
       <form id="verify">
         <label for="verify-file">Target File</label>
-        <input disabled id="verify-file" type="file">
+        <input id="verify-file" type="file">
         <label for="verify-hash">SHA-256 Hash</label>
-        <input disabled id="verify-hash" type="text" size="64" pattern="[0-9a-fA-F]+">
+        <input id="verify-hash" type="text" size="64" pattern="[0-9a-fA-F]+">
         <label for="verify-proof">Proof File</label>
-        <input disabled id="verify-proof" type="file">
-        <button id="stamp-stamp" type="button" disabled>Verify</button>
+        <input id="verify-proof" type="file">
+        <button id="verify-button" type="button" disabled>Verify</button>
       </form>
     </div>
   </section>
