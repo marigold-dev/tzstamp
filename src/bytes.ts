@@ -1,4 +1,4 @@
-import { assert, Readable } from "./deps.deno.ts";
+import { Readable } from "./deps.deno.ts";
 
 /**
  * Compares two byte arrays.
@@ -80,7 +80,9 @@ export function concat(...chunks: (number | Uint8Array)[]): Uint8Array {
  */
 export function readStream(stream: Readable): Promise<Uint8Array> {
   // Filter for streams in object mode
-  assert(!stream.readableObjectMode, "Cannot read streams in object mode");
+  if (stream.readableObjectMode) {
+    throw new Error("Cannot read streams in object mode");
+  }
 
   // Promisify callbacks
   return new Promise((resolve, reject) => {

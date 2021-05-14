@@ -4,7 +4,6 @@ import { Readable } from "https://deno.land/std@0.95.0/node/stream.ts";
 import {
   assert,
   assertEquals,
-  AssertionError,
   assertThrowsAsync,
 } from "https://deno.land/std@0.95.0/testing/asserts.ts";
 
@@ -108,7 +107,7 @@ Deno.test({
       await readStream(
         new Readable({ objectMode: true }),
       );
-    }, AssertionError);
+    });
 
     // Reject on emitted error
     assertThrowsAsync(async () => {
@@ -119,6 +118,6 @@ Deno.test({
           },
         }),
       );
-    }, Error);
+    });
   },
 });

@@ -143,10 +143,9 @@ export function decodeCheck(input: string): Uint8Array {
   const payload = bytes.slice(0, -4);
   const checksum = sha256(sha256(payload)).slice(0, 4);
 
-  assert(
-    compare(checksum, bytes.slice(-4)),
-    "Base58 checksum did not match",
-  );
+  if (!(compare(checksum, bytes.slice(-4)))) {
+    throw new Error("Base58 checksum did not match");
+  }
 
   return payload;
 }
