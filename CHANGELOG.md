@@ -4,27 +4,24 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
-## Unreleased
+## [0.2.0] - 2021-05-14
 
 ### Added
 
-- `Blake2b` class
+- `Blake2b` class underpinning the `blake2b` convenience function
 - Variable BLAKE2b digest lengths and keying
-- Regular expression for testing valid hex strings
 - Node read-stream collection helper
-- Base58 validator regular expression
+- Hexidecimal and Base58 string validators
 
 ### Changed
 
-- Base58 and hex string helpers are namespaced
-- Renamed `Hex.HEX_TEST` regular expression to `Hex.validator`
-- Concatenation helper accepts any number of inputs and can process bare numbers
-- Move the BLAKE2b min/max byte constants into the `Blake2b` class as static
-  constants
+- Better concatenation helper
+  - Accepts any number of inputs
+  - Accepts bare numbers
 
 ## Removed
 
-- The Base58 alphabet constant
+- The Base58 `ALPHABET` constant
 
 ## [0.1.1] - 2021-04-14
 
@@ -54,4 +51,5 @@ This project adheres to [Semantic Versioning].
 
 [0.1.0]: https://gitlab.com/tzstamp/helpers/-/releases/0.1.0
 [0.1.1]: https://gitlab.com/tzstamp/helpers/-/releases/0.1.1
+[0.2.0]: https://gitlab.com/tzstamp/helpers/-/releases/0.2.0
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html

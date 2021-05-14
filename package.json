@@ -8,12 +8,13 @@
     "dist"
   ],
   "scripts": {
-    "lint": "deno lint --unstable src/* tests/*",
+    "lint": "deno lint src/* tests/*",
     "postlint": "deno fmt README.md CHANGELOG.md src/* tests/*",
+    "prebuild": "rm -f dist/*",
     "build": "npx deno2node src/tsconfig.json",
     "pretest": "rm -f coverage/*",
-    "test": "deno test --unstable --coverage=coverage tests/",
-    "posttest": "deno coverage --unstable coverage/"
+    "test": "deno test --coverage=coverage tests/",
+    "posttest": "deno coverage coverage/"
   },
   "repository": {
     "type": "git",
