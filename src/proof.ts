@@ -1,5 +1,4 @@
 import { Operation } from "./operation.ts";
-import { Block } from "./block.ts";
 import { assert, Base58, compare, Hex } from "./deps.deno.ts";
 
 /**
@@ -130,8 +129,7 @@ export class Proof {
   /**
    * Derive block hash from operations
    */
-  derive(input: Uint8Array): Block {
-    const rawHash = this.operations.reduce((acc, op) => op.commit(acc), input);
-    return new Block(this.network, rawHash);
+  derive(input: Uint8Array): Uint8Array {
+    return this.operations.reduce((acc, op) => op.commit(acc), input);
   }
 }

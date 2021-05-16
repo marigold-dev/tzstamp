@@ -194,9 +194,15 @@ Deno.test("Derive block from proof", () => {
       .update(bytes)
       .digest(),
   );
-  const block = proof.derive(input);
+  const blockHash = proof.derive(input);
   assertEquals(
-    block.address,
-    "BLCkrrtSHYoLMJ5k5N6urr3kd5QR8k9uFZ3iBqqoLEaNz3t3BJA",
+    blockHash,
+    // deno-fmt-ignore
+    new Uint8Array([
+       64, 167, 173,  57, 179, 254, 123, 171,
+       45,  55, 232,  18,  81,  48, 249, 132,
+      217, 205, 174,  25, 197,  65,  81,   2,
+      158,  81, 104, 103,  55,  67, 134, 121
+    ]),
   );
 });
