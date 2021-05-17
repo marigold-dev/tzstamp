@@ -16,6 +16,10 @@
     "type": "git",
     "url": "https://gitlab.com/tzstamp/proof.git"
   },
+  "contributors": [
+    "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
   "homepage": "https://gitlab.com/tzstamp/proof",
   "license": "MIT",
   "devDependencies": {
