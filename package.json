@@ -5,11 +5,10 @@
   "types": "dist/mod.d.ts",
   "scripts": {
     "lint": "deno lint --unstable src/* tests/*",
-    "postlint": "deno fmt README.md CHANGELOG.md src/* tests/*",
+    "fmt": "deno fmt README.md CHANGELOG.md src/* tests/*",
     "build": "npx deno2node src/tsconfig.json",
-    "pretest": "rm -f coverage/*",
-    "test": "deno test --unstable --allow-net --coverage=coverage tests/",
-    "posttest": "deno coverage --unstable coverage"
+    "test": "deno test tests/",
+    "coverage": "rm -f coverage/* && deno test --coverage=coverage tests/ && deno coverage coverage"
   },
   "repository": {
     "type": "git",
