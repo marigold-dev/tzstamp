@@ -28,7 +28,8 @@ export abstract class Operation {
   abstract commit(input: Uint8Array): Uint8Array;
 
   /**
-   * JTD schema for an operation template
+   * [JTD] schema for an operation template
+   *
    * [JTD]: https://jsontypedef.com
    */
   static readonly schema: Schema = {
