@@ -10,3 +10,4 @@ export type {
   OperationTemplate,
 } from "./operation.ts";
 export { Proof } from "./proof.ts";
+export type { ProofOptions, ProofTemplate } from "./proof.ts";
