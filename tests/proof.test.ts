@@ -134,7 +134,7 @@ Deno.test({
         { type: "blake2b", length: 64, key: "01" },
       ],
       hash: "001122",
-      timestamp: "2021-01-01T08:00:00.000Z",
+      timestamp: "2004-11-03T19:53:47.776Z",
       network: "NetXdQprcVkpaWU",
     });
     assertEquals(proof.operations?.length, 3);
@@ -142,7 +142,7 @@ Deno.test({
     assert(proof.operations?.[1] instanceof Sha256Operation);
     assert(proof.operations?.[2] instanceof Blake2bOperation);
     assertEquals(proof.hash, new Uint8Array([0, 17, 34]));
-    assertEquals(proof.timestamp, new Date("Jan 1 2021"));
+    assertEquals(proof.timestamp, new Date(2 ** 40));
     assertEquals(proof.network, "NetXdQprcVkpaWU");
 
     // Bad templates
