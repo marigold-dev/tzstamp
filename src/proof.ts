@@ -2,6 +2,7 @@ import {
   Blake2bOperation,
   JoinOperation,
   Operation,
+  OperationTemplate,
   Sha256Operation,
 } from "./operation.ts";
 import { Base58, compare, Hex } from "./deps.deno.ts";
@@ -11,8 +12,10 @@ import { isValid, Schema } from "./_validate.ts";
  * Proof constructor options
  */
 export interface ProofOptions {
-  network?: string;
   operations?: Operation[];
+  hash?: Uint8Array;
+  timestamp?: Date;
+  network?: string;
 }
 
 /**
@@ -27,6 +30,16 @@ export interface ProofTemplate {
  */
 export class Proof {
   /**
+   * Input hash
+   */
+  readonly hash?: Uint8Array;
+
+  /**
+   * Target timestamp
+   */
+  readonly timestamp?: Date;
+
+  /**
    * Tezos network
    */
   readonly network?: string;
@@ -39,10 +52,12 @@ export class Proof {
   /**
    * Throws if `network` identifier is invalid.
    *
-   * @param network Network ID
+   * @param hash Input hash
+   * @param timestamp Target timestamp
+   * @param network Tezos network ID
    * @param operations Proof operations
    */
-  constructor({ network, operations = [] }: ProofOptions = { operations: [] }) {
+  constructor({ hash, timestamp, network, operations }: ProofOptions = {}) {
     // Validate network ID
     if (network) {
       try {
@@ -52,10 +67,12 @@ export class Proof {
       } catch (_) {
         throw new Error("Invalid network ID");
       }
+      this.network = network;
     }
 
-    this.network = network;
-    this.operations = operations;
+    this.hash = hash;
+    this.timestamp = timestamp;
+    this.operations = operations ?? [];
   }
 
   /**
@@ -67,15 +84,27 @@ export class Proof {
    * ```
    */
   toJSON(): ProofV1Template {
-    return {
+    const template: ProofV1Template = {
       version: 1,
-      network: this.network,
-      operations: this.operations,
+      operations: [],
     };
+    for (const operation of this.operations) {
+      template.operations.push(operation.toJSON());
+    }
+    if (this.hash) {
+      template.hash = Hex.stringify(this.hash);
+    }
+    if (this.timestamp) {
+      template.timestamp = this.timestamp.toISOString();
+    }
+    if (this.network) {
+      template.network = this.network;
+    }
+    return template;
   }
 
   /**
-   * Derives the output of all operations committed sequentially to an input.
+   * Derives the output of all operations committed sequentially to an input hash.
    *
    * ```ts
    * myProof.operations;
@@ -90,9 +119,14 @@ export class Proof {
    * // 2. concat(result, 0xb9f638a193) -> result
    * // 3. BLAKE2b(result, 64-byte digest) -> return result
    * ```
+   *
+   * @param hash Input hash
    */
-  derive(input: Uint8Array): Uint8Array {
-    return this.operations.reduce((acc, op) => op.commit(acc), input);
+  derive(hash: Uint8Array): Uint8Array {
+    if (this.hash && !compare(this.hash, hash)) {
+      throw new Error("Input hash does not match stored hash");
+    }
+    return this.operations.reduce((acc, op) => op.commit(acc), hash);
   }
 
   /**
@@ -190,19 +224,23 @@ function parseV0(template: unknown): Proof {
 }
 
 interface ProofV1Template extends ProofTemplate {
+  operations: OperationTemplate[];
+  hash?: string;
+  timestamp?: string;
   network?: string;
-  operations?: unknown[];
 }
 
 const proofv1Schema: Schema = {
   properties: {
     version: { type: "uint32" },
-  },
-  optionalProperties: {
-    network: { type: "string" },
     operations: {
       elements: Operation.schema,
     },
+  },
+  optionalProperties: {
+    hash: { type: "string" },
+    timestamp: { type: "timestamp" },
+    network: { type: "string" },
   },
 };
 
@@ -210,8 +248,18 @@ function parseV1(template: unknown): Proof {
   if (!isValid<ProofV1Template>(proofv1Schema, template)) {
     throw new Error("Invalid version 1 proof");
   }
-  return new Proof({
+  const options: ProofOptions = {
+    operations: template.operations.map(Operation.from),
     network: template.network,
-    operations: template.operations?.map(Operation.from),
-  });
+  };
+  if (template.hash) {
+    if (!Hex.validator.test(template.hash)) {
+      throw new Error("Invalid input hash");
+    }
+    options.hash = Hex.parse(template.hash);
+  }
+  if (template.timestamp) {
+    options.timestamp = new Date(template.timestamp);
+  }
+  return new Proof(options);
 }

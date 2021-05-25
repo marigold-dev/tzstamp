@@ -1,10 +1,10 @@
 import {
   Blake2bOperation,
   JoinOperation,
-  // Operation,
   Proof,
   Sha256Operation,
 } from "../src/mod.ts";
+import { Hex } from "../src/deps.deno.ts";
 import { assert, assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test("Proof construction", () => {
@@ -31,24 +31,35 @@ Deno.test({
     assertEquals(
       JSON.stringify(
         new Proof({
-          network: "NetXdQprcVkpaWU",
           operations: [
             new JoinOperation(new Uint8Array([1])),
             new JoinOperation(new Uint8Array([2]), true),
             new Sha256Operation(),
             new Blake2bOperation(),
           ],
+          // deno-fmt-ignore
+          hash: new Uint8Array([
+            199, 131, 165, 147, 208, 116, 212, 119,
+            221, 131,  22, 215, 110, 245,  64, 118,
+            143,  15,  11,  51, 198, 212,  10, 215,
+            139,  98,  20, 121, 138, 185, 128, 215,
+          ]),
+          timestamp: new Date(0),
+          network: "NetXdQprcVkpaWU",
         }),
       ),
       JSON.stringify({
         version: 1,
-        network: "NetXdQprcVkpaWU",
         operations: [
           { type: "append", data: "01" },
           { type: "prepend", data: "02" },
           { type: "sha256" },
           { type: "blake2b" },
         ],
+        hash:
+          "c783a593d074d477dd8316d76ef540768f0f0b33c6d40ad78b6214798ab980d7",
+        timestamp: "1970-01-01T00:00:00.000Z",
+        network: "NetXdQprcVkpaWU",
       }),
     );
   },
@@ -96,12 +107,15 @@ Deno.test({
     assertThrows(() =>
       Proof.from({
         version: 0,
+        network: "NetXdQprcVkpaWU",
+        ops: [],
         bogus: true,
       })
     );
     assertThrows(() =>
       Proof.from({
         version: 0,
+        network: "NetXdQprcVkpaWU",
         ops: [
           ["bogus"],
         ],
@@ -115,18 +129,22 @@ Deno.test({
   fn() {
     const proof = Proof.from({
       version: 1,
-      network: "NetXdQprcVkpaWU",
       operations: [
         { type: "append", data: "01" },
         { type: "sha256" },
         { type: "blake2b", length: 64, key: "01" },
       ],
+      hash: "001122",
+      timestamp: "2021-01-01T08:00:00.000Z",
+      network: "NetXdQprcVkpaWU",
     });
-    assertEquals(proof.network, "NetXdQprcVkpaWU");
     assertEquals(proof.operations?.length, 3);
     assert(proof.operations?.[0] instanceof JoinOperation);
     assert(proof.operations?.[1] instanceof Sha256Operation);
     assert(proof.operations?.[2] instanceof Blake2bOperation);
+    assertEquals(proof.hash, new Uint8Array([0, 17, 34]));
+    assertEquals(proof.timestamp, new Date("Jan 1 2021"));
+    assertEquals(proof.network, "NetXdQprcVkpaWU");
 
     // Bad templates
     assertThrows(() =>
@@ -141,6 +159,13 @@ Deno.test({
         operations: [
           { type: "bogus" },
         ],
+      })
+    );
+    assertThrows(() =>
+      Proof.from({
+        version: 1,
+        operations: [],
+        hash: "invalid",
       })
     );
   },
@@ -165,6 +190,14 @@ Deno.test("Derive proof", () => {
     ]),
   );
   const randomBytes = crypto.getRandomValues(new Uint8Array(64));
-  assertEquals(new Proof({ operations: [] }).derive(randomBytes), randomBytes);
+  assertEquals(
+    new Proof({ operations: [], hash: randomBytes }).derive(randomBytes),
+    randomBytes,
+  );
+  assertThrows(
+    () =>
+      new Proof({ operations: [], hash: new Uint8Array([]) })
+        .derive(randomBytes),
+  );
   assertEquals(new Proof().derive(randomBytes), randomBytes);
 });
