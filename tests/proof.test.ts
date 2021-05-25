@@ -4,7 +4,6 @@ import {
   Proof,
   Sha256Operation,
 } from "../src/mod.ts";
-import { Hex } from "../src/deps.deno.ts";
 import { assert, assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test("Proof construction", () => {
