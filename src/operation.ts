@@ -1,5 +1,5 @@
 import { Blake2b, concat, createHash, Hex } from "./deps.deno.ts";
-import { filterUndefined, isValid, Schema } from "./_validate.ts";
+import { isValid, Schema } from "./_validate.ts";
 
 /**
  * Operation template
@@ -20,7 +20,7 @@ export abstract class Operation {
   /**
    * Converts the operation to a JSON-serializable template.
    */
-  abstract toJSON(): unknown;
+  abstract toJSON(): OperationTemplate;
 
   /**
    * Commits the operation to the input.
@@ -217,11 +217,14 @@ export class Blake2bOperation extends Operation {
   }
 
   toJSON(): Blake2bTemplate {
-    return filterUndefined<Blake2bTemplate>({
-      type: "blake2b",
-      length: this.length,
-      key: this.key ? Hex.stringify(this.key) : undefined,
-    });
+    const template: Blake2bTemplate = { type: "blake2b" };
+    if (this.length) {
+      template.length = this.length;
+    }
+    if (this.key) {
+      template.key = Hex.stringify(this.key);
+    }
+    return template;
   }
 
   commit(input: Uint8Array): Uint8Array {

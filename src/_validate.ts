@@ -31,32 +31,3 @@ export type { Schema };
 export function isValid<T>(schema: Schema, instance: unknown): instance is T {
   return validate(schema, instance).length == 0;
 }
-
-/**
- * Removes all fields set to `undefined` in an object instance.
- *
- * ```ts
- * interface Metasyntactic {
- *   foo?: boolean,
- *   bar?: boolean,
- *   baz?: boolean
- * }
- *
- * filterUndefined<Metasyntactic>({
- *   foo: undefined,
- *   bar: true,
- *   baz: undefined
- * });
- * // { bar: true }, implements Metasyntactic
- * ```
- *
- * @param template Template object
- */
-export function filterUndefined<T>(instance: T): T {
-  for (const key in instance) {
-    if (instance[key] === undefined) {
-      delete instance[key];
-    }
-  }
-  return instance;
-}
