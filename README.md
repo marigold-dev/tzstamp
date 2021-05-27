@@ -25,7 +25,7 @@ on-chain Merkle Tree. At that point the proof is no longer reliant on Tezos node
 keeping a copy of the operation at all, so it doesn't concern a TzStamp instance
 if the nodes garbage collect it.
 
-<img src="tzstamp-chain-of-commitments.png" width="500px" />
+<img src="https://tzstamp.io/tzstamp-chain-of-commitments.png" width="500px" />
 
 ## Usage
 
