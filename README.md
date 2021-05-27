@@ -6,7 +6,7 @@ tzstamp is a [cryptographic timestamping service](https://www.gwern.net/Timestam
 that uses the Tezos blockchain to prove a file existed at or before a certain time.
 
 **tzstamp-server** is the software implementing the tzstamp service. Files are
-hashed using the SHA-256 algorithm and then the hash is submitted to the server.
+hashed using the SHA-256 or blake2b algorithm and then submitted to the server.
 TzStamp aggregates the hashes in a merkle tree structure, or a tree of hashes.
 The root of that tree is published to a smart contract on the Tezos blockchain,
 allowing many hashes to be shown to have existed at a certain time on-chain for
@@ -21,6 +21,8 @@ or billions of entries.
 
 See https://www.gwern.net/Timestamping for more background information on
 trusted timestamping services.
+
+For more information on using tzstamp-server [see its manual page](https://gitlab.com/tzstamp/server/-/blob/main/man/man1/tzstamp-server.md).
 
 ## Setup TestNet TzStamp On Debian 10.6
 

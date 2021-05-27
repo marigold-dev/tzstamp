@@ -13,8 +13,8 @@ tzstamp-server
 # DESCRIPTION
 
 **tzstamp-server** is a service that utilizes the Tezos blockchain to perform
-trusted timestamping of files. Files are hashed using the SHA-256 algorithm and
-then the hash is submitted to the tzstamp service. tzstamp aggregates the hashes
+trusted timestamping of files. Files are hashed using the SHA-256 or blake2b
+algorithm and then submitted to the server. tzstamp-server aggregates the hashes
 in a merkle tree structure, or a tree of hashes. The root of that tree is
 published to a smart contract on the Tezos blockchain, allowing many hashes to
 be shown to have existed at a certain time on-chain for the cost of one. A
@@ -47,6 +47,9 @@ by outside scripts and automation by setting the environment variables manually.
 
 **$FAUCET_KEY_PATH**
 : Path to a Tezos testnet faucet key, **this is not for use on mainnet**
+
+**TEZOS_WALLET_SECRET**
+: Raw Tezos private key for use with local signing, **use this setting for mainnet instances**
 
 **$CONTRACT_ADDRESS**
 : KT1 of the Tezos tzstamp smart contract instance the server will use
