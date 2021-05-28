@@ -6,6 +6,7 @@ import { isValid, Schema } from "./_validate.ts";
  */
 export interface OperationTemplate {
   type: string;
+  [_: string]: unknown;
 }
 
 /**
