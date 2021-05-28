@@ -1,6 +1,9 @@
 import {
+  AffixOperation,
+  AffixTemplate,
   Blake2bOperation,
   Blake2bTemplate,
+  InvalidNetworkIDError,
   InvalidOperationError,
   JoinOperation,
   JoinTemplate,
@@ -40,6 +43,14 @@ Deno.test({
       Operation.from({
         type: "sha256",
       }) instanceof Sha256Operation,
+    );
+    assert(
+      Operation.from({
+        type: "affix",
+        network: "NetXdQprcVkpaWU",
+        level: "block",
+        timestamp: "1970-01-01T00:00:00.000Z",
+      }) instanceof AffixOperation,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
@@ -222,6 +233,121 @@ Deno.test({
     assertThrows(
       () => Sha256Operation.from({ type: "bogus" }),
       InvalidOperationError,
+    );
+  },
+});
+
+Deno.test({
+  name: "Mainnet block-level affixation operation",
+  fn() {
+    const network = "NetXdQprcVkpaWU";
+    const level = "block";
+    const timestamp = "1970-01-01T00:00:00.000Z";
+    const localeTimestamp = new Date(timestamp).toLocaleString();
+    const op = new AffixOperation(network, level, new Date(timestamp));
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const template: AffixTemplate = {
+      type: "affix",
+      network,
+      level,
+      timestamp,
+    };
+    assertEquals(op.network, network);
+    assertEquals(op.level, level);
+    assertEquals(op.timestamp, new Date(op.timestamp));
+    assertEquals(
+      op.toString(),
+      `Affix to block hash on the Tezos Mainnet at ${localeTimestamp}`,
+    );
+    assertEquals(op.commit(input), input);
+    assertEquals(op.toJSON(), template);
+    assertEquals(op, AffixOperation.from(template));
+  },
+});
+
+Deno.test({
+  name: "Altnet operation-level affixation operation",
+  fn() {
+    const network = "NetXH12Aer3be93";
+    const level = "operation";
+    const timestamp = "1970-01-01T00:00:00.000Z";
+    const localeTimestamp = new Date(timestamp).toLocaleString();
+    const op = new AffixOperation(network, level, new Date(timestamp));
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const template: AffixTemplate = {
+      type: "affix",
+      network,
+      level,
+      timestamp,
+    };
+    assertEquals(op.network, network);
+    assertEquals(op.level, level);
+    assertEquals(op.timestamp, new Date(op.timestamp));
+    assertEquals(
+      op.toString(),
+      `Affix to operation hash on alternate Tezos network "${network}" at ${localeTimestamp}`,
+    );
+    assertEquals(op.commit(input), input);
+    assertEquals(op.toJSON(), template);
+    assertEquals(op, AffixOperation.from(template));
+  },
+});
+
+Deno.test({
+  name: "Invalid Affixation operation templating",
+  fn() {
+    assertThrows(
+      () => AffixOperation.from({ type: "bogus" }),
+      InvalidOperationError,
+    );
+    assertThrows(
+      () =>
+        AffixOperation.from({
+          type: "affix",
+          network: "NetXH12Aer3be93",
+          level: "block",
+          timestamp: "invalid",
+        }),
+      InvalidOperationError,
+    );
+    assertThrows(
+      () =>
+        AffixOperation.from({
+          type: "affix",
+          network: "NetXH12Aer3be93",
+          level: "invalid",
+          timestamp: "1970-01-01T00:00:00.000Z",
+        }),
+      InvalidOperationError,
+    );
+    assertThrows(
+      () =>
+        AffixOperation.from({
+          type: "affix",
+          network: "invalid",
+          level: "block",
+          timestamp: "1970-01-01T00:00:00.000Z",
+        }),
+    );
+    assertThrows(
+      () =>
+        AffixOperation.from({
+          type: "affix",
+          network: "2eaEQdd69bmjibEQa",
+          level: "block",
+          timestamp: "1970-01-01T00:00:00.000Z",
+        }),
+      InvalidNetworkIDError,
+    );
+    assertThrows(
+      () =>
+        AffixOperation.from({
+          type: "affix",
+          network: "MRFsrHWuD14mU9Y",
+          level: "block",
+          timestamp: "1970-01-01T00:00:00.000Z",
+        }),
+      InvalidNetworkIDError,
     );
   },
 });
