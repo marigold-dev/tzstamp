@@ -9,6 +9,20 @@ export interface OperationTemplate {
 }
 
 /**
+ * Invalid operation error
+ */
+export class InvalidOperationError extends Error {
+  name = "InvalidOperationError";
+}
+
+/**
+ * Unsupported operation error
+ */
+export class UnsupportedOperationError extends Error {
+  name = "UnsupportedOperationError";
+}
+
+/**
  * Proof operation
  */
 export abstract class Operation {
@@ -54,7 +68,7 @@ export abstract class Operation {
    */
   static from(template: unknown): Operation {
     if (!isValid<OperationTemplate>(Operation.schema, template)) {
-      throw new Error("Invalid operation");
+      throw new InvalidOperationError("Invalid operation template");
     }
     switch (template.type) {
       case "append":
@@ -63,9 +77,11 @@ export abstract class Operation {
       case "blake2b":
         return Blake2bOperation.from(template);
       case "sha256":
-        return new Sha256Operation();
+        return Sha256Operation.from(template);
       default:
-        throw new Error(`Unsupported operation "${template.type}"`);
+        throw new UnsupportedOperationError(
+          `Unsupported operation "${template.type}"`,
+        );
     }
   }
 }
@@ -74,6 +90,7 @@ export abstract class Operation {
  * Join operation template
  */
 export interface JoinTemplate extends OperationTemplate {
+  type: "append" | "prepend";
   data: string;
 }
 
@@ -126,7 +143,7 @@ export class JoinOperation extends Operation {
    */
   static readonly schema: Schema = {
     properties: {
-      type: { type: "string" },
+      type: { enum: ["append", "prepend"] },
       data: { type: "string" },
     },
   };
@@ -147,7 +164,7 @@ export class JoinOperation extends Operation {
    */
   static from(template: unknown): JoinOperation {
     if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-      throw new Error("Invalid join operation");
+      throw new InvalidOperationError("Invalid join operation");
     }
     const data = Hex.parse(template.data);
     switch (template.type) {
@@ -155,8 +172,6 @@ export class JoinOperation extends Operation {
         return new JoinOperation(data);
       case "prepend":
         return new JoinOperation(data, true);
-      default:
-        throw new Error(`Unsupported join operation "${template.type}"`);
     }
   }
 }
@@ -165,6 +180,7 @@ export class JoinOperation extends Operation {
  * BLAKE2b operation template
  */
 export interface Blake2bTemplate extends OperationTemplate {
+  type: "blake2b";
   length?: number;
   key?: string;
 }
@@ -183,16 +199,15 @@ export class Blake2bOperation extends Operation {
    * `length` or `key` fields are incompatible with the
    * [BLAKE2b] hashing algorithm.
    *
-   * @param length Digest length
+   * @param length Digest length. Defaults to 32
    * @param key Hashing key
    *
    * [BLAKE2b]: https://www.blake2.net
    */
-  constructor(length?: number, key?: Uint8Array) {
+  constructor(length = 32, key?: Uint8Array) {
     super();
     if (
-      typeof length == "number" &&
-      (length < Blake2b.MIN_DIGEST_BYTES || length > Blake2b.MAX_DIGEST_BYTES)
+      length < Blake2b.MIN_DIGEST_BYTES || length > Blake2b.MAX_DIGEST_BYTES
     ) {
       throw new RangeError(
         `BLAKE2b digest length must be between ${Blake2b.MIN_DIGEST_BYTES}–${Blake2b.MAX_DIGEST_BYTES} bytes.`,
@@ -211,14 +226,13 @@ export class Blake2bOperation extends Operation {
   }
 
   toString(): string {
-    return `BLAKE2b hash, ${this.length ?? 32}-byte digest${
-      this.key ? ` with key 0x${Hex.stringify(this.key)}` : ""
-    }`;
+    return `BLAKE2b hash, ${this.length}-byte digest` +
+      (this.key ? ` with key 0x${Hex.stringify(this.key)}` : "");
   }
 
   toJSON(): Blake2bTemplate {
     const template: Blake2bTemplate = { type: "blake2b" };
-    if (this.length) {
+    if (this.length != 32) {
       template.length = this.length;
     }
     if (this.key) {
@@ -234,13 +248,13 @@ export class Blake2bOperation extends Operation {
   }
 
   /**
-   * JTD schema for a BLAKE2b operation template
+   * [JTD] schema for a BLAKE2b operation template
    *
    * [JTD]: https://jsontypedef.com
    */
   static readonly schema: Schema = {
     properties: {
-      type: { type: "string" },
+      type: { enum: ["blake2b"] },
     },
     optionalProperties: {
       length: { type: "uint32" },
@@ -263,17 +277,21 @@ export class Blake2bOperation extends Operation {
    * @param template Template object
    */
   static from(template: unknown): Blake2bOperation {
-    if (
-      !isValid<Blake2bTemplate>(Blake2bOperation.schema, template) ||
-      template.type != "blake2b"
-    ) {
-      throw new Error("Invalid BLAKE2b operation");
+    if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
+      throw new InvalidOperationError("Invalid BLAKE2b operation");
     }
     return new Blake2bOperation(
       template.length,
       template.key ? Hex.parse(template.key) : undefined,
     );
   }
+}
+
+/**
+ * SHA-256 operation template
+ */
+export interface Sha256Template extends OperationTemplate {
+  type: "sha256";
 }
 
 /**
@@ -293,5 +311,36 @@ export class Sha256Operation extends Operation {
       .update(input)
       .digest();
     return new Uint8Array(digest);
+  }
+
+  /**
+   * [JTD] schema for a SHA-256 operation template
+   *
+   * [JTD]: https://jsontypedef.com
+   */
+  static readonly schema: Schema = {
+    properties: {
+      type: { enum: ["sha256"] },
+    },
+  };
+
+  /**
+   * Creates a SHA-256 operation from a template object.
+   * Throws if the template is invalid.
+   *
+   * ```ts
+   * Sha256Operation.from({
+   *   type: "sha256",
+   * });
+   * // Sha256Operation {}
+   * ```
+   *
+   * @param template Template object
+   */
+  static from(template: unknown): Sha256Operation {
+    if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
+      throw new InvalidOperationError("Invalid SHA-256 operation");
+    }
+    return new Sha256Operation();
   }
 }
