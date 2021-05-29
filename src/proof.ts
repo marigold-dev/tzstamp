@@ -25,17 +25,17 @@ export interface Affixation {
   /**
    * Tezos network identifier
    */
-  network: string;
+  readonly network: string;
 
   /**
    * Timestamp asserted by the proof
    */
-  timestamp: Date;
+  readonly timestamp: Date;
 
   /**
    * Tezos Base-58 encoded block hash
    */
-  blockHash: string;
+  readonly blockHash: string;
 }
 
 /**
