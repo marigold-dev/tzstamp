@@ -385,20 +385,11 @@ const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
 const TEZOS_MAINNET = "NetXdQprcVkpaWU";
 
 /**
- * Level at which an affixation operation is made.
- * Affixations to a block hash are at level "block",
- * while affixations to an operationGroup hash are
- * at level "operation".
- */
-export type AffixLevel = "block" | "operation";
-
-/**
  * Affixation operation template
  */
 export interface AffixTemplate extends OperationTemplate {
   type: "affix";
   network: string;
-  level: AffixLevel;
   timestamp: string;
 }
 
@@ -410,11 +401,6 @@ export class AffixOperation extends Operation {
    * Tezos network identifier
    */
   readonly network: string;
-
-  /**
-   * Level of affixation
-   */
-  readonly level: AffixLevel;
 
   /**
    * Affixation timestamp
@@ -433,7 +419,7 @@ export class AffixOperation extends Operation {
    *
    * @param network Tezos network identifier
    */
-  constructor(network: string, level: AffixLevel, timestamp: Date) {
+  constructor(network: string, timestamp: Date) {
     super();
     const rawNetwork = Base58.decodeCheck(network);
     if (
@@ -443,31 +429,20 @@ export class AffixOperation extends Operation {
       throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
     }
     this.network = network;
-    this.level = level;
     this.timestamp = timestamp;
   }
 
   toString(): string {
-    let levelLabel;
-    switch (this.level) {
-      case "block":
-        levelLabel = "block hash";
-        break;
-      case "operation":
-        levelLabel = "operation hash";
-        break;
-    }
     const networkLabel = this.mainnet
       ? "the Tezos Mainnet"
       : `alternate Tezos network "${this.network}"`;
-    return `Affix to ${levelLabel} on ${networkLabel} at ${this.timestamp.toLocaleString()}`;
+    return `Affix to ${networkLabel} at ${this.timestamp.toLocaleString()}`;
   }
 
   toJSON(): AffixTemplate {
     return {
       type: "affix",
       network: this.network,
-      level: this.level,
       timestamp: this.timestamp.toISOString(),
     };
   }
@@ -481,7 +456,6 @@ export class AffixOperation extends Operation {
     properties: {
       type: { enum: ["affix"] },
       network: { type: "string" },
-      level: { enum: ["block", "operation"] },
       timestamp: { type: "timestamp" },
     },
   };
@@ -494,7 +468,6 @@ export class AffixOperation extends Operation {
    * AffixOperation.from({
    *   type: "affix",
    *   network: "NetXdQprcVkpaWU",
-   *   level: "block",
    *   timestamp: "1970-01-01T00:00:00.000Z"
    * });
    * // AffixOperation { network: "NetXdQprcVkpaWU", level: "block", timestamp: Date {} }
@@ -508,7 +481,6 @@ export class AffixOperation extends Operation {
     }
     return new AffixOperation(
       template.network,
-      template.level,
       new Date(template.timestamp),
     );
   }

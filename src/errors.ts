@@ -20,20 +20,6 @@ export class MismatchedHashError extends Error {
 }
 
 /**
- * Mismatched timestamp error
- */
-export class MismatchedTimestampError extends Error {
-  name = "MismatchedTimestampError";
-}
-
-/**
- * Mismatched network error
- */
-export class MismatchedNetworkError extends Error {
-  name = "MismatchedNetworkError";
-}
-
-/**
  * Unsupported operation error
  */
 export class UnsupportedOperationError extends Error {

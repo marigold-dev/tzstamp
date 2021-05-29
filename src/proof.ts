@@ -4,27 +4,9 @@ import { isValid, Schema } from "./_validate.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
-  MismatchedNetworkError,
-  MismatchedTimestampError,
   UnallowedOperationError,
   UnsupportedVersionError,
 } from "./errors.ts";
-
-/**
- * Tezos block hash prefix. See `module Prefix` module in
- * [base58.ml] for the official Tezos implementation.
- *
- * [base58.ml]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml
- */
-const BLOCK_HASH_PREFIX = new Uint8Array([1, 52]);
-
-/**
- * Tezos operation hash prefix. See `module Prefix` module in
- * [base58.ml] for the official Tezos implementation.
- *
- * [base58.ml]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml
- */
-const OPERATION_HASH_PREFIX = new Uint8Array([5, 116]);
 
 /**
  * Proof template
@@ -34,6 +16,26 @@ export interface ProofTemplate {
   hash: string;
   operations: OperationTemplate[];
   [_: string]: unknown;
+}
+
+/**
+ * Proof affixation
+ */
+export interface Affixation {
+  /**
+   * Tezos network identifier
+   */
+  network: string;
+
+  /**
+   * Timestamp asserted by the proof
+   */
+  timestamp: Date;
+
+  /**
+   * Tezos Base-58 encoded block hash
+   */
+  blockHash: string;
 }
 
 /**
@@ -88,48 +90,17 @@ export class Proof {
   readonly operations: Operation[] = [];
 
   /**
-   * Indicates that the proof is affixed to a Tezos operation group.
-   * If true, the proof can be verified by searching a Tezos indexer
-   * for the derived operation hash and comparing the timestamp.
-   */
-  readonly isAffixedToOperation: boolean;
-
-  /**
-    * Indicates that the proof is affixed to a Tezos block.
-    * If true, the proof can be verified by fetching the block header
+    * Affixation to a Tezos block.
+    * If defined, the proof can be verified by fetching the block header
     * of the derived block hash from a Tezos node on the appropriate
     * network and comparing the timestamp.
     */
-  readonly isAffixedToBlock: boolean;
+  readonly affixation?: Affixation;
 
   /**
    * Output of all operations applied sequentially to the input hash.
    */
   readonly derivation: Uint8Array;
-
-  /**
-   * Tezos Base-58 encoded operation hash. Will be `null` if the proof
-   * does not include an operation-level affixation operation.
-   */
-  readonly operationHash: string | null;
-
-  /**
-   * Tezos Base-58 encoded block hash. Will be `null` if the proof
-   * does not include a block-level affixation operation.
-   */
-  readonly blockHash: string | null;
-
-  /**
-   * Timestamp asserted by the proof. Will be `null` if the proof
-   * does not include an affixation operation.
-   */
-  readonly timestamp: Date | null;
-
-  /**
-   * Tezos network identifier. Will be `null` if the proof does not
-   * include an affixation operation.
-   */
-  readonly network: string | null;
 
   /**
    * Proofs may only include a single operation-level affixation and
@@ -150,79 +121,28 @@ export class Proof {
   constructor(hash: Uint8Array, operations: Operation[]) {
     this.hash = hash;
     this.operations = operations;
-
-    let isAffixedToOperation = false;
-    let isAffixedToBlock = false;
-    let derivation = hash;
-    let operationHash = null;
-    let blockHash = null;
-    let timestamp = null;
-    let network = null;
+    this.derivation = hash;
 
     // Verify operations and compute derivations
     for (const operation of operations) {
-      // Prevent operations from continuing after a block-level affixation
-      if (isAffixedToBlock) {
-        throw new UnallowedOperationError("Operation after block affixation");
+      // Prevent operations from continuing after an affixation
+      if (this.affixation) {
+        throw new UnallowedOperationError("Operation after affixation");
       }
 
-      // Keep track of affixations
+      // Store affixation
       if (operation instanceof AffixOperation) {
-        switch (operation.level) {
-          case "operation":
-            // Prevent multiple operation-level affixations
-            if (isAffixedToOperation) {
-              throw new UnallowedOperationError(
-                "Multiple operation affixations",
-              );
-            }
-            timestamp = operation.timestamp;
-            network = operation.network;
-            operationHash = Base58.encodeCheck(concat(
-              OPERATION_HASH_PREFIX,
-              derivation,
-            ));
-            isAffixedToOperation = true;
-            break;
-          case "block":
-            // Prevent mismatched timestamps
-            if (timestamp) {
-              if (operation.timestamp.getTime() != timestamp.getTime()) {
-                throw new MismatchedTimestampError(
-                  "Timestamp of operation affixation does not match timestamp of block affixation",
-                );
-              }
-            } else {
-              timestamp = operation.timestamp;
-            }
-            // Prevent mismatched networks
-            if (network) {
-              if (operation.network != network) {
-                throw new MismatchedNetworkError(
-                  "Network of operation affixation does not match network of block affixation",
-                );
-              }
-            } else {
-              network = operation.network;
-            }
-            blockHash = Base58.encodeCheck(concat(
-              BLOCK_HASH_PREFIX,
-              derivation,
-            ));
-            isAffixedToBlock = true;
-        }
+        this.affixation = {
+          network: operation.network,
+          timestamp: operation.timestamp,
+          blockHash: Base58.encodeCheck(
+            concat(1, 52, this.derivation), // Tezos block hash prefix is \001\052
+          ),
+        };
       }
 
-      derivation = operation.commit(derivation);
+      this.derivation = operation.commit(this.derivation);
     }
-
-    this.isAffixedToOperation = isAffixedToOperation;
-    this.isAffixedToBlock = isAffixedToBlock;
-    this.derivation = derivation;
-    this.operationHash = operationHash;
-    this.blockHash = blockHash;
-    this.timestamp = timestamp;
-    this.network = network;
   }
 
   /**
@@ -248,11 +168,11 @@ export class Proof {
    * @param rpcURL
    */
   async verify(rpcURL: string | URL): Promise<VerificationStatus> {
-    if (!this.isAffixedToBlock) {
+    if (!this.affixation) {
       return VerificationStatus.Unaffixed;
     }
     const endpoint = new URL(
-      `/chains/${this.network}/blocks/${this.blockHash}/header`,
+      `/chains/${this.affixation.network}/blocks/${this.affixation.blockHash}/header`,
       rpcURL,
     );
     const response = await fetch(endpoint);
@@ -266,7 +186,7 @@ export class Proof {
     }
     const header = await response.json();
     const timestamp = new Date(header.timestamp);
-    if (timestamp.getTime() != this.timestamp?.getTime()) {
+    if (timestamp.getTime() != this.affixation.timestamp.getTime()) {
       return VerificationStatus.TimestampMismatch;
     }
     return VerificationStatus.Verified;

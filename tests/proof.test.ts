@@ -2,8 +2,6 @@ import { Proof, ProofTemplate, VerificationStatus } from "../src/proof.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
-  MismatchedNetworkError,
-  MismatchedTimestampError,
   UnallowedOperationError,
   UnsupportedVersionError,
 } from "../src/errors.ts";
@@ -14,113 +12,39 @@ import {
   Sha256Operation,
 } from "../src/operation.ts";
 import { Base58, Blake2b, concat, Hex } from "../src/deps.deno.ts";
-import {
-  assert,
-  assertEquals,
-  assertStrictEquals,
-  assertThrows,
-} from "./dev_deps.ts";
+import { assert, assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test({
   name: "Unaffixed proof construction",
   fn() {
     const input = crypto.getRandomValues(new Uint8Array(32));
     const proof = new Proof(input, []);
-    assert(!proof.isAffixedToOperation);
-    assert(!proof.isAffixedToBlock);
+    assert(!proof.affixation);
     assertEquals(proof.derivation, input);
-    assertStrictEquals(proof.operationHash, null);
-    assertStrictEquals(proof.blockHash, null);
-    assertStrictEquals(proof.timestamp, null);
   },
 });
 
 Deno.test({
-  name: "Operation-level affixed proof construction",
+  name: "Affixed proof construction",
   fn() {
     const input = crypto.getRandomValues(new Uint8Array(32));
     const proof = new Proof(input, [
       new AffixOperation(
         "NetXdQprcVkpaWU",
-        "operation",
         new Date("1970-01-01T00:00:00.000Z"),
       ),
     ]);
-    assert(proof.isAffixedToOperation);
-    assert(!proof.isAffixedToBlock);
+    assert(proof.affixation);
+    assertEquals(proof.affixation.network, "NetXdQprcVkpaWU");
+    assertEquals(
+      proof.affixation.timestamp,
+      new Date("1970-01-01T00:00:00.000Z"),
+    );
+    assertEquals(
+      proof.affixation.blockHash,
+      Base58.encodeCheck(concat(1, 52, proof.derivation)),
+    );
     assertEquals(proof.derivation, input);
-    assertEquals(
-      proof.operationHash,
-      Base58.encodeCheck(concat(
-        new Uint8Array([5, 116]),
-        input,
-      )),
-    );
-    assertStrictEquals(proof.blockHash, null);
-    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
-  },
-});
-
-Deno.test({
-  name: "Block-level affixed proof construction",
-  fn() {
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const proof = new Proof(input, [
-      new AffixOperation(
-        "NetXdQprcVkpaWU",
-        "block",
-        new Date("1970-01-01T00:00:00.000Z"),
-      ),
-    ]);
-    assert(!proof.isAffixedToOperation);
-    assert(proof.isAffixedToBlock);
-    assertEquals(proof.derivation, input);
-    assertStrictEquals(proof.operationHash, null);
-    assertEquals(
-      proof.blockHash,
-      Base58.encodeCheck(concat(
-        new Uint8Array([1, 52]),
-        input,
-      )),
-    );
-    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
-  },
-});
-
-Deno.test({
-  name: "Dual affixed proof construction",
-  fn() {
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const proof = new Proof(input, [
-      new AffixOperation(
-        "NetXdQprcVkpaWU",
-        "operation",
-        new Date("1970-01-01T00:00:00.000Z"),
-      ),
-      new AffixOperation(
-        "NetXdQprcVkpaWU",
-        "block",
-        new Date("1970-01-01T00:00:00.000Z"),
-      ),
-    ]);
-    assert(proof.isAffixedToOperation);
-    assert(proof.isAffixedToBlock);
-    assertEquals(proof.derivation, input);
-    assertEquals(
-      proof.operationHash,
-      Base58.encodeCheck(concat(
-        new Uint8Array([5, 116]),
-        input,
-      )),
-    );
-    assertEquals(
-      proof.blockHash,
-      Base58.encodeCheck(concat(
-        new Uint8Array([1, 52]),
-        input,
-      )),
-    );
-    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
   },
 });
 
@@ -131,34 +55,10 @@ Deno.test({
     assertThrows(
       () =>
         new Proof(input, [
-          new AffixOperation("NetXdQprcVkpaWU", "block", new Date()),
+          new AffixOperation("NetXdQprcVkpaWU", new Date()),
           new Sha256Operation(),
         ]),
       UnallowedOperationError,
-    );
-    assertThrows(
-      () =>
-        new Proof(input, [
-          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
-          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
-        ]),
-      UnallowedOperationError,
-    );
-    assertThrows(
-      () =>
-        new Proof(input, [
-          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
-          new AffixOperation("NetXdQprcVkpaWU", "block", new Date(1)),
-        ]),
-      MismatchedTimestampError,
-    );
-    assertThrows(
-      () =>
-        new Proof(input, [
-          new AffixOperation("NetXH12Aer3be93", "operation", new Date(0)),
-          new AffixOperation("NetXdQprcVkpaWU", "block", new Date(0)),
-        ]),
-      MismatchedNetworkError,
     );
   },
 });
@@ -349,11 +249,10 @@ Deno.test({
       new Blake2bOperation(),
       new AffixOperation(
         "NetXdQprcVkpaWU",
-        "block",
         new Date("2021-05-29T13:31:30.000Z"),
       ),
     ]);
-    assert(proof.isAffixedToBlock);
+    assert(proof.affixation);
     assertEquals(
       await proof.verify(rpcURL),
       VerificationStatus.Verified,
