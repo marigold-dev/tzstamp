@@ -8,8 +8,8 @@
     "lint": "deno lint --unstable src/* tests/*",
     "fmt": "deno fmt README.md CHANGELOG.md src/* tests/*",
     "build": "npx deno2node src/tsconfig.json",
-    "test": "deno test tests/",
-    "coverage": "rm -f coverage/* && deno test --coverage=coverage tests/ && deno coverage coverage"
+    "test": "deno test --unstable --allow-net tests/",
+    "coverage": "rm -f coverage/* && deno test --unstable --allow-net --coverage=coverage tests/ && deno coverage coverage"
   },
   "repository": {
     "type": "git",
