@@ -15,7 +15,13 @@ import {
   UnsupportedOperationError,
 } from "../src/errors.ts";
 import { Blake2b, Hex } from "../src/deps.deno.ts";
-import { assert, assertEquals, assertThrows, createHash } from "./dev_deps.ts";
+import {
+  assert,
+  assertEquals,
+  assertStrictEquals,
+  assertThrows,
+  createHash,
+} from "./dev_deps.ts";
 
 Deno.test({
   name: "Operation templating",
@@ -26,14 +32,7 @@ Deno.test({
     );
     assert(
       Operation.from({
-        type: "append",
-        data: "00",
-      }) instanceof JoinOperation,
-    );
-    assert(
-      Operation.from({
-        type: "prepend",
-        data: "00",
+        type: "join",
       }) instanceof JoinOperation,
     );
     assert(
@@ -62,14 +61,17 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Prepend join operation",
+  name: "Prepending join operation",
   fn() {
-    const op = new JoinOperation(new Uint8Array([0, 17, 34, 51]), true);
+    const op = new JoinOperation({
+      prepend: new Uint8Array([0, 17, 34, 51]),
+    });
     const template: JoinTemplate = {
-      type: "prepend",
-      data: "00112233",
+      type: "join",
+      prepend: "00112233",
     };
-    assert(op.prepend);
+    assertEquals(op.prepend, new Uint8Array([0, 17, 34, 51]));
+    assertStrictEquals(op.append, undefined);
     assertEquals(op.toString(), "Prepend 0x00112233");
     assertEquals(
       op.commit(new Uint8Array([67])),
@@ -81,14 +83,17 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Append join operation",
+  name: "Appending join operation",
   fn() {
-    const op = new JoinOperation(new Uint8Array([136, 68, 255]));
+    const op = new JoinOperation({
+      append: new Uint8Array([136, 68, 255]),
+    });
     const template: JoinTemplate = {
-      type: "append",
-      data: "8844ff",
+      type: "join",
+      append: "8844ff",
     };
-    assert(!op.prepend);
+    assertStrictEquals(op.prepend, undefined);
+    assertEquals(op.append, new Uint8Array([136, 68, 255]));
     assertEquals(op.toString(), "Append 0x8844ff");
     assertEquals(
       op.commit(new Uint8Array([0, 0, 1])),
@@ -100,10 +105,32 @@ Deno.test({
 });
 
 Deno.test({
+  name: "Wrapping join operation",
+  fn() {
+    const op = new JoinOperation({
+      prepend: new Uint8Array([0, 17, 34, 51]),
+      append: new Uint8Array([136, 68, 255]),
+    });
+    const template: JoinTemplate = {
+      type: "join",
+      prepend: "00112233",
+      append: "8844ff",
+    };
+    assertEquals(op.prepend, new Uint8Array([0, 17, 34, 51]));
+    assertEquals(op.append, new Uint8Array([136, 68, 255]));
+    assertEquals(op.toString(), "Prepend 0x00112233, and Append 0x8844ff");
+    assertEquals(
+      op.commit(new Uint8Array([66, 77, 88, 99])),
+      new Uint8Array([0, 17, 34, 51, 66, 77, 88, 99, 136, 68, 255]),
+    );
+    assertEquals(op.toJSON(), template);
+    assertEquals(op, JoinOperation.from(template));
+  },
+});
+
+Deno.test({
   name: "Invalid join operation templating",
   fn() {
-    assertThrows(() => JoinOperation.from({ type: "prepend" }));
-    assertThrows(() => JoinOperation.from({ type: "append" }));
     assertThrows(
       () => JoinOperation.from({ type: "bogus" }),
       InvalidTemplateError,

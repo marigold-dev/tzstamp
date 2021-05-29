@@ -73,8 +73,7 @@ export abstract class Operation {
       throw new InvalidTemplateError("Invalid operation template");
     }
     switch (template.type) {
-      case "append":
-      case "prepend":
+      case "join":
         return JoinOperation.from(template);
       case "blake2b":
         return Blake2bOperation.from(template);
@@ -94,8 +93,17 @@ export abstract class Operation {
  * Join operation template
  */
 export interface JoinTemplate extends OperationTemplate {
-  type: "append" | "prepend";
-  data: string;
+  type: "join";
+  prepend?: string;
+  append?: string;
+}
+
+/**
+ * Join operation constructor options
+ */
+export interface JoinOptions {
+  prepend?: Uint8Array;
+  append?: Uint8Array;
 }
 
 /**
@@ -103,41 +111,53 @@ export interface JoinTemplate extends OperationTemplate {
  */
 export class JoinOperation extends Operation {
   /**
-   * Data to join
+   * Data to prepend
    */
-  readonly data: Uint8Array;
+  readonly prepend?: Uint8Array;
 
   /**
-   * Indicates if the data is to be prepended.
-   * If true, the commit method will prepend the data to the input.
-   * Otherwise, the commit method will append the data to the input.
+   * Data to append
    */
-  readonly prepend: boolean;
+  readonly append?: Uint8Array;
 
   /**
    * @param data Data to join
    * @param prepend Prepend flag
    */
-  constructor(data: Uint8Array, prepend = false) {
+  constructor({ prepend, append }: JoinOptions) {
     super();
-    this.data = data;
     this.prepend = prepend;
+    this.append = append;
   }
 
   toString(): string {
-    return (this.prepend ? "Prepend" : "Append") +
-      " 0x" + Hex.stringify(this.data);
+    const prependString = this.prepend
+      ? `Prepend 0x${Hex.stringify(this.prepend)}`
+      : "";
+    const conjuction = this.prepend && this.append ? ", and " : "";
+    const appendString = this.append
+      ? `Append 0x${Hex.stringify(this.append)}`
+      : "";
+    return prependString + conjuction + appendString;
   }
 
   toJSON(): JoinTemplate {
-    return {
-      type: this.prepend ? "prepend" : "append",
-      data: Hex.stringify(this.data),
-    };
+    const template: JoinTemplate = { type: "join" };
+    if (this.prepend) {
+      template.prepend = Hex.stringify(this.prepend);
+    }
+    if (this.append) {
+      template.append = Hex.stringify(this.append);
+    }
+    return template;
   }
 
   commit(input: Uint8Array): Uint8Array {
-    return this.prepend ? concat(this.data, input) : concat(input, this.data);
+    return concat(
+      this.prepend ?? new Uint8Array(),
+      input,
+      this.append ?? new Uint8Array(),
+    );
   }
 
   /**
@@ -147,8 +167,11 @@ export class JoinOperation extends Operation {
    */
   static readonly schema: Schema = {
     properties: {
-      type: { enum: ["append", "prepend"] },
-      data: { type: "string" },
+      type: { enum: ["join"] },
+    },
+    optionalProperties: {
+      prepend: { type: "string" },
+      append: { type: "string" },
     },
   };
 
@@ -170,13 +193,9 @@ export class JoinOperation extends Operation {
     if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
       throw new InvalidTemplateError("Invalid join operation template");
     }
-    const data = Hex.parse(template.data);
-    switch (template.type) {
-      case "append":
-        return new JoinOperation(data);
-      case "prepend":
-        return new JoinOperation(data, true);
-    }
+    const prepend = template.prepend ? Hex.parse(template.prepend) : undefined;
+    const append = template.append ? Hex.parse(template.append) : undefined;
+    return new JoinOperation({ prepend, append });
   }
 }
 
