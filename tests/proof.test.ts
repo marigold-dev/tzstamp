@@ -2,20 +2,103 @@ import { Proof, ProofTemplate } from "../src/proof.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
+  MismatchedTimestampError,
+  UnallowedOperationError,
   UnsupportedVersionError,
 } from "../src/errors.ts";
 import {
+  AffixOperation,
   Blake2bOperation,
   JoinOperation,
   Sha256Operation,
 } from "../src/operation.ts";
-import { Blake2b, concat, Hex } from "../src/deps.deno.ts";
-import { assertEquals, assertThrows, createHash } from "./dev_deps.ts";
+import { Base58, Blake2b, concat, Hex } from "../src/deps.deno.ts";
+import {
+  assert,
+  assertEquals,
+  assertStrictEquals,
+  assertThrows,
+} from "./dev_deps.ts";
 
 Deno.test({
-  name: "Proof construction",
+  name: "Unaffixed proof construction",
   fn() {
-    new Proof(new Uint8Array(), []);
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const proof = new Proof(input, []);
+    assert(!proof.isAffixedToOperation);
+    assert(!proof.isAffixedToBlock);
+    assertEquals(proof.derivation, input);
+    assertStrictEquals(proof.operationHash, null);
+    assertStrictEquals(proof.blockHash, null);
+    assertStrictEquals(proof.timestamp, null);
+  },
+});
+
+Deno.test({
+  name: "Affixed proof construction",
+  fn() {
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const proof = new Proof(input, [
+      new AffixOperation(
+        "NetXdQprcVkpaWU",
+        "operation",
+        new Date("1970-01-01T00:00:00.000Z"),
+      ),
+      new AffixOperation(
+        "NetXdQprcVkpaWU",
+        "block",
+        new Date("1970-01-01T00:00:00.000Z"),
+      ),
+    ]);
+    assert(proof.isAffixedToOperation);
+    assert(proof.isAffixedToBlock);
+    assertEquals(proof.derivation, input);
+    assertEquals(
+      proof.operationHash,
+      Base58.encodeCheck(concat(
+        new Uint8Array([5, 116]),
+        input,
+      )),
+    );
+    assertEquals(
+      proof.blockHash,
+      Base58.encodeCheck(concat(
+        new Uint8Array([1, 52]),
+        input,
+      )),
+    );
+    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
+  },
+});
+
+Deno.test({
+  name: "Invalid proof construction",
+  fn() {
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    assertThrows(
+      () =>
+        new Proof(input, [
+          new AffixOperation("NetXdQprcVkpaWU", "block", new Date()),
+          new Sha256Operation(),
+        ]),
+      UnallowedOperationError,
+    );
+    assertThrows(
+      () =>
+        new Proof(input, [
+          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
+          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
+        ]),
+      UnallowedOperationError,
+    );
+    assertThrows(
+      () =>
+        new Proof(input, [
+          new AffixOperation("NetXdQprcVkpaWU", "operation", new Date(0)),
+          new AffixOperation("NetXdQprcVkpaWU", "block", new Date(1)),
+        ]),
+      MismatchedTimestampError,
+    );
   },
 });
 
@@ -86,32 +169,6 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Proof derivation",
-  fn() {
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const appendData = crypto.getRandomValues(new Uint8Array(12));
-    const proof = new Proof(input, [
-      new Sha256Operation(),
-      new JoinOperation(appendData),
-      new Blake2bOperation(64),
-    ]);
-    assertEquals(
-      proof.derive(input),
-      new Blake2b(64).update(
-        concat(
-          new Uint8Array(createHash("sha256").update(input).digest()),
-          appendData,
-        ),
-      ).digest(),
-    );
-    assertThrows(
-      () => proof.derive(crypto.getRandomValues(new Uint8Array(32))),
-      MismatchedHashError,
-    );
-  },
-});
-
-Deno.test({
   name: "Proof concatenation",
   fn() {
     const inputA = crypto.getRandomValues(new Uint8Array(32));
@@ -125,7 +182,7 @@ Deno.test({
       proofA.operations.concat(proofB.operations),
     );
     assertEquals(
-      proofAB.derive(inputA),
+      proofAB.derivation,
       new Blake2b().update(inputB).digest(),
     );
     assertThrows(

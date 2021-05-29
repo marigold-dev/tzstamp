@@ -20,10 +20,24 @@ export class MismatchedHashError extends Error {
 }
 
 /**
+ * Mismatched timestamp error
+ */
+export class MismatchedTimestampError extends Error {
+  name = "MismatchedTimestampError";
+}
+
+/**
  * Unsupported operation error
  */
 export class UnsupportedOperationError extends Error {
   name = "UnsupportedOperationError";
+}
+
+/**
+ * Unallowed operation error
+ */
+export class UnallowedOperationError extends Error {
+  name = "UnallowedOperationError";
 }
 
 /**
