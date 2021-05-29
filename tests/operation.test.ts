@@ -3,15 +3,17 @@ import {
   AffixTemplate,
   Blake2bOperation,
   Blake2bTemplate,
-  InvalidNetworkIDError,
-  InvalidOperationError,
   JoinOperation,
   JoinTemplate,
   Operation,
   Sha256Operation,
   Sha256Template,
-  UnsupportedOperationError,
 } from "../src/operation.ts";
+import {
+  InvalidTemplateError,
+  InvalidTezosNetworkError,
+  UnsupportedOperationError,
+} from "../src/errors.ts";
 import { Blake2b, Hex } from "../src/deps.deno.ts";
 import { assert, assertEquals, assertThrows, createHash } from "./dev_deps.ts";
 
@@ -20,7 +22,7 @@ Deno.test({
   fn() {
     assertThrows(
       () => Operation.from({}),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
     assert(
       Operation.from({
@@ -104,7 +106,7 @@ Deno.test({
     assertThrows(() => JoinOperation.from({ type: "append" }));
     assertThrows(
       () => JoinOperation.from({ type: "bogus" }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
   },
 });
@@ -206,7 +208,7 @@ Deno.test({
   fn() {
     assertThrows(
       () => Blake2bOperation.from({ type: "bogus" }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
   },
 });
@@ -232,7 +234,7 @@ Deno.test({
   fn() {
     assertThrows(
       () => Sha256Operation.from({ type: "bogus" }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
   },
 });
@@ -298,7 +300,7 @@ Deno.test({
   fn() {
     assertThrows(
       () => AffixOperation.from({ type: "bogus" }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
     assertThrows(
       () =>
@@ -308,7 +310,7 @@ Deno.test({
           level: "block",
           timestamp: "invalid",
         }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
     assertThrows(
       () =>
@@ -318,7 +320,7 @@ Deno.test({
           level: "invalid",
           timestamp: "1970-01-01T00:00:00.000Z",
         }),
-      InvalidOperationError,
+      InvalidTemplateError,
     );
     assertThrows(
       () =>
@@ -337,7 +339,7 @@ Deno.test({
           level: "block",
           timestamp: "1970-01-01T00:00:00.000Z",
         }),
-      InvalidNetworkIDError,
+      InvalidTezosNetworkError,
     );
     assertThrows(
       () =>
@@ -347,7 +349,7 @@ Deno.test({
           level: "block",
           timestamp: "1970-01-01T00:00:00.000Z",
         }),
-      InvalidNetworkIDError,
+      InvalidTezosNetworkError,
     );
   },
 });

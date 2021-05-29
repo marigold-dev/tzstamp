@@ -1,6 +1,11 @@
 import { Operation, OperationTemplate } from "./operation.ts";
 import { compare, Hex } from "./deps.deno.ts";
 import { isValid, Schema } from "./_validate.ts";
+import {
+  InvalidTemplateError,
+  MismatchedHashError,
+  UnsupportedVersionError,
+} from "./errors.ts";
 
 /**
  * Proof template
@@ -10,27 +15,6 @@ export interface ProofTemplate {
   hash: string;
   operations: OperationTemplate[];
   [_: string]: unknown;
-}
-
-/**
- * Unsupported proof version error
- */
-export class UnsupportedVersionError extends Error {
-  name = "UnsupportedVersionError";
-}
-
-/**
- * Mismatched hash error
- */
-export class MismatchedHashError extends Error {
-  name = "MismatchedHashError";
-}
-
-/**
- * Invalid proof error
- */
-export class InvalidProofError extends Error {
-  name = "InvalidProofError";
 }
 
 /**
@@ -139,22 +123,23 @@ export class Proof {
 
   /**
    * Creates a proof from a template object.
-   * Throws `InvalidProofError` if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    * Throws `UnsupportedVersionError` if the template version is unsupported.
    *
    * ```ts
    * Proof.from({
    *   version: 1,
-   *   network: "NetXdQprcVkpaWU"
+   *   hash: "...":
+   *   operations: [...]
    * });
-   * // Proof { network: "NetXdQprcVkpaWU" }
+   * // Proof { hash: Uint8Array {...}, operations: [...] }
    * ```
    *
    * @param template Template object
    */
   static from(template: unknown): Proof {
     if (!isValid<ProofTemplate>(Proof.schema, template)) {
-      throw new InvalidProofError("Invalid proof");
+      throw new InvalidTemplateError("Invalid proof template");
     }
     const supported = [1];
     if (supported.includes(template.version)) {

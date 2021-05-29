@@ -7,6 +7,11 @@ import {
   Hex,
 } from "./deps.deno.ts";
 import { isValid, Schema } from "./_validate.ts";
+import {
+  InvalidTemplateError,
+  InvalidTezosNetworkError,
+  UnsupportedOperationError,
+} from "./errors.ts";
 
 /**
  * Operation template
@@ -14,20 +19,6 @@ import { isValid, Schema } from "./_validate.ts";
 export interface OperationTemplate {
   type: string;
   [_: string]: unknown;
-}
-
-/**
- * Invalid operation error
- */
-export class InvalidOperationError extends Error {
-  name = "InvalidOperationError";
-}
-
-/**
- * Unsupported operation error
- */
-export class UnsupportedOperationError extends Error {
-  name = "UnsupportedOperationError";
 }
 
 /**
@@ -65,7 +56,8 @@ export abstract class Operation {
 
   /**
    * Creates subclassed operation from template object.
-   * Throws if operation is not supported.
+   * Throws `InvalidTemplateError` if the template is invalid.
+   * Throws `UnsupportedOperationError` if operation is not supported.
    *
    * ```ts
    * Operation.from({
@@ -78,7 +70,7 @@ export abstract class Operation {
    */
   static from(template: unknown): Operation {
     if (!isValid<OperationTemplate>(Operation.schema, template)) {
-      throw new InvalidOperationError("Invalid operation template");
+      throw new InvalidTemplateError("Invalid operation template");
     }
     switch (template.type) {
       case "append":
@@ -162,7 +154,7 @@ export class JoinOperation extends Operation {
 
   /**
    * Creates subclassed operation from template object.
-   * Throws if the template is invalid or the join operation is not supported.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * JoinOperation.from({
@@ -176,7 +168,7 @@ export class JoinOperation extends Operation {
    */
   static from(template: unknown): JoinOperation {
     if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid join operation");
+      throw new InvalidTemplateError("Invalid join operation template");
     }
     const data = Hex.parse(template.data);
     switch (template.type) {
@@ -276,7 +268,7 @@ export class Blake2bOperation extends Operation {
 
   /**
    * Creates a BLAKE2b operation from template object.
-   * Throws if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * Blake2bOperation.from({
@@ -290,7 +282,7 @@ export class Blake2bOperation extends Operation {
    */
   static from(template: unknown): Blake2bOperation {
     if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid BLAKE2b operation");
+      throw new InvalidTemplateError("Invalid BLAKE2b operation template");
     }
     return new Blake2bOperation(
       template.length,
@@ -338,7 +330,7 @@ export class Sha256Operation extends Operation {
 
   /**
    * Creates a SHA-256 operation from a template object.
-   * Throws if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * Sha256Operation.from({
@@ -351,7 +343,7 @@ export class Sha256Operation extends Operation {
    */
   static from(template: unknown): Sha256Operation {
     if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
-      throw new InvalidOperationError("Invalid SHA-256 operation");
+      throw new InvalidTemplateError("Invalid SHA-256 operation template");
     }
     return new Sha256Operation();
   }
@@ -372,13 +364,6 @@ const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
  * Tezos Mainnet network identifier
  */
 const TEZOS_MAINNET = "NetXdQprcVkpaWU";
-
-/**
- * Invalid Tezos network ID error
- */
-export class InvalidNetworkIDError extends Error {
-  name = "InvalidNetworkIDError";
-}
 
 /**
  * Level at which an affixation operation is made.
@@ -425,18 +410,18 @@ export class AffixOperation extends Operation {
   }
 
   /**
-   * Throws `InvalidNetworkIDError` if the Tezos network identifier is invalid.
+   * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
    *
    * @param network Tezos network identifier
    */
   constructor(network: string, level: AffixLevel, timestamp: Date) {
     super();
     const rawNetwork = Base58.decodeCheck(network);
-    if (rawNetwork.length != 7) {
-      throw new InvalidNetworkIDError("Network ID is wrong length");
-    }
-    if (!compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)) {
-      throw new InvalidNetworkIDError("Network ID has wrong prefix");
+    if (
+      rawNetwork.length != 7 ||
+      !compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)
+    ) {
+      throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
     }
     this.network = network;
     this.level = level;
@@ -484,7 +469,7 @@ export class AffixOperation extends Operation {
 
   /**
    * Creates a affixation operation from a template object.
-   * Throws `InvalidOperationError` if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * AffixOperation.from({
@@ -500,7 +485,7 @@ export class AffixOperation extends Operation {
    */
   static from(template: unknown): AffixOperation {
     if (!isValid<AffixTemplate>(AffixOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid affix operation");
+      throw new InvalidTemplateError("Invalid affix operation template");
     }
     return new AffixOperation(
       template.network,

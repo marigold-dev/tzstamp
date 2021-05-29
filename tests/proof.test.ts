@@ -1,10 +1,9 @@
+import { Proof, ProofTemplate } from "../src/proof.ts";
 import {
-  InvalidProofError,
+  InvalidTemplateError,
   MismatchedHashError,
-  Proof,
-  ProofTemplate,
   UnsupportedVersionError,
-} from "../src/proof.ts";
+} from "../src/errors.ts";
 import {
   Blake2bOperation,
   JoinOperation,
@@ -50,11 +49,11 @@ Deno.test({
   fn() {
     assertThrows(
       () => Proof.from(null),
-      InvalidProofError,
+      InvalidTemplateError,
     );
     assertThrows(
       () => Proof.from({}),
-      InvalidProofError,
+      InvalidTemplateError,
     );
     assertThrows(
       () =>
