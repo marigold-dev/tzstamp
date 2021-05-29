@@ -2,6 +2,7 @@ import { Proof, ProofTemplate } from "../src/proof.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
+  MismatchedNetworkError,
   MismatchedTimestampError,
   UnallowedOperationError,
   UnsupportedVersionError,
@@ -35,7 +36,59 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Affixed proof construction",
+  name: "Operation-level affixed proof construction",
+  fn() {
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const proof = new Proof(input, [
+      new AffixOperation(
+        "NetXdQprcVkpaWU",
+        "operation",
+        new Date("1970-01-01T00:00:00.000Z"),
+      ),
+    ]);
+    assert(proof.isAffixedToOperation);
+    assert(!proof.isAffixedToBlock);
+    assertEquals(proof.derivation, input);
+    assertEquals(
+      proof.operationHash,
+      Base58.encodeCheck(concat(
+        new Uint8Array([5, 116]),
+        input,
+      )),
+    );
+    assertStrictEquals(proof.blockHash, null);
+    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
+  },
+});
+
+Deno.test({
+  name: "Block-level affixed proof construction",
+  fn() {
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const proof = new Proof(input, [
+      new AffixOperation(
+        "NetXdQprcVkpaWU",
+        "block",
+        new Date("1970-01-01T00:00:00.000Z"),
+      ),
+    ]);
+    assert(!proof.isAffixedToOperation);
+    assert(proof.isAffixedToBlock);
+    assertEquals(proof.derivation, input);
+    assertStrictEquals(proof.operationHash, null);
+    assertEquals(
+      proof.blockHash,
+      Base58.encodeCheck(concat(
+        new Uint8Array([1, 52]),
+        input,
+      )),
+    );
+    assertEquals(proof.timestamp, new Date("1970-01-01T00:00:00.000Z"));
+  },
+});
+
+Deno.test({
+  name: "Dual affixed proof construction",
   fn() {
     const input = crypto.getRandomValues(new Uint8Array(32));
     const proof = new Proof(input, [
@@ -98,6 +151,14 @@ Deno.test({
           new AffixOperation("NetXdQprcVkpaWU", "block", new Date(1)),
         ]),
       MismatchedTimestampError,
+    );
+    assertThrows(
+      () =>
+        new Proof(input, [
+          new AffixOperation("NetXH12Aer3be93", "operation", new Date(0)),
+          new AffixOperation("NetXdQprcVkpaWU", "block", new Date(0)),
+        ]),
+      MismatchedNetworkError,
     );
   },
 });
@@ -167,6 +228,23 @@ Deno.test({
     );
   },
 });
+
+// Deno.test({
+//   name: "Proof verification",
+//   async fn() {
+//     const input = new TextEncoder().encode("hello");
+//     const rpcURL = "https://mainnet-tezos.giganode.io";
+//     const proof = new Proof(input, [
+//       new Sha256Operation(),
+//       new AffixOperation("NetXdQprcVkpaWU", "block", new Date()),
+//     ]);
+//     assert(proof.isAffixedToBlock);
+//     assertEquals(
+//       await proof.verify(rpcURL),
+//       VerificationStatus.Verified,
+//     );
+//   },
+// });
 
 Deno.test({
   name: "Proof concatenation",

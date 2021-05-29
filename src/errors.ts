@@ -27,6 +27,13 @@ export class MismatchedTimestampError extends Error {
 }
 
 /**
+ * Mismatched network error
+ */
+export class MismatchedNetworkError extends Error {
+  name = "MismatchedNetworkError";
+}
+
+/**
  * Unsupported operation error
  */
 export class UnsupportedOperationError extends Error {

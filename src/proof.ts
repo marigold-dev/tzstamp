@@ -4,6 +4,7 @@ import { isValid, Schema } from "./_validate.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
+  MismatchedNetworkError,
   MismatchedTimestampError,
   UnallowedOperationError,
   UnsupportedVersionError,
@@ -33,6 +34,43 @@ export interface ProofTemplate {
   hash: string;
   operations: OperationTemplate[];
   [_: string]: unknown;
+}
+
+/**
+ * Verification status of a proof
+ */
+export enum VerificationStatus {
+  /**
+   * Proof is successfully verified. The stored
+   * input hash existed by the stored timestamp.
+   */
+  Verified = "verified",
+
+  /**
+   * Proof could not be verified. The proof does
+   * not include a block-level affixation.
+   */
+  Unaffixed = "unaffixed",
+
+  /**
+   * Proof could not be verified. The Tezos node
+   * could not be contacted, or the client is not
+   * authorized to access the node.
+   */
+  CommunicationError = "commerror",
+
+  /**
+   * Proof could not be verified. The Tezos node
+   * could not find the block at the affixed address.
+   */
+  BlockNotFound = "notfound",
+
+  /**
+   * Proof could not be verified. The stored timestamp
+   * does not match the on-chain timestamp. The
+   * proof has been modified, perhaps maliciously.
+   */
+  TimestampMismatch = "difftimestamp",
 }
 
 /**
@@ -88,6 +126,12 @@ export class Proof {
   readonly timestamp: Date | null;
 
   /**
+   * Tezos network identifier. Will be `null` if the proof does not
+   * include an affixation operation.
+   */
+  readonly network: string | null;
+
+  /**
    * Proofs may only include a single operation-level affixation and
    * block-level affixation each. Throws `UnallowedOperationError` if
    * there are multiple same-level affixations.
@@ -113,6 +157,7 @@ export class Proof {
     let operationHash = null;
     let blockHash = null;
     let timestamp = null;
+    let network = null;
 
     // Verify operations and compute derivations
     for (const operation of operations) {
@@ -132,6 +177,7 @@ export class Proof {
               );
             }
             timestamp = operation.timestamp;
+            network = operation.network;
             operationHash = Base58.encodeCheck(concat(
               OPERATION_HASH_PREFIX,
               derivation,
@@ -140,13 +186,24 @@ export class Proof {
             break;
           case "block":
             // Prevent mismatched timestamps
-            if (
-              timestamp &&
-              operation.timestamp.getTime() != timestamp.getTime()
-            ) {
-              throw new MismatchedTimestampError(
-                "Timestamp of operation affixation does not match timestamp of block affixation",
-              );
+            if (timestamp) {
+              if (operation.timestamp.getTime() != timestamp.getTime()) {
+                throw new MismatchedTimestampError(
+                  "Timestamp of operation affixation does not match timestamp of block affixation",
+                );
+              }
+            } else {
+              timestamp = operation.timestamp;
+            }
+            // Prevent mismatched networks
+            if (network) {
+              if (operation.network != network) {
+                throw new MismatchedNetworkError(
+                  "Network of operation affixation does not match network of block affixation",
+                );
+              }
+            } else {
+              network = operation.network;
             }
             blockHash = Base58.encodeCheck(concat(
               BLOCK_HASH_PREFIX,
@@ -165,6 +222,7 @@ export class Proof {
     this.operationHash = operationHash;
     this.blockHash = blockHash;
     this.timestamp = timestamp;
+    this.network = network;
   }
 
   /**
@@ -181,6 +239,37 @@ export class Proof {
       hash: Hex.stringify(this.hash),
       operations: this.operations.map((operation) => operation.toJSON()),
     };
+  }
+
+  /**
+   * Verifies a proof. Returns `false` if the proof is unaffixed to a block,
+   * if the Tezos node cannot find the block, if the timestamp does not match,
+   * or if the
+   * @param rpcURL
+   */
+  async verify(rpcURL: string | URL): Promise<VerificationStatus> {
+    if (!this.isAffixedToBlock) {
+      return VerificationStatus.Unaffixed;
+    }
+    const endpoint = new URL(
+      `/chains/${this.network}/blocks/${this.blockHash}/header`,
+      rpcURL,
+    );
+    const response = await fetch(endpoint);
+    switch (response.status) {
+      case 404:
+        return VerificationStatus.BlockNotFound;
+      case 200:
+        break;
+      default:
+        return VerificationStatus.CommunicationError;
+    }
+    const header = await response.json();
+    const timestamp = new Date(header.timestamp);
+    if (timestamp.getTime() != this.timestamp?.getTime()) {
+      return VerificationStatus.TimestampMismatch;
+    }
+    return VerificationStatus.Verified;
   }
 
   /**
