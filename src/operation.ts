@@ -68,6 +68,7 @@ export abstract class Operation {
         return Sha256Operation.from(template);
       default:
         throw new UnsupportedOperationError(
+          template.type,
           `Unsupported operation "${template.type}"`,
         );
     }

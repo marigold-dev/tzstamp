@@ -190,6 +190,7 @@ export class Proof {
     const supported = [1];
     if (!supported.includes(template.version)) {
       throw new UnsupportedVersionError(
+        template.version,
         `Unsupported proof version "${template.version}"`,
       );
     }
