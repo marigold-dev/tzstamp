@@ -7,6 +7,11 @@ import {
   Hex,
 } from "./deps.deno.ts";
 import { isValid, Schema } from "./_validate.ts";
+import {
+  InvalidTemplateError,
+  InvalidTezosNetworkError,
+  UnsupportedOperationError,
+} from "./errors.ts";
 
 /**
  * Operation template
@@ -14,20 +19,6 @@ import { isValid, Schema } from "./_validate.ts";
 export interface OperationTemplate {
   type: string;
   [_: string]: unknown;
-}
-
-/**
- * Invalid operation error
- */
-export class InvalidOperationError extends Error {
-  name = "InvalidOperationError";
-}
-
-/**
- * Unsupported operation error
- */
-export class UnsupportedOperationError extends Error {
-  name = "UnsupportedOperationError";
 }
 
 /**
@@ -65,7 +56,8 @@ export abstract class Operation {
 
   /**
    * Creates subclassed operation from template object.
-   * Throws if operation is not supported.
+   * Throws `InvalidTemplateError` if the template is invalid.
+   * Throws `UnsupportedOperationError` if operation is not supported.
    *
    * ```ts
    * Operation.from({
@@ -78,11 +70,10 @@ export abstract class Operation {
    */
   static from(template: unknown): Operation {
     if (!isValid<OperationTemplate>(Operation.schema, template)) {
-      throw new InvalidOperationError("Invalid operation template");
+      throw new InvalidTemplateError("Invalid operation template");
     }
     switch (template.type) {
-      case "append":
-      case "prepend":
+      case "join":
         return JoinOperation.from(template);
       case "blake2b":
         return Blake2bOperation.from(template);
@@ -102,8 +93,17 @@ export abstract class Operation {
  * Join operation template
  */
 export interface JoinTemplate extends OperationTemplate {
-  type: "append" | "prepend";
-  data: string;
+  type: "join";
+  prepend?: string;
+  append?: string;
+}
+
+/**
+ * Join operation constructor options
+ */
+export interface JoinOptions {
+  prepend?: Uint8Array;
+  append?: Uint8Array;
 }
 
 /**
@@ -111,41 +111,53 @@ export interface JoinTemplate extends OperationTemplate {
  */
 export class JoinOperation extends Operation {
   /**
-   * Data to join
+   * Data to prepend
    */
-  readonly data: Uint8Array;
+  readonly prepend?: Uint8Array;
 
   /**
-   * Indicates if the data is to be prepended.
-   * If true, the commit method will prepend the data to the input.
-   * Otherwise, the commit method will append the data to the input.
+   * Data to append
    */
-  readonly prepend: boolean;
+  readonly append?: Uint8Array;
 
   /**
    * @param data Data to join
    * @param prepend Prepend flag
    */
-  constructor(data: Uint8Array, prepend = false) {
+  constructor({ prepend, append }: JoinOptions) {
     super();
-    this.data = data;
     this.prepend = prepend;
+    this.append = append;
   }
 
   toString(): string {
-    return (this.prepend ? "Prepend" : "Append") +
-      " 0x" + Hex.stringify(this.data);
+    const prependString = this.prepend
+      ? `Prepend 0x${Hex.stringify(this.prepend)}`
+      : "";
+    const conjunction = this.prepend && this.append ? ", and " : "";
+    const appendString = this.append
+      ? `Append 0x${Hex.stringify(this.append)}`
+      : "";
+    return prependString + conjunction + appendString;
   }
 
   toJSON(): JoinTemplate {
-    return {
-      type: this.prepend ? "prepend" : "append",
-      data: Hex.stringify(this.data),
-    };
+    const template: JoinTemplate = { type: "join" };
+    if (this.prepend) {
+      template.prepend = Hex.stringify(this.prepend);
+    }
+    if (this.append) {
+      template.append = Hex.stringify(this.append);
+    }
+    return template;
   }
 
   commit(input: Uint8Array): Uint8Array {
-    return this.prepend ? concat(this.data, input) : concat(input, this.data);
+    return concat(
+      this.prepend ?? new Uint8Array(),
+      input,
+      this.append ?? new Uint8Array(),
+    );
   }
 
   /**
@@ -155,14 +167,17 @@ export class JoinOperation extends Operation {
    */
   static readonly schema: Schema = {
     properties: {
-      type: { enum: ["append", "prepend"] },
-      data: { type: "string" },
+      type: { enum: ["join"] },
+    },
+    optionalProperties: {
+      prepend: { type: "string" },
+      append: { type: "string" },
     },
   };
 
   /**
    * Creates subclassed operation from template object.
-   * Throws if the template is invalid or the join operation is not supported.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * JoinOperation.from({
@@ -176,15 +191,11 @@ export class JoinOperation extends Operation {
    */
   static from(template: unknown): JoinOperation {
     if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid join operation");
+      throw new InvalidTemplateError("Invalid join operation template");
     }
-    const data = Hex.parse(template.data);
-    switch (template.type) {
-      case "append":
-        return new JoinOperation(data);
-      case "prepend":
-        return new JoinOperation(data, true);
-    }
+    const prepend = template.prepend ? Hex.parse(template.prepend) : undefined;
+    const append = template.append ? Hex.parse(template.append) : undefined;
+    return new JoinOperation({ prepend, append });
   }
 }
 
@@ -276,7 +287,7 @@ export class Blake2bOperation extends Operation {
 
   /**
    * Creates a BLAKE2b operation from template object.
-   * Throws if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * Blake2bOperation.from({
@@ -290,7 +301,7 @@ export class Blake2bOperation extends Operation {
    */
   static from(template: unknown): Blake2bOperation {
     if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid BLAKE2b operation");
+      throw new InvalidTemplateError("Invalid BLAKE2b operation template");
     }
     return new Blake2bOperation(
       template.length,
@@ -338,7 +349,7 @@ export class Sha256Operation extends Operation {
 
   /**
    * Creates a SHA-256 operation from a template object.
-   * Throws if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * Sha256Operation.from({
@@ -351,7 +362,7 @@ export class Sha256Operation extends Operation {
    */
   static from(template: unknown): Sha256Operation {
     if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
-      throw new InvalidOperationError("Invalid SHA-256 operation");
+      throw new InvalidTemplateError("Invalid SHA-256 operation template");
     }
     return new Sha256Operation();
   }
@@ -374,27 +385,11 @@ const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
 const TEZOS_MAINNET = "NetXdQprcVkpaWU";
 
 /**
- * Invalid Tezos network ID error
- */
-export class InvalidNetworkIDError extends Error {
-  name = "InvalidNetworkIDError";
-}
-
-/**
- * Level at which an affixation operation is made.
- * Affixations to a block hash are at level "block",
- * while affixations to an operationGroup hash are
- * at level "operation".
- */
-export type AffixLevel = "block" | "operation";
-
-/**
  * Affixation operation template
  */
 export interface AffixTemplate extends OperationTemplate {
   type: "affix";
   network: string;
-  level: AffixLevel;
   timestamp: string;
 }
 
@@ -406,11 +401,6 @@ export class AffixOperation extends Operation {
    * Tezos network identifier
    */
   readonly network: string;
-
-  /**
-   * Level of affixation
-   */
-  readonly level: AffixLevel;
 
   /**
    * Affixation timestamp
@@ -425,45 +415,34 @@ export class AffixOperation extends Operation {
   }
 
   /**
-   * Throws `InvalidNetworkIDError` if the Tezos network identifier is invalid.
+   * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
    *
    * @param network Tezos network identifier
    */
-  constructor(network: string, level: AffixLevel, timestamp: Date) {
+  constructor(network: string, timestamp: Date) {
     super();
     const rawNetwork = Base58.decodeCheck(network);
-    if (rawNetwork.length != 7) {
-      throw new InvalidNetworkIDError("Network ID is wrong length");
-    }
-    if (!compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)) {
-      throw new InvalidNetworkIDError("Network ID has wrong prefix");
+    if (
+      rawNetwork.length != 7 ||
+      !compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)
+    ) {
+      throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
     }
     this.network = network;
-    this.level = level;
     this.timestamp = timestamp;
   }
 
   toString(): string {
-    let levelLabel;
-    switch (this.level) {
-      case "block":
-        levelLabel = "block hash";
-        break;
-      case "operation":
-        levelLabel = "operation hash";
-        break;
-    }
     const networkLabel = this.mainnet
       ? "the Tezos Mainnet"
       : `alternate Tezos network "${this.network}"`;
-    return `Affix to ${levelLabel} on ${networkLabel} at ${this.timestamp.toLocaleString()}`;
+    return `Affix to ${networkLabel} at ${this.timestamp.toLocaleString()}`;
   }
 
   toJSON(): AffixTemplate {
     return {
       type: "affix",
       network: this.network,
-      level: this.level,
       timestamp: this.timestamp.toISOString(),
     };
   }
@@ -477,20 +456,18 @@ export class AffixOperation extends Operation {
     properties: {
       type: { enum: ["affix"] },
       network: { type: "string" },
-      level: { enum: ["block", "operation"] },
       timestamp: { type: "timestamp" },
     },
   };
 
   /**
    * Creates a affixation operation from a template object.
-   * Throws `InvalidOperationError` if the template is invalid.
+   * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
    * AffixOperation.from({
    *   type: "affix",
    *   network: "NetXdQprcVkpaWU",
-   *   level: "block",
    *   timestamp: "1970-01-01T00:00:00.000Z"
    * });
    * // AffixOperation { network: "NetXdQprcVkpaWU", level: "block", timestamp: Date {} }
@@ -500,11 +477,10 @@ export class AffixOperation extends Operation {
    */
   static from(template: unknown): AffixOperation {
     if (!isValid<AffixTemplate>(AffixOperation.schema, template)) {
-      throw new InvalidOperationError("Invalid affix operation");
+      throw new InvalidTemplateError("Invalid affix operation template");
     }
     return new AffixOperation(
       template.network,
-      template.level,
       new Date(template.timestamp),
     );
   }
