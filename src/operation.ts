@@ -119,11 +119,11 @@ export class JoinOperation extends Operation {
     const prependString = this.prepend
       ? `Prepend 0x${Hex.stringify(this.prepend)}`
       : "";
-    const conjuction = this.prepend && this.append ? ", and " : "";
+    const conjunction = this.prepend && this.append ? ", and " : "";
     const appendString = this.append
       ? `Append 0x${Hex.stringify(this.append)}`
       : "";
-    return prependString + conjuction + appendString;
+    return prependString + conjunction + appendString;
   }
 
   toJSON(): JoinTemplate {
