@@ -61,11 +61,26 @@ export abstract class Operation {
     }
     switch (template.type) {
       case "join":
-        return JoinOperation.from(template);
+        if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
+          throw new InvalidTemplateError("Invalid join operation template");
+        }
+        return new JoinOperation({
+          prepend: template.prepend ? Hex.parse(template.prepend) : undefined,
+          append: template.append ? Hex.parse(template.append) : undefined,
+        });
       case "blake2b":
-        return Blake2bOperation.from(template);
+        if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
+          throw new InvalidTemplateError("Invalid BLAKE2b operation template");
+        }
+        return new Blake2bOperation(
+          template.length,
+          template.key ? Hex.parse(template.key) : undefined,
+        );
       case "sha256":
-        return Sha256Operation.from(template);
+        if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
+          throw new InvalidTemplateError("Invalid SHA-256 operation template");
+        }
+        return new Sha256Operation();
       default:
         throw new UnsupportedOperationError(
           template.type,
@@ -160,29 +175,6 @@ export class JoinOperation extends Operation {
       append: { type: "string" },
     },
   };
-
-  /**
-   * Creates a join operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * JoinOperation.from({
-   *   type: "prepend",
-   *   data: "e789f123"
-   * });
-   * // JoinOperation { prepend: true, data: Uint8Array(4) }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): JoinOperation {
-    if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid join operation template");
-    }
-    const prepend = template.prepend ? Hex.parse(template.prepend) : undefined;
-    const append = template.append ? Hex.parse(template.append) : undefined;
-    return new JoinOperation({ prepend, append });
-  }
 }
 
 /**
@@ -270,30 +262,6 @@ export class Blake2bOperation extends Operation {
       key: { type: "string" },
     },
   };
-
-  /**
-   * Creates a BLAKE2b hash operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * Blake2bOperation.from({
-   *   type: "blake2b",
-   *   length: 64
-   * });
-   * // Blake2bOperation { length: 64 }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): Blake2bOperation {
-    if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid BLAKE2b operation template");
-    }
-    return new Blake2bOperation(
-      template.length,
-      template.key ? Hex.parse(template.key) : undefined,
-    );
-  }
 }
 
 /**
@@ -332,24 +300,4 @@ export class Sha256Operation extends Operation {
       type: { enum: ["sha256"] },
     },
   };
-
-  /**
-   * Creates a SHA-256 hash operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * Sha256Operation.from({
-   *   type: "sha256",
-   * });
-   * // Sha256Operation {}
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): Sha256Operation {
-    if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
-      throw new InvalidTemplateError("Invalid SHA-256 operation template");
-    }
-    return new Sha256Operation();
-  }
 }

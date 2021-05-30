@@ -13,7 +13,6 @@ import {
 } from "../src/errors.ts";
 import { Blake2b, Hex } from "../src/deps.deno.ts";
 import {
-  assert,
   assertEquals,
   assertStrictEquals,
   assertThrows,
@@ -21,26 +20,27 @@ import {
 } from "./dev_deps.ts";
 
 Deno.test({
-  name: "Operation templating",
+  name: "Invalid operation templating",
   fn() {
+    assertThrows(
+      () => Operation.from(null),
+      InvalidTemplateError,
+    );
     assertThrows(
       () => Operation.from({}),
       InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "join",
-      }) instanceof JoinOperation,
+    assertThrows(
+      () => Operation.from({ type: "join", foo: true }),
+      InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "blake2b",
-      }) instanceof Blake2bOperation,
+    assertThrows(
+      () => Operation.from({ type: "blake2b", foo: true }),
+      InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "sha256",
-      }) instanceof Sha256Operation,
+    assertThrows(
+      () => Operation.from({ type: "sha256", foo: true }),
+      InvalidTemplateError,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
@@ -67,7 +67,7 @@ Deno.test({
       new Uint8Array([0, 17, 34, 51, 67]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -89,7 +89,7 @@ Deno.test({
       new Uint8Array([0, 0, 1, 136, 68, 255]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -113,17 +113,7 @@ Deno.test({
       new Uint8Array([0, 17, 34, 51, 66, 77, 88, 99, 136, 68, 255]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid join operation templating",
-  fn() {
-    assertThrows(
-      () => JoinOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -144,7 +134,7 @@ Deno.test({
       new Blake2b(32).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -168,7 +158,7 @@ Deno.test({
       new Blake2b(64).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -193,7 +183,7 @@ Deno.test({
       new Blake2b(32, key).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -220,16 +210,6 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Invalid BLAKE2b hash operation templating",
-  fn() {
-    assertThrows(
-      () => Blake2bOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
-  },
-});
-
-Deno.test({
   name: "SHA-256 hash operation",
   fn() {
     const op = new Sha256Operation();
@@ -241,16 +221,6 @@ Deno.test({
       new Uint8Array(createHash("sha256").update(input).digest()),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Sha256Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid SHA-256 hash operation templating",
-  fn() {
-    assertThrows(
-      () => Sha256Operation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
+    assertEquals(op, Operation.from(template));
   },
 });
