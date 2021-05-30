@@ -108,35 +108,37 @@ export interface JoinOptions {
 }
 
 /**
- * Join data operation
+ * Join operation
  */
 export class JoinOperation extends Operation {
   /**
    * Data to prepend
    */
-  readonly prepend?: Uint8Array;
+  readonly prepend: Uint8Array;
 
   /**
    * Data to append
    */
-  readonly append?: Uint8Array;
+  readonly append: Uint8Array;
 
   /**
-   * @param data Data to join
-   * @param prepend Prepend flag
+   * Throws `TypeError` if no data is set.
+   *
+   * @param prepend Data to prepend
+   * @param append Data to append
    */
   constructor({ prepend, append }: JoinOptions) {
     super();
-    this.prepend = prepend;
-    this.append = append;
+    this.prepend = prepend ?? new Uint8Array();
+    this.append = append ?? new Uint8Array();
   }
 
   toString(): string {
-    const prependString = this.prepend
+    const prependString = this.prepend.length
       ? `Prepend 0x${Hex.stringify(this.prepend)}`
       : "";
-    const conjunction = this.prepend && this.append ? ", and " : "";
-    const appendString = this.append
+    const conjunction = this.prepend.length && this.append.length ? ", " : "";
+    const appendString = this.append.length
       ? `Append 0x${Hex.stringify(this.append)}`
       : "";
     return prependString + conjunction + appendString;
@@ -144,21 +146,17 @@ export class JoinOperation extends Operation {
 
   toJSON(): JoinTemplate {
     const template: JoinTemplate = { type: "join" };
-    if (this.prepend) {
+    if (this.prepend.length) {
       template.prepend = Hex.stringify(this.prepend);
     }
-    if (this.append) {
+    if (this.append.length) {
       template.append = Hex.stringify(this.append);
     }
     return template;
   }
 
   commit(input: Uint8Array): Uint8Array {
-    return concat(
-      this.prepend ?? new Uint8Array(),
-      input,
-      this.append ?? new Uint8Array(),
-    );
+    return concat(this.prepend, input, this.append);
   }
 
   /**

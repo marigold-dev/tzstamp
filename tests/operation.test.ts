@@ -11,13 +11,8 @@ import {
   InvalidTemplateError,
   UnsupportedOperationError,
 } from "../src/errors.ts";
-import { Blake2b, Hex } from "../src/deps.deno.ts";
-import {
-  assertEquals,
-  assertStrictEquals,
-  assertThrows,
-  createHash,
-} from "./dev_deps.ts";
+import { Blake2b, concat, Hex } from "../src/deps.deno.ts";
+import { assertEquals, assertThrows, createHash } from "./dev_deps.ts";
 
 Deno.test({
   name: "Invalid operation templating",
@@ -50,146 +45,135 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Prepending join operation",
+  name: "Join operation",
   fn() {
-    const op = new JoinOperation({
-      prepend: new Uint8Array([0, 17, 34, 51]),
-    });
-    const template: JoinTemplate = {
+    const prepend = crypto.getRandomValues(new Uint8Array(16));
+    const append = crypto.getRandomValues(new Uint8Array(16));
+    const wrapOp = new JoinOperation({ prepend, append });
+    const wrapTemplate: JoinTemplate = {
       type: "join",
-      prepend: "00112233",
+      prepend: Hex.stringify(prepend),
+      append: Hex.stringify(append),
     };
-    assertEquals(op.prepend, new Uint8Array([0, 17, 34, 51]));
-    assertStrictEquals(op.append, undefined);
-    assertEquals(op.toString(), "Prepend 0x00112233");
-    assertEquals(
-      op.commit(new Uint8Array([67])),
-      new Uint8Array([0, 17, 34, 51, 67]),
-    );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Appending join operation",
-  fn() {
-    const op = new JoinOperation({
-      append: new Uint8Array([136, 68, 255]),
-    });
-    const template: JoinTemplate = {
+    const prependOp = new JoinOperation({ prepend });
+    const prependTemplate: JoinTemplate = {
       type: "join",
-      append: "8844ff",
+      prepend: Hex.stringify(prepend),
     };
-    assertStrictEquals(op.prepend, undefined);
-    assertEquals(op.append, new Uint8Array([136, 68, 255]));
-    assertEquals(op.toString(), "Append 0x8844ff");
-    assertEquals(
-      op.commit(new Uint8Array([0, 0, 1])),
-      new Uint8Array([0, 0, 1, 136, 68, 255]),
-    );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Wrapping join operation",
-  fn() {
-    const op = new JoinOperation({
-      prepend: new Uint8Array([0, 17, 34, 51]),
-      append: new Uint8Array([136, 68, 255]),
-    });
-    const template: JoinTemplate = {
+    const appendOp = new JoinOperation({ append });
+    const appendTemplate: JoinTemplate = {
       type: "join",
-      prepend: "00112233",
-      append: "8844ff",
+      append: Hex.stringify(append),
     };
-    assertEquals(op.prepend, new Uint8Array([0, 17, 34, 51]));
-    assertEquals(op.append, new Uint8Array([136, 68, 255]));
-    assertEquals(op.toString(), "Prepend 0x00112233, and Append 0x8844ff");
-    assertEquals(
-      op.commit(new Uint8Array([66, 77, 88, 99])),
-      new Uint8Array([0, 17, 34, 51, 66, 77, 88, 99, 136, 68, 255]),
-    );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "BLAKE2b hash operation with all defaults",
-  fn() {
-    const op = new Blake2bOperation();
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: Blake2bTemplate = { type: "blake2b" };
-    assertEquals(op.length, 32);
-    assertEquals(op.key, undefined);
-    assertEquals(
-      op.toString(),
-      "BLAKE2b hash, 32-byte digest",
-    );
-    assertEquals(
-      op.commit(input),
-      new Blake2b(32).update(input).digest(),
-    );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "BLAKE2b hash operation with 64-byte digest length",
-  fn() {
-    const op = new Blake2bOperation(64);
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: Blake2bTemplate = {
-      type: "blake2b",
-      length: 64,
+    const nullOp = new JoinOperation({});
+    const nullTemplate: JoinTemplate = {
+      type: "join",
     };
-    assertEquals(op.length, 64);
-    assertEquals(op.key, undefined);
+    assertEquals(wrapOp.prepend, prepend);
+    assertEquals(wrapOp.append, append);
+    assertEquals(nullOp.prepend, new Uint8Array());
+    assertEquals(nullOp.append, new Uint8Array());
     assertEquals(
-      op.toString(),
-      "BLAKE2b hash, 64-byte digest",
+      wrapOp.toString(),
+      `Prepend 0x${Hex.stringify(prepend)}, Append 0x${Hex.stringify(append)}`,
+    );
+    assertEquals(prependOp.toString(), `Prepend 0x${Hex.stringify(prepend)}`);
+    assertEquals(appendOp.toString(), `Append 0x${Hex.stringify(append)}`);
+    assertEquals(nullOp.toString(), "");
+    assertEquals(
+      wrapOp.commit(new Uint8Array([67])),
+      concat(prepend, 67, append),
     );
     assertEquals(
-      op.commit(input),
-      new Blake2b(64).update(input).digest(),
+      prependOp.commit(new Uint8Array([39])),
+      concat(prepend, 39),
     );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
+    assertEquals(
+      appendOp.commit(new Uint8Array([244])),
+      concat(244, append),
+    );
+    assertEquals(
+      nullOp.commit(new Uint8Array([132])),
+      new Uint8Array([132]),
+    );
+    assertEquals(wrapOp.toJSON(), wrapTemplate);
+    assertEquals(prependOp.toJSON(), prependTemplate);
+    assertEquals(appendOp.toJSON(), appendTemplate);
+    assertEquals(nullOp.toJSON(), nullTemplate);
+    assertEquals(wrapOp, Operation.from(wrapTemplate));
+    assertEquals(prependOp, Operation.from(prependTemplate));
+    assertEquals(appendOp, Operation.from(appendTemplate));
+    assertEquals(nullOp, Operation.from(nullTemplate));
   },
 });
 
 Deno.test({
-  name: "BLAKE2b keyed hash operation",
+  name: "BLAKE2b hash operation",
   fn() {
     const key = crypto.getRandomValues(new Uint8Array(32));
-    const op = new Blake2bOperation(undefined, key);
     const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: Blake2bTemplate = {
+    const lenKeyOp = new Blake2bOperation(64, key);
+    const lenKeyTemplate: Blake2bTemplate = {
+      type: "blake2b",
+      length: 64,
+      key: Hex.stringify(key),
+    };
+    const lenOp = new Blake2bOperation(44);
+    const lenTemplate: Blake2bTemplate = {
+      type: "blake2b",
+      length: 44,
+    };
+    const keyOp = new Blake2bOperation(undefined, key);
+    const keyTemplate: Blake2bTemplate = {
       type: "blake2b",
       key: Hex.stringify(key),
     };
-    assertEquals(op.length, 32);
-    assertEquals(op.key, key);
+    const defaultOp = new Blake2bOperation();
+    const defaultTemplate: Blake2bTemplate = { type: "blake2b" };
+    assertEquals(lenKeyOp.length, 64);
+    assertEquals(lenOp.length, 44);
+    assertEquals(keyOp.length, 32);
+    assertEquals(keyOp.key, key);
     assertEquals(
-      op.toString(),
+      lenKeyOp.toString(),
+      `BLAKE2b hash, 64-byte digest with key 0x${Hex.stringify(key)}`,
+    );
+    assertEquals(
+      lenOp.toString(),
+      "BLAKE2b hash, 44-byte digest",
+    );
+    assertEquals(
+      keyOp.toString(),
       `BLAKE2b hash, 32-byte digest with key 0x${Hex.stringify(key)}`,
     );
     assertEquals(
-      op.commit(input),
+      defaultOp.toString(),
+      "BLAKE2b hash, 32-byte digest",
+    );
+    assertEquals(
+      lenKeyOp.commit(input),
+      new Blake2b(64, key).update(input).digest(),
+    );
+    assertEquals(
+      lenOp.commit(input),
+      new Blake2b(44).update(input).digest(),
+    );
+    assertEquals(
+      keyOp.commit(input),
       new Blake2b(32, key).update(input).digest(),
     );
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid BLAKE2b hash operation construction",
-  fn() {
+    assertEquals(
+      defaultOp.commit(input),
+      new Blake2b().update(input).digest(),
+    );
+    assertEquals(lenKeyOp.toJSON(), lenKeyTemplate);
+    assertEquals(lenOp.toJSON(), lenTemplate);
+    assertEquals(keyOp.toJSON(), keyTemplate);
+    assertEquals(defaultOp.toJSON(), defaultTemplate);
+    assertEquals(lenKeyOp, Operation.from(lenKeyTemplate));
+    assertEquals(lenOp, Operation.from(lenTemplate));
+    assertEquals(keyOp, Operation.from(keyTemplate));
+    assertEquals(defaultOp, Operation.from(defaultTemplate));
     assertThrows(
       () => new Blake2bOperation(0),
       RangeError,
