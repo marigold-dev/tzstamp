@@ -1,19 +1,14 @@
 import {
-  AffixOperation,
-  AffixTemplate,
   Blake2bOperation,
   Blake2bTemplate,
   JoinOperation,
   JoinTemplate,
   Operation,
-  RemoteOperation,
-  RemoteTemplate,
   Sha256Operation,
   Sha256Template,
 } from "../src/operation.ts";
 import {
   InvalidTemplateError,
-  InvalidTezosNetworkError,
   UnsupportedOperationError,
 } from "../src/errors.ts";
 import { Blake2b, Hex } from "../src/deps.deno.ts";
@@ -46,19 +41,6 @@ Deno.test({
       Operation.from({
         type: "sha256",
       }) instanceof Sha256Operation,
-    );
-    assert(
-      Operation.from({
-        type: "affix",
-        network: "NetXdQprcVkpaWU",
-        timestamp: "1970-01-01T00:00:00.000Z",
-      }) instanceof AffixOperation,
-    );
-    assert(
-      Operation.from({
-        type: "remote",
-        url: "file://",
-      }) instanceof RemoteOperation,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
@@ -269,134 +251,6 @@ Deno.test({
     assertThrows(
       () => Sha256Operation.from({ type: "bogus" }),
       InvalidTemplateError,
-    );
-  },
-});
-
-Deno.test({
-  name: "Mainnet affixation operation",
-  fn() {
-    const network = "NetXdQprcVkpaWU";
-    const timestamp = "1970-01-01T00:00:00.000Z";
-    const localeTimestamp = new Date(timestamp).toLocaleString();
-    const op = new AffixOperation(network, new Date(timestamp));
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: AffixTemplate = {
-      type: "affix",
-      network,
-      timestamp,
-    };
-    assertEquals(op.network, network);
-    assertEquals(op.timestamp, new Date(op.timestamp));
-    assertEquals(
-      op.toString(),
-      `Affix to the Tezos Mainnet at ${localeTimestamp}`,
-    );
-    assert(op.mainnet);
-    assertEquals(op.commit(input), input);
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, AffixOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Altnet operation-level affixation operation",
-  fn() {
-    const network = "NetXH12Aer3be93";
-    const timestamp = "1970-01-01T00:00:00.000Z";
-    const localeTimestamp = new Date(timestamp).toLocaleString();
-    const op = new AffixOperation(network, new Date(timestamp));
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: AffixTemplate = {
-      type: "affix",
-      network,
-      timestamp,
-    };
-    assertEquals(op.network, network);
-    assertEquals(op.timestamp, new Date(op.timestamp));
-    assertEquals(
-      op.toString(),
-      `Affix to alternate Tezos network "NetXH12Aer3be93" at ${localeTimestamp}`,
-    );
-    assert(!op.mainnet);
-    assertEquals(op.commit(input), input);
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, AffixOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid Affixation operation templating",
-  fn() {
-    assertThrows(
-      () => AffixOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "NetXH12Aer3be93",
-          timestamp: "invalid",
-        }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "invalid",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "2eaEQdd69bmjibEQa",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-      InvalidTezosNetworkError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "MRFsrHWuD14mU9Y",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-      InvalidTezosNetworkError,
-    );
-  },
-});
-
-Deno.test({
-  name: "Remote proof operation",
-  fn() {
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const url = "https://tzstamp.example.com/myProof.json";
-    const op = new RemoteOperation(url);
-    const template: RemoteTemplate = {
-      type: "remote",
-      url,
-    };
-    assertEquals(op.url.toString(), url);
-    assertEquals(
-      op.toString(),
-      `Continue with remote proof at <${url}>`,
-    );
-    assertEquals(op.commit(input), input);
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, RemoteOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid remote proof operation templating",
-  fn() {
-    assertThrows(
-      () => new RemoteOperation("bogus"),
-      TypeError,
     );
   },
 });

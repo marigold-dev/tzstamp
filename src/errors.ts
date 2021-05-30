@@ -27,15 +27,29 @@ export class UnsupportedOperationError extends Error {
 }
 
 /**
- * Unallowed operation error
- */
-export class UnallowedOperationError extends Error {
-  name = "UnallowedOperationError";
-}
-
-/**
  * Invalid Tezos network identifier error
  */
 export class InvalidTezosNetworkError extends Error {
   name = "InvalidTezosNetworkError";
+}
+
+/**
+ * Fetch error
+ */
+export class FetchError extends Error {
+  name = "FetchError";
+
+  /**
+   * HTTP status code
+   */
+  status: number;
+
+  /**
+   * @param status HTTP status code
+   * @param message Optional error message
+   */
+  constructor(status: number, message?: string) {
+    super(message);
+    this.status = status;
+  }
 }

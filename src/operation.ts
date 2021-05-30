@@ -1,17 +1,6 @@
-import {
-  Base58,
-  Blake2b,
-  compare,
-  concat,
-  createHash,
-  Hex,
-} from "./deps.deno.ts";
+import { Blake2b, concat, createHash, Hex } from "./deps.deno.ts";
 import { isValid, Schema } from "./_validate.ts";
-import {
-  InvalidTemplateError,
-  InvalidTezosNetworkError,
-  UnsupportedOperationError,
-} from "./errors.ts";
+import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
 
 /**
  * Operation template
@@ -38,9 +27,7 @@ export abstract class Operation {
   /**
    * Commits the operation to the input.
    */
-  commit(input: Uint8Array): Uint8Array {
-    return input;
-  }
+  abstract commit(input: Uint8Array): Uint8Array;
 
   /**
    * [JTD] schema for an operation template
@@ -79,10 +66,6 @@ export abstract class Operation {
         return Blake2bOperation.from(template);
       case "sha256":
         return Sha256Operation.from(template);
-      case "affix":
-        return AffixOperation.from(template);
-      case "remote":
-        return RemoteOperation.from(template);
       default:
         throw new UnsupportedOperationError(
           `Unsupported operation "${template.type}"`,
@@ -367,195 +350,5 @@ export class Sha256Operation extends Operation {
       throw new InvalidTemplateError("Invalid SHA-256 operation template");
     }
     return new Sha256Operation();
-  }
-}
-
-/**
- * Tezos network identifier prefix bytes
- *
- * When encoded in [Base58], it renders as the characters "Net" with carry of 15.
- * See [base58.ml] for details.
- *
- * [Base58]: https://tools.ietf.org/id/draft-msporny-base58-01.html
- * [base58.ml]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml#L424
- */
-const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
-
-/**
- * Tezos Mainnet network identifier
- */
-const TEZOS_MAINNET = "NetXdQprcVkpaWU";
-
-/**
- * Affixation operation template
- */
-export interface AffixTemplate extends OperationTemplate {
-  type: "affix";
-  network: string;
-  timestamp: string;
-}
-
-/**
- * Affixation operation
- */
-export class AffixOperation extends Operation {
-  /**
-   * Tezos network identifier
-   */
-  readonly network: string;
-
-  /**
-   * Affixation timestamp
-   */
-  readonly timestamp: Date;
-
-  /**
-   * Checks if the affixation is to mainnet
-   */
-  get mainnet(): boolean {
-    return this.network == TEZOS_MAINNET;
-  }
-
-  /**
-   * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
-   *
-   * @param network Tezos network identifier
-   */
-  constructor(network: string, timestamp: Date) {
-    super();
-    const rawNetwork = Base58.decodeCheck(network);
-    if (
-      rawNetwork.length != 7 ||
-      !compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)
-    ) {
-      throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
-    }
-    this.network = network;
-    this.timestamp = timestamp;
-  }
-
-  toString(): string {
-    const networkLabel = this.mainnet
-      ? "the Tezos Mainnet"
-      : `alternate Tezos network "${this.network}"`;
-    return `Affix to ${networkLabel} at ${this.timestamp.toLocaleString()}`;
-  }
-
-  toJSON(): AffixTemplate {
-    return {
-      type: "affix",
-      network: this.network,
-      timestamp: this.timestamp.toISOString(),
-    };
-  }
-
-  /**
-   * [JTD] schema for an affix operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["affix"] },
-      network: { type: "string" },
-      timestamp: { type: "timestamp" },
-    },
-  };
-
-  /**
-   * Creates an affixation operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * AffixOperation.from({
-   *   type: "affix",
-   *   network: "NetXdQprcVkpaWU",
-   *   timestamp: "1970-01-01T00:00:00.000Z"
-   * });
-   * // AffixOperation { network: "NetXdQprcVkpaWU", level: "block", timestamp: Date {} }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): AffixOperation {
-    if (!isValid<AffixTemplate>(AffixOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid affix operation template");
-    }
-    return new AffixOperation(
-      template.network,
-      new Date(template.timestamp),
-    );
-  }
-}
-
-/**
- * Remote proof operation template
- */
-export interface RemoteTemplate extends OperationTemplate {
-  type: "remote";
-  url: string;
-}
-
-/**
- * Remote proof operation
- */
-export class RemoteOperation extends Operation {
-  /**
-   * Remote proof URL
-   */
-  readonly url: URL;
-
-  /**
-   * Throws `TypeError` if URL is invalid.
-   *
-   * @param url Remote proof URL
-   */
-  constructor(url: string) {
-    super();
-    this.url = new URL(url);
-  }
-
-  toString(): string {
-    return `Continue with remote proof at <${this.url}>`;
-  }
-
-  toJSON(): RemoteTemplate {
-    return {
-      type: "remote",
-      url: this.url.toString(),
-    };
-  }
-
-  /**
-   * [JTD] schema for a remote proof operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["remote"] },
-      url: { type: "string" },
-    },
-  };
-
-  /**
-   * Creates a remote proof operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * RemoteOperation.from({
-   *   type: "remote",
-   *   url: "https://..."
-   * });
-   * // RemoteOperation { url: URL {} }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): RemoteOperation {
-    if (!isValid<RemoteTemplate>(RemoteOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid remote proof operation template");
-    }
-    return new RemoteOperation(template.url);
   }
 }
