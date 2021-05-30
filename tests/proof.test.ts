@@ -1,4 +1,4 @@
-import { Proof, ProofTemplate, VerificationStatus } from "../src/proof.ts";
+import { Proof, ProofTemplate, VerifyStatus } from "../src/proof.ts";
 import {
   InvalidTemplateError,
   MismatchedHashError,
@@ -255,7 +255,7 @@ Deno.test({
     assert(proof.affixation);
     assertEquals(
       await proof.verify(rpcURL),
-      VerificationStatus.Verified,
+      VerifyStatus.verified,
     );
   },
 });

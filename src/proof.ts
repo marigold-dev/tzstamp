@@ -41,39 +41,40 @@ export interface Affixation {
 /**
  * Verification status of a proof
  */
-export enum VerificationStatus {
+export const VerifyStatus = {
   /**
    * Proof is successfully verified. The stored
    * input hash existed by the stored timestamp.
    */
-  Verified = "verified",
+  verified: Symbol("Verified"),
 
   /**
    * Proof could not be verified. The proof does
    * not include a block-level affixation.
    */
-  Unaffixed = "unaffixed",
+  unaffixed: Symbol("Unaffixed"),
 
   /**
-   * Proof could not be verified. The Tezos node
-   * could not be contacted, or the client is not
-   * authorized to access the node.
+   * Proof could not be verified. A network error
+   * occoured while contacting the Tezos node.
    */
-  CommunicationError = "commerror",
+  netError: Symbol("Network error"),
 
   /**
    * Proof could not be verified. The Tezos node
    * could not find the block at the affixed address.
    */
-  BlockNotFound = "notfound",
+  notFound: Symbol("Block not found"),
 
   /**
    * Proof could not be verified. The stored timestamp
    * does not match the on-chain timestamp. The
    * proof has been modified, perhaps maliciously.
    */
-  TimestampMismatch = "difftimestamp",
-}
+  mismatch: Symbol("Timestamp mismatch"),
+} as const;
+
+export type VerifyStatus = typeof VerifyStatus[keyof typeof VerifyStatus];
 
 /**
  * Cryptographic proof-of-inclusion
@@ -167,9 +168,9 @@ export class Proof {
    * or if the
    * @param rpcURL
    */
-  async verify(rpcURL: string | URL): Promise<VerificationStatus> {
+  async verify(rpcURL: string | URL): Promise<VerifyStatus> {
     if (!this.affixation) {
-      return VerificationStatus.Unaffixed;
+      return VerifyStatus.unaffixed;
     }
     const endpoint = new URL(
       `/chains/${this.affixation.network}/blocks/${this.affixation.blockHash}/header`,
@@ -178,18 +179,18 @@ export class Proof {
     const response = await fetch(endpoint);
     switch (response.status) {
       case 404:
-        return VerificationStatus.BlockNotFound;
+        return VerifyStatus.notFound;
       case 200:
         break;
       default:
-        return VerificationStatus.CommunicationError;
+        return VerifyStatus.netError;
     }
     const header = await response.json();
     const timestamp = new Date(header.timestamp);
     if (timestamp.getTime() != this.affixation.timestamp.getTime()) {
-      return VerificationStatus.TimestampMismatch;
+      return VerifyStatus.mismatch;
     }
-    return VerificationStatus.Verified;
+    return VerifyStatus.verified;
   }
 
   /**
