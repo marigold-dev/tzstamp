@@ -2,7 +2,7 @@
  * Invalid template error
  */
 export class InvalidTemplateError extends Error {
-  name = "InvalidProofError";
+  name = "InvalidTemplateError";
 }
 
 /**
@@ -42,15 +42,15 @@ export class UnsupportedOperationError extends Error {
   /**
    * Operation label
    */
-  label: string;
+  operation: string;
 
   /**
-   * @param label Operation label
+   * @param operation Operation label
    * @param message Optional error message
    */
-  constructor(label: string, message?: string) {
+  constructor(operation: string, message?: string) {
     super(message);
-    this.label = label;
+    this.operation = operation;
   }
 }
 
