@@ -55,7 +55,7 @@ export abstract class Operation {
   };
 
   /**
-   * Creates subclassed operation from template object.
+   * Creates a subclassed operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    * Throws `UnsupportedOperationError` if operation is not supported.
    *
@@ -176,7 +176,7 @@ export class JoinOperation extends Operation {
   };
 
   /**
-   * Creates subclassed operation from template object.
+   * Creates a join operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
@@ -200,7 +200,7 @@ export class JoinOperation extends Operation {
 }
 
 /**
- * BLAKE2b operation template
+ * BLAKE2b hash operation template
  */
 export interface Blake2bTemplate extends OperationTemplate {
   type: "blake2b";
@@ -209,7 +209,7 @@ export interface Blake2bTemplate extends OperationTemplate {
 }
 
 /**
- * [BLAKE2b] hashing operation
+ * [BLAKE2b] hash operation
  *
  * [BLAKE2b]: https://www.blake2.net
  */
@@ -286,7 +286,7 @@ export class Blake2bOperation extends Operation {
   };
 
   /**
-   * Creates a BLAKE2b operation from template object.
+   * Creates a BLAKE2b hash operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
@@ -311,14 +311,14 @@ export class Blake2bOperation extends Operation {
 }
 
 /**
- * SHA-256 operation template
+ * SHA-256 hash operation template
  */
 export interface Sha256Template extends OperationTemplate {
   type: "sha256";
 }
 
 /**
- * SHA-256 hashing operation
+ * SHA-256 hash operation
  */
 export class Sha256Operation extends Operation {
   toString(): string {
@@ -337,7 +337,7 @@ export class Sha256Operation extends Operation {
   }
 
   /**
-   * [JTD] schema for a SHA-256 operation template
+   * [JTD] schema for a SHA-256 hash operation template
    *
    * [JTD]: https://jsontypedef.com
    */
@@ -348,7 +348,7 @@ export class Sha256Operation extends Operation {
   };
 
   /**
-   * Creates a SHA-256 operation from a template object.
+   * Creates a SHA-256 hash operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
@@ -461,7 +461,7 @@ export class AffixOperation extends Operation {
   };
 
   /**
-   * Creates a affixation operation from a template object.
+   * Creates an affixation operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    *
    * ```ts
