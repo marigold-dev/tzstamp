@@ -10,6 +10,20 @@ export class InvalidTemplateError extends Error {
  */
 export class UnsupportedVersionError extends Error {
   name = "UnsupportedVersionError";
+
+  /**
+   * Proof version
+   */
+  version: number;
+
+  /**
+   * @param version Proof version
+   * @param message Optional error message
+   */
+  constructor(version: number, message?: string) {
+    super(message);
+    this.version = version;
+  }
 }
 
 /**
@@ -24,6 +38,20 @@ export class MismatchedHashError extends Error {
  */
 export class UnsupportedOperationError extends Error {
   name = "UnsupportedOperationError";
+
+  /**
+   * Operation label
+   */
+  label: string;
+
+  /**
+   * @param label Operation label
+   * @param message Optional error message
+   */
+  constructor(label: string, message?: string) {
+    super(message);
+    this.label = label;
+  }
 }
 
 /**
