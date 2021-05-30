@@ -20,43 +20,6 @@ export interface ProofTemplate {
 }
 
 /**
- * Verification status of a proof
- */
-export enum VerificationStatus {
-  /**
-   * Proof is successfully verified. The stored
-   * input hash existed by the stored timestamp.
-   */
-  Verified = "verified",
-
-  /**
-   * Proof could not be verified. The proof does
-   * not include a block-level affixation.
-   */
-  Unaffixed = "unaffixed",
-
-  /**
-   * Proof could not be verified. The Tezos node
-   * could not be contacted, or the client is not
-   * authorized to access the node.
-   */
-  CommunicationError = "commerror",
-
-  /**
-   * Proof could not be verified. The Tezos node
-   * could not find the block at the affixed address.
-   */
-  BlockNotFound = "notfound",
-
-  /**
-   * Proof could not be verified. The stored timestamp
-   * does not match the on-chain timestamp. The
-   * proof has been modified, perhaps maliciously.
-   */
-  TimestampMismatch = "difftimestamp",
-}
-
-/**
  * Proof constructor options
  */
 export interface ProofOptions {
@@ -219,9 +182,40 @@ export class Proof {
 }
 
 /**
+ * Verification status of a proof
+ */
+export enum VerifyStatus {
+  /**
+   * Proof is successfully verified. The stored
+   * input hash existed by the stored timestamp.
+   */
+  Verified = "verified",
+
+  /**
+   * Proof could not be verified. The Tezos node
+   * could not be contacted, or the client is not
+   * authorized to access the node.
+   */
+  NetError = "netError",
+
+  /**
+   * Proof could not be verified. The Tezos node
+   * could not find the block at the affixed address.
+   */
+  NotFound = "notFound",
+
+  /**
+   * Proof could not be verified. The asserted timestamp
+   * does not match the on-chain timestamp. The
+   * proof has been modified, perhaps maliciously.
+   */
+  Mismatch = "mismatch",
+}
+
+/**
  * Affixed proof constructor options
  */
-interface AffixedProofOptions extends ProofOptions {
+export interface AffixedProofOptions extends ProofOptions {
   network: string;
   timestamp: Date;
 }
@@ -229,7 +223,7 @@ interface AffixedProofOptions extends ProofOptions {
 /**
  * Affixed proof template
  */
-interface AffixedProofTemplate extends ProofTemplate {
+export interface AffixedProofTemplate extends ProofTemplate {
   network: string;
   timestamp: string;
 }
@@ -253,7 +247,7 @@ const TEZOS_MAINNET = "NetXdQprcVkpaWU";
 /**
  * Cryptographic timestamp proof affixed to the Tezos blockchain
  */
-class AffixedProof extends Proof {
+export class AffixedProof extends Proof {
   /**
    * Tezos network identifier
    */
@@ -309,26 +303,30 @@ class AffixedProof extends Proof {
    *
    * @param rpcURL Tezos node RPC base URL
    */
-  async verify(rpcURL: string | URL): Promise<VerificationStatus> {
+  async verify(rpcURL: string | URL): Promise<VerifyStatus> {
     const endpoint = new URL(
       `/chains/${this.network}/blocks/${this.blockHash}/header`,
       rpcURL,
     );
-    const response = await fetch(endpoint);
+    const response = await fetch(endpoint, {
+      headers: {
+        accepts: "application/json",
+      },
+    });
     switch (response.status) {
-      case 404:
-        return VerificationStatus.BlockNotFound;
       case 200:
         break;
+      case 404:
+        return VerifyStatus.NotFound;
       default:
-        return VerificationStatus.CommunicationError;
+        return VerifyStatus.NetError;
     }
     const header = await response.json();
     const timestamp = new Date(header.timestamp);
     if (timestamp.getTime() != this.timestamp.getTime()) {
-      return VerificationStatus.TimestampMismatch;
+      return VerifyStatus.Mismatch;
     }
-    return VerificationStatus.Verified;
+    return VerifyStatus.Verified;
   }
 
   toJSON(): AffixedProofTemplate {
@@ -360,18 +358,18 @@ class AffixedProof extends Proof {
 /**
  * Pending proof constructor options
  */
-interface PendingProofOptions extends ProofOptions {
+export interface PendingProofOptions extends ProofOptions {
   remote: string | URL;
 }
 
 /**
  * Pending proof template
  */
-interface PendingProofTemplate extends ProofTemplate {
+export interface PendingProofTemplate extends ProofTemplate {
   remote: string;
 }
 
-class PendingProof extends Proof {
+export class PendingProof extends Proof {
   /**
    * Remote proof URL
    */
