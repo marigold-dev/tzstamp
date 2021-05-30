@@ -1,17 +1,6 @@
-import {
-  Base58,
-  Blake2b,
-  compare,
-  concat,
-  createHash,
-  Hex,
-} from "./deps.deno.ts";
+import { Blake2b, concat, createHash, Hex } from "./deps.deno.ts";
 import { isValid, Schema } from "./_validate.ts";
-import {
-  InvalidTemplateError,
-  InvalidTezosNetworkError,
-  UnsupportedOperationError,
-} from "./errors.ts";
+import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
 
 /**
  * Operation template
@@ -38,9 +27,7 @@ export abstract class Operation {
   /**
    * Commits the operation to the input.
    */
-  commit(input: Uint8Array): Uint8Array {
-    return input;
-  }
+  abstract commit(input: Uint8Array): Uint8Array;
 
   /**
    * [JTD] schema for an operation template
@@ -55,7 +42,7 @@ export abstract class Operation {
   };
 
   /**
-   * Creates subclassed operation from template object.
+   * Creates a subclassed operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    * Throws `UnsupportedOperationError` if operation is not supported.
    *
@@ -74,15 +61,29 @@ export abstract class Operation {
     }
     switch (template.type) {
       case "join":
-        return JoinOperation.from(template);
+        if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
+          throw new InvalidTemplateError("Invalid join operation template");
+        }
+        return new JoinOperation({
+          prepend: template.prepend ? Hex.parse(template.prepend) : undefined,
+          append: template.append ? Hex.parse(template.append) : undefined,
+        });
       case "blake2b":
-        return Blake2bOperation.from(template);
+        if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
+          throw new InvalidTemplateError("Invalid BLAKE2b operation template");
+        }
+        return new Blake2bOperation(
+          template.length,
+          template.key ? Hex.parse(template.key) : undefined,
+        );
       case "sha256":
-        return Sha256Operation.from(template);
-      case "affix":
-        return AffixOperation.from(template);
+        if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
+          throw new InvalidTemplateError("Invalid SHA-256 operation template");
+        }
+        return new Sha256Operation();
       default:
         throw new UnsupportedOperationError(
+          template.type,
           `Unsupported operation "${template.type}"`,
         );
     }
@@ -174,33 +175,10 @@ export class JoinOperation extends Operation {
       append: { type: "string" },
     },
   };
-
-  /**
-   * Creates subclassed operation from template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * JoinOperation.from({
-   *   type: "prepend",
-   *   data: "e789f123"
-   * });
-   * // JoinOperation { prepend: true, data: Uint8Array(4) }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): JoinOperation {
-    if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid join operation template");
-    }
-    const prepend = template.prepend ? Hex.parse(template.prepend) : undefined;
-    const append = template.append ? Hex.parse(template.append) : undefined;
-    return new JoinOperation({ prepend, append });
-  }
 }
 
 /**
- * BLAKE2b operation template
+ * BLAKE2b hash operation template
  */
 export interface Blake2bTemplate extends OperationTemplate {
   type: "blake2b";
@@ -209,7 +187,7 @@ export interface Blake2bTemplate extends OperationTemplate {
 }
 
 /**
- * [BLAKE2b] hashing operation
+ * [BLAKE2b] hash operation
  *
  * [BLAKE2b]: https://www.blake2.net
  */
@@ -284,41 +262,17 @@ export class Blake2bOperation extends Operation {
       key: { type: "string" },
     },
   };
-
-  /**
-   * Creates a BLAKE2b operation from template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * Blake2bOperation.from({
-   *   type: "blake2b",
-   *   length: 64
-   * });
-   * // Blake2bOperation { length: 64 }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): Blake2bOperation {
-    if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid BLAKE2b operation template");
-    }
-    return new Blake2bOperation(
-      template.length,
-      template.key ? Hex.parse(template.key) : undefined,
-    );
-  }
 }
 
 /**
- * SHA-256 operation template
+ * SHA-256 hash operation template
  */
 export interface Sha256Template extends OperationTemplate {
   type: "sha256";
 }
 
 /**
- * SHA-256 hashing operation
+ * SHA-256 hash operation
  */
 export class Sha256Operation extends Operation {
   toString(): string {
@@ -337,7 +291,7 @@ export class Sha256Operation extends Operation {
   }
 
   /**
-   * [JTD] schema for a SHA-256 operation template
+   * [JTD] schema for a SHA-256 hash operation template
    *
    * [JTD]: https://jsontypedef.com
    */
@@ -346,142 +300,4 @@ export class Sha256Operation extends Operation {
       type: { enum: ["sha256"] },
     },
   };
-
-  /**
-   * Creates a SHA-256 operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * Sha256Operation.from({
-   *   type: "sha256",
-   * });
-   * // Sha256Operation {}
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): Sha256Operation {
-    if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
-      throw new InvalidTemplateError("Invalid SHA-256 operation template");
-    }
-    return new Sha256Operation();
-  }
-}
-
-/**
- * Tezos network identifier prefix bytes
- *
- * When encoded in [Base58], it renders as the characters "Net" with carry of 15.
- * See [base58.ml] for details.
- *
- * [Base58]: https://tools.ietf.org/id/draft-msporny-base58-01.html
- * [base58.ml]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml#L424
- */
-const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
-
-/**
- * Tezos Mainnet network identifier
- */
-const TEZOS_MAINNET = "NetXdQprcVkpaWU";
-
-/**
- * Affixation operation template
- */
-export interface AffixTemplate extends OperationTemplate {
-  type: "affix";
-  network: string;
-  timestamp: string;
-}
-
-/**
- * Affixation operation
- */
-export class AffixOperation extends Operation {
-  /**
-   * Tezos network identifier
-   */
-  readonly network: string;
-
-  /**
-   * Affixation timestamp
-   */
-  readonly timestamp: Date;
-
-  /**
-   * Checks if the affixation is to mainnet
-   */
-  get mainnet(): boolean {
-    return this.network == TEZOS_MAINNET;
-  }
-
-  /**
-   * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
-   *
-   * @param network Tezos network identifier
-   */
-  constructor(network: string, timestamp: Date) {
-    super();
-    const rawNetwork = Base58.decodeCheck(network);
-    if (
-      rawNetwork.length != 7 ||
-      !compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)
-    ) {
-      throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
-    }
-    this.network = network;
-    this.timestamp = timestamp;
-  }
-
-  toString(): string {
-    const networkLabel = this.mainnet
-      ? "the Tezos Mainnet"
-      : `alternate Tezos network "${this.network}"`;
-    return `Affix to ${networkLabel} at ${this.timestamp.toLocaleString()}`;
-  }
-
-  toJSON(): AffixTemplate {
-    return {
-      type: "affix",
-      network: this.network,
-      timestamp: this.timestamp.toISOString(),
-    };
-  }
-
-  /**
-   * [JTD] schema for an affix operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["affix"] },
-      network: { type: "string" },
-      timestamp: { type: "timestamp" },
-    },
-  };
-
-  /**
-   * Creates a affixation operation from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   *
-   * ```ts
-   * AffixOperation.from({
-   *   type: "affix",
-   *   network: "NetXdQprcVkpaWU",
-   *   timestamp: "1970-01-01T00:00:00.000Z"
-   * });
-   * // AffixOperation { network: "NetXdQprcVkpaWU", level: "block", timestamp: Date {} }
-   * ```
-   *
-   * @param template Template object
-   */
-  static from(template: unknown): AffixOperation {
-    if (!isValid<AffixTemplate>(AffixOperation.schema, template)) {
-      throw new InvalidTemplateError("Invalid affix operation template");
-    }
-    return new AffixOperation(
-      template.network,
-      new Date(template.timestamp),
-    );
-  }
 }

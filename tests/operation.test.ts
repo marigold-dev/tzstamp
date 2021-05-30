@@ -1,6 +1,4 @@
 import {
-  AffixOperation,
-  AffixTemplate,
   Blake2bOperation,
   Blake2bTemplate,
   JoinOperation,
@@ -11,12 +9,10 @@ import {
 } from "../src/operation.ts";
 import {
   InvalidTemplateError,
-  InvalidTezosNetworkError,
   UnsupportedOperationError,
 } from "../src/errors.ts";
 import { Blake2b, Hex } from "../src/deps.deno.ts";
 import {
-  assert,
   assertEquals,
   assertStrictEquals,
   assertThrows,
@@ -24,33 +20,27 @@ import {
 } from "./dev_deps.ts";
 
 Deno.test({
-  name: "Operation templating",
+  name: "Invalid operation templating",
   fn() {
+    assertThrows(
+      () => Operation.from(null),
+      InvalidTemplateError,
+    );
     assertThrows(
       () => Operation.from({}),
       InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "join",
-      }) instanceof JoinOperation,
+    assertThrows(
+      () => Operation.from({ type: "join", foo: true }),
+      InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "blake2b",
-      }) instanceof Blake2bOperation,
+    assertThrows(
+      () => Operation.from({ type: "blake2b", foo: true }),
+      InvalidTemplateError,
     );
-    assert(
-      Operation.from({
-        type: "sha256",
-      }) instanceof Sha256Operation,
-    );
-    assert(
-      Operation.from({
-        type: "affix",
-        network: "NetXdQprcVkpaWU",
-        timestamp: "1970-01-01T00:00:00.000Z",
-      }) instanceof AffixOperation,
+    assertThrows(
+      () => Operation.from({ type: "sha256", foo: true }),
+      InvalidTemplateError,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
@@ -77,7 +67,7 @@ Deno.test({
       new Uint8Array([0, 17, 34, 51, 67]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -99,7 +89,7 @@ Deno.test({
       new Uint8Array([0, 0, 1, 136, 68, 255]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -123,17 +113,7 @@ Deno.test({
       new Uint8Array([0, 17, 34, 51, 66, 77, 88, 99, 136, 68, 255]),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, JoinOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid join operation templating",
-  fn() {
-    assertThrows(
-      () => JoinOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -154,7 +134,7 @@ Deno.test({
       new Blake2b(32).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -178,7 +158,7 @@ Deno.test({
       new Blake2b(64).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -203,7 +183,7 @@ Deno.test({
       new Blake2b(32, key).update(input).digest(),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Blake2bOperation.from(template));
+    assertEquals(op, Operation.from(template));
   },
 });
 
@@ -230,16 +210,6 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Invalid BLAKE2b hash operation templating",
-  fn() {
-    assertThrows(
-      () => Blake2bOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
-  },
-});
-
-Deno.test({
   name: "SHA-256 hash operation",
   fn() {
     const op = new Sha256Operation();
@@ -251,113 +221,6 @@ Deno.test({
       new Uint8Array(createHash("sha256").update(input).digest()),
     );
     assertEquals(op.toJSON(), template);
-    assertEquals(op, Sha256Operation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid SHA-256 hash operation templating",
-  fn() {
-    assertThrows(
-      () => Sha256Operation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
-  },
-});
-
-Deno.test({
-  name: "Mainnet affixation operation",
-  fn() {
-    const network = "NetXdQprcVkpaWU";
-    const timestamp = "1970-01-01T00:00:00.000Z";
-    const localeTimestamp = new Date(timestamp).toLocaleString();
-    const op = new AffixOperation(network, new Date(timestamp));
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: AffixTemplate = {
-      type: "affix",
-      network,
-      timestamp,
-    };
-    assertEquals(op.network, network);
-    assertEquals(op.timestamp, new Date(op.timestamp));
-    assertEquals(
-      op.toString(),
-      `Affix to the Tezos Mainnet at ${localeTimestamp}`,
-    );
-    assert(op.mainnet);
-    assertEquals(op.commit(input), input);
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, AffixOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Altnet operation-level affixation operation",
-  fn() {
-    const network = "NetXH12Aer3be93";
-    const timestamp = "1970-01-01T00:00:00.000Z";
-    const localeTimestamp = new Date(timestamp).toLocaleString();
-    const op = new AffixOperation(network, new Date(timestamp));
-    const input = crypto.getRandomValues(new Uint8Array(32));
-    const template: AffixTemplate = {
-      type: "affix",
-      network,
-      timestamp,
-    };
-    assertEquals(op.network, network);
-    assertEquals(op.timestamp, new Date(op.timestamp));
-    assertEquals(
-      op.toString(),
-      `Affix to alternate Tezos network "NetXH12Aer3be93" at ${localeTimestamp}`,
-    );
-    assert(!op.mainnet);
-    assertEquals(op.commit(input), input);
-    assertEquals(op.toJSON(), template);
-    assertEquals(op, AffixOperation.from(template));
-  },
-});
-
-Deno.test({
-  name: "Invalid Affixation operation templating",
-  fn() {
-    assertThrows(
-      () => AffixOperation.from({ type: "bogus" }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "NetXH12Aer3be93",
-          timestamp: "invalid",
-        }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "invalid",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "2eaEQdd69bmjibEQa",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-      InvalidTezosNetworkError,
-    );
-    assertThrows(
-      () =>
-        AffixOperation.from({
-          type: "affix",
-          network: "MRFsrHWuD14mU9Y",
-          timestamp: "1970-01-01T00:00:00.000Z",
-        }),
-      InvalidTezosNetworkError,
-    );
+    assertEquals(op, Operation.from(template));
   },
 });
