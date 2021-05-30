@@ -53,19 +53,19 @@ commands:
 
 #### On TestNet
 
-    tzstamp-manage upload-hash KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj 84714a61037b3b4fa539008681cbfa97c7256930279ff4b54bad7366521afc67 \-\-node https://testnet-tezos.giganode.io/ \-\-faucet tz1MKs91KPzkpmZYz7Dvbd9dyq86murA1BrN.json
+    tzstamp-manage upload-hash KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj 84714a61037b3b4fa539008681cbfa97c7256930279ff4b54bad7366521afc67 --node https://testnet-tezos.giganode.io/ --faucet tz1MKs91KPzkpmZYz7Dvbd9dyq86murA1BrN.json
 
 #### On MainNet
 
-    tzstamp-manage upload-hash KT1K5npkpWK6wxkcBg97dZD77c2J7DmWvxSb a4e9de2410c9e7c3ac4c57bbc18beedc5935d5c8118e345a72baee00a9820b67 \-\-secret-path secret.txt
+    tzstamp-manage upload-hash KT1K5npkpWK6wxkcBg97dZD77c2J7DmWvxSb a4e9de2410c9e7c3ac4c57bbc18beedc5935d5c8118e345a72baee00a9820b67 --secret-path secret.txt
 
 ### Viewing Contract Storage
 
-    tzstamp-manage view storage KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj \-\-node https://testnet-tezos.giganode.io/
+    tzstamp-manage view storage KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj --node https://testnet-tezos.giganode.io/
 
 ### Checking If A Contract Is A TzStamp Instance
 
 **Note**: The stored hashes are currently out of date, do not rely on this to
 determine if a contract is a TzStamp contract or not.
 
-    tzstamp-manage is-tzstamp KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj \-\-node https://testnet-tezos.giganode.io/
+    tzstamp-manage is-tzstamp KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj --node https://testnet-tezos.giganode.io/
