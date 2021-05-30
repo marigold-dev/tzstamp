@@ -104,17 +104,8 @@ export class Proof {
   readonly derivation: Uint8Array;
 
   /**
-   * Proofs may only include a single operation-level affixation and
-   * block-level affixation each. Throws `UnallowedOperationError` if
-   * there are multiple same-level affixations.
-   *
-   * The block-level affixation must be the last operation in the proof.
-   * Throws `UnallowedOperationError` if there are operations after a
-   * block-level affixation.
-   *
-   * If an operation-level and block-level are both included in the proof,
-   * their timestamps must match. Throws `MismatchedTimestampError` if
-   * the timestamps do not match.
+   * An affixation operation must be the last operation in a proof.
+   * Throws `UnallowedOperationError` if there are any operations after.
    *
    * @param hash Input hash
    * @param operations Proof operations
