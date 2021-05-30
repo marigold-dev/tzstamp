@@ -81,6 +81,8 @@ export abstract class Operation {
         return Sha256Operation.from(template);
       case "affix":
         return AffixOperation.from(template);
+      case "remote":
+        return RemoteOperation.from(template);
       default:
         throw new UnsupportedOperationError(
           `Unsupported operation "${template.type}"`,
@@ -483,5 +485,77 @@ export class AffixOperation extends Operation {
       template.network,
       new Date(template.timestamp),
     );
+  }
+}
+
+/**
+ * Remote proof operation template
+ */
+export interface RemoteTemplate extends OperationTemplate {
+  type: "remote";
+  url: string;
+}
+
+/**
+ * Remote proof operation
+ */
+export class RemoteOperation extends Operation {
+  /**
+   * Remote proof URL
+   */
+  readonly url: URL;
+
+  /**
+   * Throws `TypeError` if URL is invalid.
+   *
+   * @param url Remote proof URL
+   */
+  constructor(url: string) {
+    super();
+    this.url = new URL(url);
+  }
+
+  toString(): string {
+    return `Continue with remote proof at <${this.url}>`;
+  }
+
+  toJSON(): RemoteTemplate {
+    return {
+      type: "remote",
+      url: this.url.toString(),
+    };
+  }
+
+  /**
+   * [JTD] schema for a remote proof operation template
+   *
+   * [JTD]: https://jsontypedef.com
+   */
+  static readonly schema: Schema = {
+    properties: {
+      type: { enum: ["remote"] },
+      url: { type: "string" },
+    },
+  };
+
+  /**
+   * Creates a remote proof operation from a template object.
+   * Throws `InvalidTemplateError` if the template is invalid.
+   *
+   * ```ts
+   * RemoteOperation.from({
+   *   type: "remote",
+   *   url: "https://..."
+   * });
+   * // RemoteOperation { url: URL {} }
+   * ```
+   *
+   * @param template Template object
+   */
+  static from(template: unknown): RemoteOperation {
+    if (!isValid<RemoteTemplate>(RemoteOperation.schema, template)) {
+      throw new InvalidTemplateError("Invalid remote proof operation template");
+    }
+    return new RemoteOperation(template.url);
   }
 }

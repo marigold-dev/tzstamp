@@ -6,6 +6,8 @@ import {
   JoinOperation,
   JoinTemplate,
   Operation,
+  RemoteOperation,
+  RemoteTemplate,
   Sha256Operation,
   Sha256Template,
 } from "../src/operation.ts";
@@ -51,6 +53,12 @@ Deno.test({
         network: "NetXdQprcVkpaWU",
         timestamp: "1970-01-01T00:00:00.000Z",
       }) instanceof AffixOperation,
+    );
+    assert(
+      Operation.from({
+        type: "remote",
+        url: "file://",
+      }) instanceof RemoteOperation,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
@@ -358,6 +366,37 @@ Deno.test({
           timestamp: "1970-01-01T00:00:00.000Z",
         }),
       InvalidTezosNetworkError,
+    );
+  },
+});
+
+Deno.test({
+  name: "Remote proof operation",
+  fn() {
+    const input = crypto.getRandomValues(new Uint8Array(32));
+    const url = "https://tzstamp.example.com/myProof.json";
+    const op = new RemoteOperation(url);
+    const template: RemoteTemplate = {
+      type: "remote",
+      url,
+    };
+    assertEquals(op.url.toString(), url);
+    assertEquals(
+      op.toString(),
+      `Continue with remote proof at <${url}>`,
+    );
+    assertEquals(op.commit(input), input);
+    assertEquals(op.toJSON(), template);
+    assertEquals(op, RemoteOperation.from(template));
+  },
+});
+
+Deno.test({
+  name: "Invalid remote proof operation templating",
+  fn() {
+    assertThrows(
+      () => new RemoteOperation("bogus"),
+      TypeError,
     );
   },
 });
