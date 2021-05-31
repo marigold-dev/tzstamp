@@ -14,9 +14,12 @@ Assuming a fresh install you'll need to `apt-get` some dependencies:
 
     sudo apt-get install git nodejs npm
 
-Before you can deploy a contract, you'll need to [download a faucet
-key](https://faucet.tzalpha.net/) for the Tezos testnet. Make sure to remember
-where you store this key as we'll use it in the following steps.
+The global nodejs installation will have to be upgraded from Debian 10's default
+before you can run TzStamp:
+
+    sudo npm --global --upgrade install npm
+
+    sudo npm --global --upgrade install node
 
 Next clone the tzstamp contract management utility.
 
@@ -27,19 +30,25 @@ Install the dependencies for the management utility.
 
     npm install
 
+Before you can deploy a contract or upload a Merkle root, you'll need to
+[download a faucet key](https://faucet.tzalpha.net/) for the Tezos testnet.
+
+You're now ready to use the utility.
+
 ## Basic Use
 
 ### Deploying a smart contract
 
 TzStamp has a variety of possible backend smart contracts. However upgrades in
 the TzStamp proof protocol currently mean there's no upside to using any
-available contract besides 'deadsimple', which accepts the bytes of a hash
-without storing it. Previous contracts 'simple' and 'expensive' stored hashes in
-various ways, but are no longer necessary for a long lived TzStamp proof.
+available contract besides 'noop', which accepts the bytes of a hash
+without storing it. TzStamp's proof protocol lets it avoid having to store the
+Merkle root on chain. Instead the TzStamp server constructs a long lived proof
+by showing the hash of this operation must be part of its parent block.
 
-To deploy the 'deadsimple' contract run:
+Once [you have the faucet key](https://faucet.tzalpha.net/) you can deploy the 'noop' contract by running:
 
-    ./index.js deploy deadsimple --faucet tz1abAjdogmGma8EuSDE8xNbwfEtGAKMSrd4.json --node https://testnet-tezos.giganode.io
+    ./index.js deploy noop --faucet tz1abAjdogmGma8EuSDE8xNbwfEtGAKMSrd4.json --node https://testnet-tezos.giganode.io
 
 [Use a chainviewer](https://better-call.dev/) to verify you've originated the
 contract.
