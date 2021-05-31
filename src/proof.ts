@@ -64,8 +64,38 @@ export class Proof {
    * Throws `MismatchedHashError` if the derivation of the current proof does not match
    * the stored hash of the passed proof.
    *
-   * Concatenating to an `AffixedProof` or `PendingProof` will produce
-   * a concatenated proof of the same subclass.
+   * ```ts
+   * const proofA = new Proof({ ... });
+   * const proofB = new Proof({ ... });
+   * const proofAB = proofA.concat(proofB);
+   * // Hash of proofA
+   * // Operations of proofA + proofB
+   * // Calculates new derivation
+   * ```
+   *
+   * The `AffixedProof` and `PendingProof` subclasses are viral.
+   * Concatenating to instances of these classes with produce a new
+   * instance of the same subclass:
+   *
+   * ```ts
+   * const affixedProof = new AffixedProof({ ... });
+   * proof.concat(affixedProof);
+   * // AffixedProof {}
+   * // Retains extra fields of affixedProof
+   *
+   * const pendingProof = new PendingProof({ ... });
+   * proof.concat(pendingProof);
+   * // PendingProof {}
+   * // Retains extra fields of pendingProof
+   * ```
+   *
+   * The `AffixedProof` class represents the end of a proof
+   * and cannot be concatenated to:
+   *
+   * ```
+   * affixedProof.concat(proof);
+   * // TypeError: Cannot concatenate to an affixed proof
+   * ```
    *
    * @param proof Proof to append
    */
@@ -73,6 +103,9 @@ export class Proof {
   concat(proof: PendingProof): PendingProof;
   concat(proof: Proof): Proof;
   concat(proof: Proof): Proof {
+    if (this instanceof AffixedProof) {
+      throw new TypeError("Cannot concatenate to an affixed proof");
+    }
     if (!compare(this.derivation, proof.hash)) {
       throw new MismatchedHashError(
         "Derivation of partial proof does not match the stored hash of the appended proof",
@@ -192,9 +225,9 @@ export enum VerifyStatus {
   Verified = "verified",
 
   /**
-   * Proof could not be verified. The Tezos node
-   * could not be contacted, or the client is not
-   * authorized to access the node.
+   * Proof could not be verified. A connection could
+   * not be established to the The Tezos node, or
+   * the server responses were wrong.
    */
   NetError = "netError",
 
@@ -268,6 +301,8 @@ export class AffixedProof extends Proof {
   }
 
   /**
+   * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
+   *
    * @param hash Input hash
    * @param operations Proof operations
    * @param network Tezos network identifier
@@ -288,18 +323,46 @@ export class AffixedProof extends Proof {
 
   /**
    * Checks if the proof is affixed to the Tezos Mainnet.
-   * If `false`, the proof is affixed to an alternate network.
+   * If `false`, the proof is affixed to an alternate network
+   * and may not be trustworthy.
    */
   get mainnet(): boolean {
     return this.network == TEZOS_MAINNET;
   }
 
-  concat(_: Proof): never {
-    throw new Error("Cannot concatenate to an affixed proof");
-  }
-
   /**
-   * Verifies the proof.
+   * Verifies the proof by querying Tezos node RPC with the derived
+   * block hash and comparing the timestamp of the block header with
+   * the timestamp asserted by the proof.
+   *
+   * Throws `TypeError` if the RPC URL is invalid.
+   *
+   * Resolves to `VerifyStatus.NotFound` if the node responds with a 404
+   * while querying the block header. Probable causes are:
+   *
+   * 1. The RPC URL provided does not refer to a Tezos node.
+   * 2. The node does not support the asserted network.
+   * 3. The proof has been tampered with or was constructed incorrectly.
+   * 4. The node is operating in rolling history mode.
+   *
+   * Resolves to `VerifyStatus.NetError` if a connection could not be established,
+   * the server responds with a status other than 200 or 404, or the response was
+   * not JSON. Probable causes are:
+   *
+   * 1. The RPC URL provided does not refer to a Tezos node.
+   * 2. Network access is unavailable or blocked by the runtime or operating system.
+   * 3. The client is not authorized to access the node.
+   * 4. The node is under strain or temporarily down.
+   *
+   * Resolves to `VerifyStatus.Mismatch` if the block header is successfully
+   * fetched, but the on-chain timestamp is different. Probable causes are:
+   *
+   * 1. The proof has been tampered with or was constructed incorrectly.
+   *
+   * Resolves to `VerifyStatus.Verified` if the block header is successfully
+   * fetched, and the timestamps match. If the proof is committed to the Mainnet
+   * or a trusted alternative network, the proof's hash can be trusted to have
+   * existed by the proof's asserted timestamp.
    *
    * @param rpcURL Tezos node RPC base URL
    */
@@ -373,6 +436,9 @@ export interface PendingProofTemplate extends ProofTemplate {
   remote: string;
 }
 
+/**
+ * Proof segment awaiting remote proof
+ */
 export class PendingProof extends Proof {
   /**
    * Remote proof URL
@@ -391,6 +457,8 @@ export class PendingProof extends Proof {
 
   /**
    * Tries to fetch and concatenate the remote proof.
+   *
+   * Throws if a network connection cannot be established.
    *
    * Throws `FetchError` if the request response status was not 200.
    *
