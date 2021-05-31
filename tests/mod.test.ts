@@ -7,6 +7,29 @@ const blocks: Uint8Array[] = Array.from(
   () => crypto.getRandomValues(new Uint8Array(32)),
 );
 
+const manualRoot = hashcat(
+  hashcat(
+    hashcat(
+      blake2b(blocks[0]),
+      blake2b(blocks[1]),
+    ),
+    hashcat(
+      blake2b(blocks[2]),
+      blake2b(blocks[3]),
+    ),
+  ),
+  hashcat(
+    hashcat(
+      blake2b(blocks[4]),
+      blake2b(blocks[5]),
+    ),
+    hashcat(
+      blake2b(blocks[6]),
+      blake2b(blocks[6]),
+    ),
+  ),
+);
+
 function hashcat(a: Uint8Array, b: Uint8Array): Uint8Array {
   return blake2b(concat(a, b));
 }
@@ -35,30 +58,6 @@ Deno.test({
   fn() {
     const merkleTree = new MerkleTree();
     merkleTree.append(...blocks);
-
-    // Calculate manual root
-    const manualRoot = hashcat(
-      hashcat(
-        hashcat(
-          blake2b(blocks[0]),
-          blake2b(blocks[1]),
-        ),
-        hashcat(
-          blake2b(blocks[2]),
-          blake2b(blocks[3]),
-        ),
-      ),
-      hashcat(
-        hashcat(
-          blake2b(blocks[4]),
-          blake2b(blocks[5]),
-        ),
-        hashcat(
-          blake2b(blocks[6]),
-          blake2b(blocks[6]),
-        ),
-      ),
-    );
 
     // Compare progressively calculated root
     assertEquals(merkleTree.root, manualRoot);
@@ -139,6 +138,20 @@ Deno.test({
       }
       assertEquals(result, path.root);
       assertEquals(path.root, merkleTree.root);
+    }
+  },
+});
+
+Deno.test({
+  name: "Path to proof",
+  fn() {
+    const merkleTree = new MerkleTree();
+    merkleTree.append(...blocks);
+    assertEquals(merkleTree.root, manualRoot);
+    for (const path of merkleTree.paths()) {
+      const proof = path.toProof();
+      assertEquals(proof.hash, path.leaf);
+      assertEquals(proof.derivation, manualRoot);
     }
   },
 });

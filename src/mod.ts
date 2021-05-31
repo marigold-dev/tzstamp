@@ -1,43 +1,5 @@
 import { blake2b, concat, Hex } from "./deps.deno.ts";
-
-/**
- * Step along path
- */
-export interface Step {
-  /**
-   * Sibling node hash
-   */
-  sibling: Uint8Array;
-
-  /**
-   * Relation of a sibling node
-   *
-   * The hash of a left sibling node should prepended to the current
-   * hash to derive the parent node hash, whereas the hash of a right
-   * sibling node should appended.
-   */
-  relation: "left" | "right";
-}
-
-/**
- * Path from leaf to root
- */
-export interface Path {
-  /**
-   * Leaf node hash
-   */
-  leaf: Uint8Array;
-
-  /**
-   * Path steps from leaf to root hash, exluding both
-   */
-  steps: Step[];
-
-  /**
-   * Root node hash
-   */
-  root: Uint8Array;
-}
+import { Path, Step } from "./path.ts";
 
 /**
  * Appendable Tezos-style Merkle tree
@@ -198,11 +160,11 @@ export class MerkleTree {
       tail = blake2b(concat(tail, tail));
     }
 
-    return {
+    return new Path({
       leaf: this.layers[0][index],
       steps,
       root: this.root,
-    };
+    });
   }
 
   /**
