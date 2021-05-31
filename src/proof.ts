@@ -39,7 +39,7 @@ export class Proof {
   /**
    * Proof operations
    */
-  readonly operations: Operation[] = [];
+  readonly operations: Operation[];
 
   /**
    * Output of all operations applied sequentially to the input hash.
@@ -305,28 +305,32 @@ export class AffixedProof extends Proof {
    */
   async verify(rpcURL: string | URL): Promise<VerifyStatus> {
     const endpoint = new URL(
-      `/chains/${this.network}/blocks/${this.blockHash}/header`,
+      `chains/${this.network}/blocks/${this.blockHash}/header`,
       rpcURL,
     );
-    const response = await fetch(endpoint, {
-      headers: {
-        accepts: "application/json",
-      },
-    });
-    switch (response.status) {
-      case 200:
-        break;
-      case 404:
-        return VerifyStatus.NotFound;
-      default:
-        return VerifyStatus.NetError;
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          accepts: "application/json",
+        },
+      });
+      switch (response.status) {
+        case 200:
+          break;
+        case 404:
+          return VerifyStatus.NotFound;
+        default:
+          return VerifyStatus.NetError;
+      }
+      const header = await response.json();
+      const timestamp = new Date(header.timestamp);
+      if (timestamp.getTime() != this.timestamp.getTime()) {
+        return VerifyStatus.Mismatch;
+      }
+      return VerifyStatus.Verified;
+    } catch (_) {
+      return VerifyStatus.NetError;
     }
-    const header = await response.json();
-    const timestamp = new Date(header.timestamp);
-    if (timestamp.getTime() != this.timestamp.getTime()) {
-      return VerifyStatus.Mismatch;
-    }
-    return VerifyStatus.Verified;
   }
 
   toJSON(): AffixedProofTemplate {
