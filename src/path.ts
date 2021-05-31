@@ -1,4 +1,5 @@
 import {
+  blake2b,
   Blake2bOperation,
   JoinOperation,
   Operation,
@@ -29,9 +30,9 @@ export interface Step {
  */
 export interface PathOptions {
   /**
-   * Leaf node hash
+   * Data block
    */
-  leaf: Uint8Array;
+  block: Uint8Array;
 
   /**
    * Path steps from leaf to root hash, excluding both.
@@ -49,9 +50,9 @@ export interface PathOptions {
  */
 export class Path {
   /**
-   * Leaf node hash
+   * Data block
    */
-  leaf: Uint8Array;
+  block: Uint8Array;
 
   /**
    * Path steps from leaf to root hash, excluding both
@@ -63,17 +64,24 @@ export class Path {
    */
   root: Uint8Array;
 
-  constructor({ leaf, steps, root }: PathOptions) {
-    this.leaf = leaf;
+  constructor({ block, steps, root }: PathOptions) {
+    this.block = block;
     this.steps = steps;
     this.root = root;
+  }
+
+  /**
+   * Leaf node hash
+   */
+  get leaf(): Uint8Array {
+    return blake2b(this.block);
   }
 
   /**
    * Creates a proof from the path.
    */
   toProof(): Proof {
-    const operations: Operation[] = [];
+    const operations: Operation[] = [new Blake2bOperation()];
     for (const { sibling, relation } of this.steps) {
       operations.push(
         new JoinOperation({
@@ -84,7 +92,7 @@ export class Path {
       );
     }
     return new Proof({
-      hash: this.leaf,
+      hash: this.block,
       operations,
     });
   }

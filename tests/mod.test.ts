@@ -154,7 +154,7 @@ Deno.test({
     assertEquals(merkleTree.root, manualRoot);
     for (const path of merkleTree.paths()) {
       const proof = path.toProof();
-      assertEquals(proof.hash, path.leaf);
+      assertEquals(proof.hash, path.block);
       assertEquals(proof.derivation, manualRoot);
     }
   },

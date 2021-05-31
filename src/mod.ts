@@ -13,14 +13,16 @@ export interface MerkleTreeOptions {
  *
  * Based on the Merkle tree implementation found within the
  * [Tezos source code][merkle].
- * While the leaf count is not a power of 2, the last leaf in
- * the tree is implicitly duplicated until the tree is perfect.
- * Appends have a logarithmic time complexity.
+ *
+ * The hashing algorithm is BLAKE2b with 32-byte digests. The last
+ * leaf is implicitly duplicated until the tree is perfect. Appends
+ * have a logarithmic time complexity.
  *
  * [merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
  */
 export class MerkleTree {
-  private leafSet: Set<string> = new Set();
+  private blockSet = new Set<string>();
+  private blocks: Uint8Array[] = [];
   private layers: Uint8Array[][] = [[]];
   private readonly deduplicate: boolean;
 
@@ -34,25 +36,22 @@ export class MerkleTree {
   /**
    * Root hash
    */
-  get root(): Uint8Array {
-    return this.layers[this.layers.length - 1][0];
+  get root(): Uint8Array | null {
+    return this.blocks.length ? this.layers[this.layers.length - 1][0] : null;
   }
 
   /**
    * The number of leaves included within the Merkle tree
    */
   get size(): number {
-    return this.layers[0].length;
+    return this.blocks.length;
   }
 
   /**
    * Appends data blocks to the Merkle tree
    *
-   * Appends have logarithmic time complexity. The last leaf
-   * appended is implicitly duplicated until the tree is perfect.
-   *
    * ```ts
-   * merkleTree.size; // 3
+   * const merkleTree = new MerkleTree();
    *
    * merkleTree.append(
    *   new Uint8Array([ 1, 2 ]),
@@ -60,35 +59,42 @@ export class MerkleTree {
    *   new Uint8Array([ 5, 6 ]),
    * );
    *
-   * merkleTree.size; // 6
+   * merkleTree.size; // 3
    * ```
    *
-   * Merkle trees configured to deduplicate leaves will silently
-   * drop previously-included leaves:
+   * Merkle trees configured to deduplicate blocks will silently
+   * drop previously-included blocks:
    *
    * ```ts
-   * merkleTree.size; // 3
+   * const merkleTree = new MerkleTree({
+   *   deduplicate: true,
+   * });
    *
    * merkleTree.append(
    *   new Uint8Array([ 1, 2 ]),
-   *   new Uint8Array([ 1, 2 ]),
-   *   new Uint8Array([ 1, 2 ]),
+   *   new Uint8Array([ 1, 2 ]), // deduplicated
    * );
    *
-   * merkleTree.size; // 4
+   * merkleTree.size; // 1
    * ```
+   *
+   * Appends have logarithmic time-complexity. Internally, the
+   * last leaf is implicitly duplicated until the tree is perfect.
+   *
+   * @param blocks Data blocks
    */
   append(...blocks: Uint8Array[]): void {
     for (const block of blocks) {
-      // Create leaf
-      const leaf = blake2b(block);
-      const leafHex = Hex.stringify(leaf);
-
       // Deduplicate leaves already in tree
-      if (this.deduplicate && this.leafSet.has(leafHex)) {
+      const blockHex = Hex.stringify(block);
+      if (this.deduplicate && this.blockSet.has(blockHex)) {
         continue;
       }
-      this.leafSet.add(leafHex);
+      this.blocks.push(block);
+      this.blockSet.add(blockHex);
+
+      // Create leaf
+      const leaf = blake2b(block);
 
       // Create cursor variables
       let index = this.layers[0].length;
@@ -137,12 +143,12 @@ export class MerkleTree {
 
   /**
    * Check if a block is included in the tree
-   * @param block Data block corresponding to a leaf
+   *
+   * @param block Data block
    */
   has(block: Uint8Array): boolean {
-    const leaf = blake2b(block);
-    const leafHex = Hex.stringify(leaf);
-    return this.leafSet.has(leafHex);
+    const blockHex = Hex.stringify(block);
+    return this.blockSet.has(blockHex);
   }
 
   /**
@@ -152,7 +158,7 @@ export class MerkleTree {
    * @param index Index of the leaf.
    */
   path(index: number): Path {
-    if (!(index in this.layers[0])) {
+    if (!(index in this.blocks[0])) {
       throw new RangeError("Leaf index is out of range");
     }
 
@@ -176,9 +182,9 @@ export class MerkleTree {
     }
 
     return new Path({
-      leaf: this.layers[0][index],
+      block: this.blocks[index],
       steps,
-      root: this.root,
+      root: (this.root as Uint8Array),
     });
   }
 
