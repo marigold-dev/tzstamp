@@ -48,8 +48,12 @@ Deno.test({
     assertEquals(merkleTree.size, 3);
 
     // Deduplication
-    merkleTree.append(blocks[0]);
-    assertEquals(merkleTree.size, 3);
+    const dedupeMerkleTree = new MerkleTree({ deduplicate: true });
+    dedupeMerkleTree.append(
+      blocks[0],
+      blocks[0],
+    );
+    assertEquals(dedupeMerkleTree.size, 1);
   },
 });
 

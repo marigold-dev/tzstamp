@@ -2,6 +2,13 @@ import { blake2b, concat, Hex } from "./deps.deno.ts";
 import { Path, Step } from "./path.ts";
 
 /**
+ * Tezos-style Merkle tree constructor options
+ */
+export interface MerkleTreeOptions {
+  deduplicate?: boolean;
+}
+
+/**
  * Appendable Tezos-style Merkle tree
  *
  * Based on the Merkle tree implementation found within the
@@ -15,6 +22,14 @@ import { Path, Step } from "./path.ts";
 export class MerkleTree {
   private leafSet: Set<string> = new Set();
   private layers: Uint8Array[][] = [[]];
+  private readonly deduplicate: boolean;
+
+  /**
+   * @param deduplicate Deduplicate leaves. Defaults to false
+   */
+  constructor({ deduplicate = false }: MerkleTreeOptions = {}) {
+    this.deduplicate = deduplicate;
+  }
 
   /**
    * Root hash
@@ -27,7 +42,7 @@ export class MerkleTree {
    * The number of leaves included within the Merkle tree
    */
   get size(): number {
-    return this.leafSet.size;
+    return this.layers[0].length;
   }
 
   /**
@@ -70,7 +85,7 @@ export class MerkleTree {
       const leafHex = Hex.stringify(leaf);
 
       // Deduplicate leaves already in tree
-      if (this.leafSet.has(leafHex)) {
+      if (this.deduplicate && this.leafSet.has(leafHex)) {
         continue;
       }
       this.leafSet.add(leafHex);
