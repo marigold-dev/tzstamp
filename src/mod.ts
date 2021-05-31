@@ -43,10 +43,12 @@ export interface Path {
  * Appendable Tezos-style Merkle tree
  *
  * Based on the Merkle tree implementation found within the
- * [Tezos source code](https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml).
- * In the case of a leaf count not equalling a power of 2, the
- * last leaf in the tree is implicitly duplicated until the tree
- * is perfect. Appends take logarithmic time.
+ * [Tezos source code][merkle].
+ * While the leaf count is not a power of 2, the last leaf in
+ * the tree is implicitly duplicated until the tree is perfect.
+ * Appends have a logarithmic time complexity.
+ *
+ * [merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
  */
 export class MerkleTree {
   private leafSet: Set<string> = new Set();
@@ -69,8 +71,8 @@ export class MerkleTree {
   /**
    * Appends data blocks to the Merkle tree
    *
-   * Appends take logarithmic time. The last leaf appended is
-   * implicitly duplicated until the tree is perfect.
+   * Appends have logarithmic time complexity. The last leaf
+   * appended is implicitly duplicated until the tree is perfect.
    *
    * ```ts
    * merkleTree.size; // 3
@@ -84,8 +86,8 @@ export class MerkleTree {
    * merkleTree.size; // 6
    * ```
    *
-   * Merkle trees configured to deplicate leaves will silently drop
-   * previously-included leaves:
+   * Merkle trees configured to deduplicate leaves will silently
+   * drop previously-included leaves:
    *
    * ```ts
    * merkleTree.size; // 3
