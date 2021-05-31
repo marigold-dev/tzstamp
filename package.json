@@ -4,7 +4,7 @@
   "description": "Manages instances of the tzstamp tezos smart contract.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "FAUCET_PATH=faucet.json node test/test.js"
   },
   "author": "John David Pressman",
   "license": "MIT",
@@ -17,5 +17,8 @@
     "dotenv-defaults": "^2.0.1",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.25.0"
   }
 }
