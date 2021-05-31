@@ -310,11 +310,11 @@ export class AffixedProof extends Proof {
    */
   constructor({ hash, operations, network, timestamp }: AffixedProofOptions) {
     super({ hash, operations });
-    const rawNetwork = Base58.decodeCheck(network);
-    if (
-      rawNetwork.length != 7 ||
-      !compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)
-    ) {
+    try {
+      const rawNetwork = Base58.decodeCheck(network);
+      if (rawNetwork.length != 7) throw null;
+      if (!compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)) throw null;
+    } catch (_) {
       throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
     }
     this.network = network;
