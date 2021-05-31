@@ -1,56 +1,35 @@
 import { blake2b, concat, Hex } from "./deps.deno.ts";
+import { Path, Step } from "./path.ts";
 
 /**
- * Step along path
+ * Tezos-style Merkle tree constructor options
  */
-export interface Step {
-  /**
-   * Sibling node hash
-   */
-  sibling: Uint8Array;
-
-  /**
-   * Relation of a sibling node
-   *
-   * The hash of a left sibling node should prepended to the current
-   * hash to derive the parent node hash, whereas the hash of a right
-   * sibling node should appended.
-   */
-  relation: "left" | "right";
-}
-
-/**
- * Path from leaf to root
- */
-export interface Path {
-  /**
-   * Leaf node hash
-   */
-  leaf: Uint8Array;
-
-  /**
-   * Path steps from leaf to root hash, exluding both
-   */
-  steps: Step[];
-
-  /**
-   * Root node hash
-   */
-  root: Uint8Array;
+export interface MerkleTreeOptions {
+  deduplicate?: boolean;
 }
 
 /**
  * Appendable Tezos-style Merkle tree
  *
  * Based on the Merkle tree implementation found within the
- * [Tezos source code](https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml).
- * In the case of a leaf count not equalling a power of 2, the
- * last leaf in the tree is implicitly duplicated until the tree
- * is perfect. Appends take logarithmic time.
+ * [Tezos source code][merkle].
+ * While the leaf count is not a power of 2, the last leaf in
+ * the tree is implicitly duplicated until the tree is perfect.
+ * Appends have a logarithmic time complexity.
+ *
+ * [merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
  */
 export class MerkleTree {
   private leafSet: Set<string> = new Set();
   private layers: Uint8Array[][] = [[]];
+  private readonly deduplicate: boolean;
+
+  /**
+   * @param deduplicate Deduplicate leaves. Defaults to false
+   */
+  constructor({ deduplicate = false }: MerkleTreeOptions = {}) {
+    this.deduplicate = deduplicate;
+  }
 
   /**
    * Root hash
@@ -63,14 +42,14 @@ export class MerkleTree {
    * The number of leaves included within the Merkle tree
    */
   get size(): number {
-    return this.leafSet.size;
+    return this.layers[0].length;
   }
 
   /**
    * Appends data blocks to the Merkle tree
    *
-   * Appends take logarithmic time. The last leaf appended is
-   * implicitly duplicated until the tree is perfect.
+   * Appends have logarithmic time complexity. The last leaf
+   * appended is implicitly duplicated until the tree is perfect.
    *
    * ```ts
    * merkleTree.size; // 3
@@ -84,8 +63,8 @@ export class MerkleTree {
    * merkleTree.size; // 6
    * ```
    *
-   * Merkle trees configured to deplicate leaves will silently drop
-   * previously-included leaves:
+   * Merkle trees configured to deduplicate leaves will silently
+   * drop previously-included leaves:
    *
    * ```ts
    * merkleTree.size; // 3
@@ -106,7 +85,7 @@ export class MerkleTree {
       const leafHex = Hex.stringify(leaf);
 
       // Deduplicate leaves already in tree
-      if (this.leafSet.has(leafHex)) {
+      if (this.deduplicate && this.leafSet.has(leafHex)) {
         continue;
       }
       this.leafSet.add(leafHex);
@@ -196,11 +175,11 @@ export class MerkleTree {
       tail = blake2b(concat(tail, tail));
     }
 
-    return {
+    return new Path({
       leaf: this.layers[0][index],
       steps,
       root: this.root,
-    };
+    });
   }
 
   /**

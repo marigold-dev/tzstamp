@@ -26,7 +26,8 @@
   "homepage": "https://gitlab.com/tzstamp/merkle",
   "license": "MIT",
   "dependencies": {
-    "@tzstamp/helpers": "^0.2.0"
+    "@tzstamp/helpers": "^0.2.0",
+    "@tzstamp/proof": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^15.0.2"
