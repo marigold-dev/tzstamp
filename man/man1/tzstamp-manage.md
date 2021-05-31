@@ -14,6 +14,8 @@ tzstamp-manage - Manage an instance of the tzstamp Tezos smart contract
 
 **tzstamp-manage** **view** {**stats** | **storage**} *CONTRACT_KT1*
 
+**tzstamp-manage** **estimate** *CONTRACT_NAME* *CONTRACT_KT1*
+
 **tzstamp-manage** **is-tzstamp** *CONTRACT_KT1*
 
 # DESCRIPTION
@@ -51,6 +53,9 @@ is required to make use of deployment and manual uploading of merkle roots.
 
 **Viewing Contract Storage**
 : tzstamp-manage view storage KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj \-\-node https://testnet-tezos.giganode.io/
+
+**Estimating Burn Rate For A Custom Contract**
+: tzstamp-manage estimate --node https://testnet-tezos.giganode.io --faucet tz1aiE7jFTAutxE8VBmKJcid7xxPsCXgWzJH.json noop KT1PXq6SVTH3fBgJk9hqyVakJERkRp4pUYEL
 
 **Checking If A Contract Is A TzStamp Instance**
 : tzstamp-manage is-tzstamp KT1AkQkRdLgE9NKSTCaPPZPgQuX7NUEtXzdj \-\-node https://testnet-tezos.giganode.io/
