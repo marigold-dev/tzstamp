@@ -1,86 +1,104 @@
-# TzStamp Tezos Merkle Trees
+# TzStamp Tezos-style Merkle Trees
 
-Fast-appendable Tezos-style Merkle trees for
-[TzStamp tools](https://tzstamp.io).
+Fast-appendable Tezos-style Merkle trees for [TzStamp tools][tzstamp].
 
-Tezos-style Merkle Trees use the Blake2b 256-bit hashing algorithm and
-implicitly repeat the last leaf until the tree is
-[perfect](https://xlinux.nist.gov/dads/HTML/perfectBinaryTree.html).
+Tezos-style Merkle trees use the [BLAKE2b] hashing algorithm and implicitly repeat
+the last leaf until the tree is perfect.
 
-This implementation uses logrithmic time-complexity appends to allow for
+This implementation has logarithmic time-complexity appends to allow for
 progressive root derivation over a long runtime. You can find the
-[official Tezos implementation here](https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml).
+[official Tezos implementation here][merkle].
 
 ## Usage
 
 ```js
+// Node + NPM
+const { MerkleTree } = require("@tzstamp/tezos-merkle");
+
 // Deno
 import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.2.0/src/mod.ts";
-
-// Node+NPM
-const { MerkleTree } = require("@tzstamp/tezos-merkle");
 ```
 
-### Constructing a new Merkle tree
+See the [full reference documentation here][docs].
+
+### Building a Merkle tree
 
 ```js
 const merkleTree = new MerkleTree();
-```
 
-### Appending data blocks
-
-```js
+// Append data blocks
 merkleTree.append(
   new Uint8Array([1, 4, 7]),
   new Uint8Array([55, 66, 77]),
   new Uint8Array([0, 0, 0, 255]),
 );
 
-// Automatic deduplication
-merkleTree.size; // 3
-merkleTree.append(new Uint8Array([1, 4, 7]));
+// Get leaf count
 merkleTree.size; // 3
 
-// Check for leaf inclusion
-merkleTree.has(new Uint8Array([0, 0, 0, 255])); // true
-
-// Get current root
+// Get the current root
 merkleTree.root; // Uint8Array(32)
+
+// Check if a block is included in the tree
+merkleTree.has(new Uint8Array([1, 4, 7])); // true
+merkleTree.has(new Uint8Array([255])); // false
+```
+
+Block deduplication (off by default) can be configured like so:
+
+```js
+const merkleTree = new MerkleTree({
+  deduplicate: true,
+});
+
+merkleTree.append(
+  new Uint8Array([1, 2, 3, 4]),
+  new Uint8Array([1, 2, 3, 4]), // deduplicated
+);
+
+merkleTree.size; // 1
 ```
 
 ### Generating paths
 
-A generator function is provided that iterates over all leaf-to-root paths in
-the tree, allowing for simple mass proof construction.
+Block-to-root paths can be computed like so:
 
 ```js
-import { Operation, Proof } from "@tzstamp/proof";
+const paths = merkleTree.path(4); // Path from 5th block to the root
 
-// ...
+path.block; // Uint8Array
+path.root; // Uint8Array(32)
 
-const paths = merkleTree.paths();
-const proofs = [];
-for (const path in paths) {
-  const operations = [Operation.blake2b()];
-  for (const [relation, sibling] of path.steps) {
-    switch (relation) {
-      case 1: // Sibling is to the left
-        operations.push(Operation.prepend(sibling));
-      case 0: // Sibling is to the right
-        operations.push(Operation.append(sibling));
-    }
-    operations.push(Operation.blake2b());
-  }
-  proof.push(new Proof(NETWORK_ID, operations));
-}
+// Sibling nodes along path to root
+path.siblings;
+// [
+//   { sibling: Uint8Array {}, relation: "left" },
+//   ...
+// ]
 ```
 
-Each object produced by the generator has the following properties:
+A [TzStamp proof] can be constructed with the `.toProof` method:
 
-- `root`: Root byte array (`Uint8Array`)
-- `leaf`: Hashed-leaf byte array (`Uint8Array`)
-- `steps`: Array of sibling nodes (`{ sibling: Uint8Array, relation: "left" | "right" }[]`)
+```js
+path.toProof(); // Proof {}
+```
+
+A `paths` generator function is provided to compute paths for all blocks in
+the tree, facilitating mass proof construction.
+
+```js
+for (const path of merkleTree.paths()) {
+  const proof = path.toProof();
+  await storeMyProof(proof);
+}
+```
 
 ## License
 
 [MIT](LICENSE.txt)
+
+[tzstamp]: https://tzstamp.io
+[BLAKE2b]: https://www.blake2.net/
+[merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
+[docs]: https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.2.0/src/mod.ts
+[TzStamp proof]: https://gitlab.com/tzstamp/proof
