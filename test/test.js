@@ -24,8 +24,7 @@ void async function () {
   // Move on once all commands have completed
   console.log('Deploying contracts')
   const deployments = [
-    await deploy('simple'), // $ tzstamp-manage deploy simple
-    await deploy('expensive') // $ tzstamp-manage deploy expensive
+    await deploy('noop') // $ tzstamp-manage deploy noop
   ]
 
   // Manual hash uploads

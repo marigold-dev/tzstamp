@@ -99,7 +99,7 @@ async function deploy (contractName) {
   const contract = await readContract(contractName)
   Tezos.contract.originate({
     code: contract,
-    init: '{}'
+    init: 'Unit'
   })
     .then(originationOp => {
       console.log(`Waiting for confirmation of origination for ${originationOp.contractAddress}...`)
