@@ -7,13 +7,13 @@ import {
 } from "./deps.deno.ts";
 
 /**
- * Step along path
+ * Sibling node
  */
-export interface Step {
+export interface Sibling {
   /**
    * Sibling node hash
    */
-  sibling: Uint8Array;
+  hash: Uint8Array;
 
   /**
    * Relation of a sibling node
@@ -35,9 +35,9 @@ export interface PathOptions {
   block: Uint8Array;
 
   /**
-   * Path steps from leaf to root hash, excluding both.
+   * Sibling nodes along the path from the block to the root hash.
    */
-  steps: Step[];
+  siblings: Sibling[];
 
   /**
     * Root node hash
@@ -55,18 +55,18 @@ export class Path {
   block: Uint8Array;
 
   /**
-   * Path steps from leaf to root hash, excluding both
+   * Sibling nodes along path from the block to the root hash.
    */
-  steps: Step[];
+  siblings: Sibling[];
 
   /**
    * Root node hash
    */
   root: Uint8Array;
 
-  constructor({ block, steps, root }: PathOptions) {
+  constructor({ block, siblings, root }: PathOptions) {
     this.block = block;
-    this.steps = steps;
+    this.siblings = siblings;
     this.root = root;
   }
 
@@ -78,15 +78,17 @@ export class Path {
   }
 
   /**
-   * Creates a proof from the path.
+   * Creates a [TzStamp proof] from the path.
+   *
+   * [TzStamp proof]: https://gitlab.com/tzstamp/proof
    */
   toProof(): Proof {
     const operations: Operation[] = [new Blake2bOperation()];
-    for (const { sibling, relation } of this.steps) {
+    for (const { hash, relation } of this.siblings) {
       operations.push(
         new JoinOperation({
-          prepend: relation == "left" ? sibling : undefined,
-          append: relation == "right" ? sibling : undefined,
+          prepend: relation == "left" ? hash : undefined,
+          append: relation == "right" ? hash : undefined,
         }),
         new Blake2bOperation(),
       );

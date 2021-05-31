@@ -130,13 +130,13 @@ Deno.test({
     // Iteratively test each path
     for (const path of merkleTree.paths()) {
       let result = path.leaf;
-      for (const { relation, sibling } of path.steps) {
+      for (const { hash, relation } of path.siblings) {
         switch (relation) {
           case "left":
-            result = hashcat(sibling, result);
+            result = hashcat(hash, result);
             break;
           case "right":
-            result = hashcat(result, sibling);
+            result = hashcat(result, hash);
             break;
         }
       }

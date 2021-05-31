@@ -1,5 +1,5 @@
 import { blake2b, concat, Hex } from "./deps.deno.ts";
-import { Path, Step } from "./path.ts";
+import { Path, Sibling } from "./path.ts";
 
 /**
  * Tezos-style Merkle tree constructor options
@@ -162,19 +162,19 @@ export class MerkleTree {
       throw new RangeError("Leaf index is out of range");
     }
 
-    const steps: Step[] = [];
+    const siblings: Sibling[] = [];
     let height = 0;
     let cursor = index;
     let tail = this.layers[0][this.layers[0].length - 1];
 
     // Step through each layer, except the highest
     while (height < this.layers.length - 1) {
-      // Add path step
+      // Add path sibling
       const relation = cursor % 2 ? "left" : "right";
-      const sibling = relation == "left"
+      const hash = relation == "left"
         ? this.layers[height][cursor - 1]
         : this.layers[height][cursor + 1] ?? tail;
-      steps.push({ relation, sibling });
+      siblings.push({ hash, relation });
 
       ++height;
       cursor = Math.floor(cursor / 2);
@@ -183,7 +183,7 @@ export class MerkleTree {
 
     return new Path({
       block: this.blocks[index],
-      steps,
+      siblings,
       root: (this.root as Uint8Array),
     });
   }
