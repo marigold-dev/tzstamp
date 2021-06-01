@@ -180,9 +180,6 @@ async function publishTree () {
 
   // Build and validate proof operations from aggregator root to block hash
   const block = await tezos.rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
-  if (block.protocol != 'PtEdo2ZkT9oKpimTah6x2embF25oss54njMuPzkJTEi5RqfdZFA') {
-    throw new Error(`Unsupported block protocol "${block.header.protocol}"`)
-  }
   const highSteps = buildSteps(block, operationGroup.hash)
   const highProof = new Proof(block.chain_id, highSteps)
   if (highProof.derive(pendingTree.root).address != block.hash) {
