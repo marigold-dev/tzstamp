@@ -30,6 +30,13 @@ Assuming a fresh install you'll need to `apt-get` some dependencies:
 
     sudo apt-get install git nodejs npm
 
+The global nodejs installation will have to be upgraded from Debian 10's default
+before you can run TzStamp:
+
+    sudo npm --global --upgrade install npm
+
+    sudo npm --global --upgrade install node
+
 Before you can deploy a contract, you'll need to [download a faucet
 key](https://faucet.tzalpha.net/) for the Tezos testnet. Make sure to remember
 where you store this key as we'll use it in the following steps.
@@ -43,10 +50,9 @@ Install the dependencies for the management utility.
 
     npm install
 
-Deploy either the 'simple' contract (node indexers store merkle roots) or the
-'expensive' contract (hashes stored on chain).
+Deploy the 'noop' contract.
 
-    ./index.js deploy simple --faucet tz1abAjdogmGma8EuSDE8xNbwfEtGAKMSrd4.json --node https://testnet-tezos.giganode.io
+    ./index.js deploy noop --faucet tz1abAjdogmGma8EuSDE8xNbwfEtGAKMSrd4.json --node https://testnet-tezos.giganode.io
 
 [Use a chainviewer](https://better-call.dev/) to verify you've originated the
 contract. Write down the KT1, you'll use it in the server configuration.
