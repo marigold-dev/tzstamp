@@ -216,11 +216,11 @@ function longPollProof (url) {
   return new Promise((resolve, reject) => {
 
     // Query every 30 seconds
-    const inteval = setInterval(async () => {
+    const interval = setInterval(async () => {
       const response = await fetch(url)
       switch (response.status) {
         case 200:
-          clearInterval(inteval)
+          clearInterval(interval)
           resolve(url)
           break
         case 202:
@@ -274,7 +274,7 @@ function handleHelp (command) {
     case 'derive':
       console.log('Derive a block address from a proof')
       console.log('An incorrect input will still produce a valid block address')
-      console.log('Usage a chainviewer to verify that the block hash is commited to a network')
+      console.log('Usage a chainviewer to verify that the block hash is committed to a network')
       console.group(em('Usage:'))
       console.log('tzstamp derive <file|hash> <proofFile|URL>')
       console.groupEnd()
