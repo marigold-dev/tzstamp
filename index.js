@@ -4,13 +4,12 @@ const fs = require('fs/promises')
 require('dotenv-defaults').config()
 const { MerkleTree } = require('@tzstamp/tezos-merkle')
 const { Hex, blake2b } = require('@tzstamp/helpers')
-const { Proof } = require('@tzstamp/proof')
 const Koa = require('koa')
 const Router = require('@koa/router')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
 const { ensureProofsDir, pendingProof, fetchProof, storeProof } = require('./lib/proof-storage')
-const { walkOperations, buildSteps } = require('./lib/proofs')
+const { operationGroupProof, operationsHashProof, blockHeaderProof } = require('./lib/proofs')
 const { parseBody } = require('./lib/parse-body')
 
 const {
@@ -180,17 +179,21 @@ async function publishTree () {
 
   // Build and validate proof operations from aggregator root to block hash
   const block = await tezos.rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
-  const highSteps = buildSteps(block, operationGroup.hash)
-  const highProof = new Proof(block.chain_id, highSteps)
-  if (highProof.derive(pendingTree.root).address != block.hash) {
-    throw new Error('Could not validate steps from aggregator to block')
+  const opGroupData = block.operations[3].find(op => op.hash == operationGroup.hash)
+  if (!opGroupData) {
+    throw new Error('Target operation group not found in fourth pass')
   }
+  const opGroupProof = operationGroupProof(pendingTree.root, opGroupData)
+  const opsHashProof = operationsHashProof(operationGroup.hash, block.operations)
+  const headerProof = blockHeaderProof(block.chain_id, block.header)
+  const highProof = opGroupProof
+    .concat(opsHashProof)
+    .concat(headerProof)
 
   // Generate proofs
   console.log(`Saving proofs for root "${payload}" (${pendingTree.size} leaves)`)
   for (const path of pendingTree.paths()) {
-    const lowSteps = walkOperations(path)
-    const proof = new Proof(block.chain_id, lowSteps.concat(highSteps))
+    const proof = path.toProof().concat(highProof)
     const proofId = Hex.stringify(path.leaf)
     storeProof(proof, proofId)
     pendingProofs.delete(proofId)

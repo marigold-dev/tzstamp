@@ -1,14 +1,12 @@
+const assert = require('assert')
 const crypto = require('crypto')
 const { spawn } = require('child_process')
 const fetch = require('node-fetch')
-const { Proof } = require('@tzstamp/proof')
+const { Proof, VerifyStatus } = require('@tzstamp/proof')
 const { Hex } = require('@tzstamp/helpers')
 require('dotenv-defaults').config()
 
-const {
-  BASE_URL,
-  RPC_URL
-} = process.env
+const { BASE_URL } = process.env
 
 /** API endpoints */
 const API = {
@@ -49,7 +47,7 @@ server.stderr.on('data', data => {
   console.log('SERVER ERROR:', text.slice(0, -1))
 })
 
-// Capture server closeing
+// Capture server closing
 server.on('close', code => {
   console.log('SERVER EXIT:', code)
 
@@ -59,7 +57,7 @@ server.on('close', code => {
   }
 })
 
-// Tests mananger
+// Tests manager
 async function runTests () {
 
   // Mock file hashes
@@ -81,15 +79,19 @@ async function runTests () {
   process.exit(0)
 }
 
-// Fetch a non-existant proof
+// Fetch a non-existent proof
 async function fetchMissingProof (fileHash) {
   const proofId = Hex.stringify(fileHash)
   const endpoint = API.proof(proofId)
   const response = await fetch(endpoint, {
     headers: { 'Accept': 'application/json' }
   })
-  expect(response.status == 404, 'Fetching a non-existant proof did not yield a response status of 404')
-  console.log('Fetching non-existant proof yielded status 404')
+  assert.strictEqual(
+    response.status,
+    404,
+    'Fetching a non-existent proof did not yield a response status of 404'
+  )
+  console.log('Fetching non-existent proof yielded status 404')
 }
 
 // Stamp mock file hashes
@@ -107,7 +109,11 @@ async function postFiles (fileHashes) {
         hash: Hex.stringify(fileHash)
       })
     })
-    expect(response.status == 202, 'Posting a file hash to be timestamped did not yield a response status of 202')
+    assert.strictEqual(
+      response.status,
+      202,
+      'Posting a file hash to be timestamped did not yield a response status of 202'
+    )
     const json = await response.json()
     proofURLs.push(json.url)
   }
@@ -121,9 +127,17 @@ async function queryPendingProofs (proofURLs) {
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     })
-    expect(response.status == 202, 'Fetching a pending proof did not yield a response status of 202')
+    assert.strictEqual(
+      response.status,
+      202,
+      'Fetching a pending proof did not yield a response status of 202'
+    )
     const json = await response.json()
-    expect(json.url == url, 'Pending proof query showed contradictory proof URL')
+    assert.strictEqual(
+      json.url,
+      url,
+      'Pending proof query showed contradictory proof URL'
+    )
   }
   console.log(`Queried ${proofURLs.length} pending proofs`)
 }
@@ -148,14 +162,14 @@ async function fetchProofs (proofURLs) {
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     })
-    expect(response.status == 200, 'Fetching a proof did not yield a response status of 200')
-    const text = await response.text()
-    try {
-      const proof = Proof.parse(text)
-      proofs.push(proof)
-    } catch (error) {
-      expect(false, `Could not parse proof: "${error.message}"`)
-    }
+    assert.strictEqual(
+      response.status,
+      200,
+      'Fetching a proof did not yield a response status of 200'
+    )
+    const json = await response.json()
+    const proof = Proof.from(json)
+    proofs.push(proof)
   }
   console.log(`Fetched and parsed ${proofURLs.length} proofs for mock file hashes`)
   return proofs
@@ -166,26 +180,16 @@ async function verifyProofs (fileHashes, proofs) {
   for (const index in fileHashes) {
     const fileHash = fileHashes[index]
     const proof = proofs[index]
-    const block = proof.derive(fileHash)
-    // console.log('DEBUG verifyProofs:', fileHash)
-    try {
-      const timestamp = await block.lookup(RPC_URL)
-    } catch (status) {
-      switch (status) {
-        case 404:
-          expect(false, `Could not verify proof. Block header could not be found.`)
-        default:
-          expect(false, `Could not verify proof. RPC returned status code "${status}"`)
-      }
+    switch (proof.verify(fileHash)) {
+      case VerifyStatus.NetError:
+        throw new Error('Could not verify proof. Network error')
+      case VerifyStatus.NotFound:
+        throw new Error('Could not verify proof. Block not found')
+      case VerifyStatus.Mismatch:
+        throw new Error('Could not verify proof. Mismatched timestamp')
+      case VerifyStatus.Verified:
+        continue
     }
   }
   console.log(`Verified ${fileHashes.length} proofs for mock file hashes`)
-}
-
-function expect (expr, message) {
-  if (!expr) {
-    server.kill()
-    console.error(message)
-    process.exit(1)
-  }
 }
