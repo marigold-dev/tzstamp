@@ -10,7 +10,7 @@ const Router = require('@koa/router')
 const { TezosToolkit } = require('@taquito/taquito')
 const { InMemorySigner, importKey } = require('@taquito/signer')
 const { ensureProofsDir, pendingProof, fetchProof, storeProof } = require('./lib/proof-storage')
-const { walkOperations, buildSteps } = require('./lib/tezos-merkle')
+const { walkOperations, buildSteps } = require('./lib/proofs')
 const { parseBody } = require('./lib/parse-body')
 
 const {
