@@ -94,7 +94,7 @@ async function postStamp (ctx) {
   ctx.assert(hashHex != undefined, 400, 'Data field is missing')
   ctx.assert(typeof hashHex == 'string', 400, 'Data field is wrong type')
   ctx.assert(hashHex.length, 400, 'Data field is empty')
-  ctx.assert(hashHex.match(HEX_STRING), 400, 'Data field is not a hexidecimal string')
+  ctx.assert(hashHex.match(HEX_STRING), 400, 'Data field is not a hexadecimal string')
   ctx.assert(hashHex.length <= 128, 400, 'Data field is larger than 64 bytes')
 
   const hash = Hex.parse(hashHex)
