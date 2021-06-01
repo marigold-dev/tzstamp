@@ -32,7 +32,7 @@ const tezos = new TezosToolkit(RPC_URL)
 let contract
 
 // Merkle tree
-let tree = new MerkleTree
+let tree = new MerkleTree({ deduplicate: true })
 const pendingProofs = new Set
 
 // RESTful API
@@ -170,7 +170,7 @@ async function publishTree () {
 
   // Swap out live tree
   const pendingTree = tree
-  tree = new MerkleTree
+  tree = new MerkleTree({ deduplicate: true })
 
   // Invoke contract and await confirmation
   const payload = Hex.stringify(pendingTree.root)
