@@ -1,6 +1,6 @@
 const Help = require('./help')
 const chalk = require('chalk')
-const { getHash, getProof, getNode } = require('./helpers')
+const { getHash, getProof, getNode, getIndexer } = require('./helpers')
 const { compare } = require('@tzstamp/helpers')
 const { PendingProof, AffixedProof, VerifyStatus } = require('@tzstamp/proof')
 
@@ -36,6 +36,7 @@ async function handler (options) {
 
   // Verify proof
   const node = options.node || getNode(proof.network)
+  const indexer = getIndexer(proof.network)
   try {
     if (options.verbose) {
       console.log(chalk.dim`Querying node ${node} for the header of block ${proof.blockHash}\n`)
@@ -63,6 +64,9 @@ async function handler (options) {
     console.log(`Hash existed at ${proof.timestamp.toLocaleString()}`)
     console.log(`Block hash: ${proof.blockHash}`)
     console.log(`Node queried: ${node}`)
+    if (indexer) {
+      console.log(`Verify block on TzKT: <${new URL(proof.blockHash, indexer).toString()}>`)
+    }
     console.log()
   } catch (error) {
     throw new Error(`Could not verify proof: ${error.message}`)
