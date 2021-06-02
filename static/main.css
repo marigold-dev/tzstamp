@@ -1,50 +1,128 @@
 :root {
-  --color-text: #000;
-  --color-border: #8f8f8f;
-  --color-background: #fff;
+  /* colors */
+  --text-color: #000;
+  --inverted-text-color: #fff;
+  --subtle-text-color: #0009;
+  --code-color: #a88900;
+  --link-color: #346092;
+  --button-color: #d8d8d8;
+  --border-color: #8f8f8f;
+  --endpoint-color: #d6e8fc;
+  --endpoint-method-color: #005fcc;
+  --example-color: #e7e7e7;
+  --background-color: #fff;
+  --navbar-color: #367ddb;
+  --navitems-color: #2a558d;
+  --header-color: #8197b4;
+  --footer-color: #d2deee;
+  /* effects */
+  --box-shadow: 3px 3px 6px #0003;
+  /* spacing */
+  --thin-spacing: 0.8rem;
+  --normal-spacing: 1.4rem;
+  --wide-spacing: 2.4rem;
   --border-radius: 6px;
-  --box-shadow: 3px 3px 8px;
+  --content-width: 60rem;
+  /* typography */
   --font-stack-sans-serif: Futura, "Trebuchet MS", Arial, sans-serif;
   --font-stack-monospace: monaco, Consolas, "Lucida Console", monospace;
   --line-height: 1.5;
-  --content-width: 60rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-text: #fff;
-    --color-background: #282828;
-  }
+/* reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  padding: 1.4rem;
-  color: var(--color-text);
-  background: var(--color-background);
+  color: var(--text-color);
+  background-color: var(--background-color);
   font-family: var(--font-stack-sans-serif);
   line-height: var(--line-height);
-  overflow-x: hidden;
 }
 
-main, header, footer {
-  margin: 2rem auto;
+div.content {
+  margin: 0 auto;
   max-width: var(--content-width);
 }
 
-nav {
-  display: flex;
-  margin-bottom: 1.5rem;
-  align-items: flex-start;
-  gap: 1.4rem;
+#navbar {
+  --text-color: var(--inverted-text-color);
+  --link-color: var(--inverted-text-color);
   font-weight: bold;
+  user-select: none;
 }
 
-header p {
-  margin-bottom: 2.5rem;
+#navbar > .content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--normal-spacing);
+}
+
+#logo {
+  display: block;
+}
+
+#logo > svg {
+  height: 4rem;
+  width: 12rem;
+  filter: drop-shadow(2px 2px 4px #0003);
+}
+
+#logo use {
+  fill: var(--text-color);
+}
+
+#navtoggle {
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  background-color: transparent;
+  border: none;
+}
+
+#navtoggle rect {
+  fill: var(--text-color);
+}
+
+#navitems {
+  display: flex;
+  gap: var(--normal-spacing);
+  list-style-type: none;
+}
+
+body > section {
+  margin: var(--wide-spacing) var(--normal-spacing);
+}
+
+#footer {
+  color: var(--subtle-text-color);
+  padding: var(--normal-spacing);
+  margin-top: var(--wide-spacing);
+  background-color: var(--footer-color);
+}
+
+h2 {
+  display: inline-block;
+  border-bottom: 4px solid var(--navbar-color);
+  margin-bottom: var(--wide-spacing);
+}
+
+h3 {
+  margin-top: var(--wide-spacing);
+}
+
+h4 {
+  margin-top: var(--normal-spacing);
+  margin-bottom: var(--normal-spacing);
+  color: var(--subtle-text-color);
 }
 
 a {
+  color: var(--link-color);
   text-decoration: none;
 }
 
@@ -52,14 +130,55 @@ a:hover {
   text-decoration: underline;
 }
 
-#tzstamp h2 {
-  text-align: center;
+svg.external-link {
+  height: 0.6em;
+}
+
+svg.external-link path {
+  fill: var(--link-color);
+  stroke: none;
+}
+
+p {
+  margin-top: var(--thin-spacing);
+  margin-bottom: var(--thin-spacing);
+}
+
+p.endpoint {
+  padding: var(--thin-spacing);
+  background-color: var(--endpoint-color);
+  font-family: var(--font-stack-monospace);
+  font-weight: bold;
+}
+
+p.endpoint span.method {
+  color: var(--endpoint-method-color);
+}
+
+code {
+  font-family: var(--font-stack-monospace);
+  color: var(--code-color);
+}
+
+blockquote.example {
+  padding: var(--normal-spacing);
+  background-color: var(--example-color);
+  font-family: var(--font-stack-monospace);
+  overflow-x: scroll;
+}
+
+blockquote.example > p {
+  margin: 0;
+  white-space: pre;
+}
+
+dd {
+  margin-left: var(--normal-spacing);
 }
 
 form {
-  margin-left: auto;
-  margin-right: auto;
-  width: max-content;
+  margin-top: var(--normal-spacing);
+  margin-bottom: var(--normal-spacing);
 }
 
 label {
@@ -75,11 +194,10 @@ label + input {
 
 input {
   max-width: 100%;
-  box-sizing: border-box;
   padding: 0.6rem;
   font-family: var(--font-stack-monospace);
   font-size: inherit;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
 }
 
@@ -93,43 +211,79 @@ input[type=file]::-webkit-file-upload-button {
 input[type=file]::file-selector-button {
   padding: 0.4rem;
   margin-right: 0.8rem;
-  background-color: transparent;
-  border: 1px solid var(--color-border);
+  background-color: var(--button-color);
 }
 
-button {
+form button {
   margin-right: 0.4rem;
   padding: 0.4rem;
   font-family: inherit;
   margin-bottom: 0.4rem;
 }
 
-#proofs {
-  margin-top: 1em;
+#proof-list {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--normal-spacing);
+  padding-left: var(--wide-spacing);
+  overflow-x: scroll;
 }
 
-#proofs div {
-  display: flex;
-  flex-direction: column;
-  border: 1px black solid;
-  word-wrap: break-word;
-  max-width: 65ch;
+@media (min-width: 769px) {
+  #navbar {
+    padding: var(--normal-spacing);
+    background-color: var(--navbar-color);
+    box-shadow: var(--box-shadow);
+  }
 }
 
-#proofs div a {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-  margin-left: 1em;
-  margin-right: 1em;
+@media (max-width: 768px) {
+  :root {
+    --normal-spacing: 1rem;
+  }
+
+  #navbar {
+    padding: 0;
+  }
+
+  #navbar > .content {
+    display: block;
+  }
+
+  #navanchor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--normal-spacing);
+    background-color: var(--navbar-color);
+    box-shadow: var(--box-shadow);
+  }
+
+  #navtoggle {
+    display: block;
+  }
+
+  #navitems {
+    display: none;
+    line-height: 2;
+    flex-direction: column;
+    padding: var(--normal-spacing);
+    background-color: var(--navitems-color);
+    text-align: right;
+  }
+
+  #navitems.open {
+    display: block;
+  }
 }
 
-#no-stamps {
-  text-align: center;
-  opacity: 40%;
-}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #fff;
+    --background-color: #282828;
+  }
 
-#instructions {
-  margin-left: auto;
-  margin-right: auto;
-  width: 80ch;
+  #navbar {
+    --text-color: navy;
+  }
 }
