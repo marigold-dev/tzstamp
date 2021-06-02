@@ -1,6 +1,6 @@
 {
   "name": "@tzstamp/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tezos timestamping utility",
   "main": "bin/index.js",
   "bin": {
