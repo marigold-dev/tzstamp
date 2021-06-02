@@ -1,10 +1,10 @@
 # TzStamp Proof Upgrade Utility
 
-Upgrade deprecated TzStamp proofs to a supported version.
+Upgrade deprecated [TzStamp] proofs to a supported version.
 
 ## Usage
 
-Install with Deno:
+Install with [Deno]:
 
 ```bash
 deno install --allow-read https://gitlab.com/metanomial/tzstamp-upgrade/-/raw/main/tzstamp-upgrade.ts
@@ -19,3 +19,6 @@ tzstamp-upgrade --version 0 --timestamp <iso-datetime-string> --proof <file> [--
 ## License
 
 [MIT](license.txt)
+
+[TzStamp]: http://tzstamp.io/
+[Deno]: https://deno.land/
