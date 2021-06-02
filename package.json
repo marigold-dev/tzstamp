@@ -1,7 +1,7 @@
 {
   "name": "@tzstamp/cli",
-  "version": "0.1.0",
-  "description": "Command line tool to cryptographically timestamp files on the Tezos blockchain",
+  "version": "0.2.0",
+  "description": "Tezos timestamping utility",
   "main": "bin/index.js",
   "bin": {
     "tzstamp": "./bin/index.js"
@@ -35,7 +35,9 @@
   "homepage": "https://gitlab.com/JD-P/tzstamp#readme",
   "dependencies": {
     "@tzstamp/helpers": "^0.1.1",
-    "@tzstamp/proof": "^0.1.0",
+    "@tzstamp/proof": "^0.2.0",
+    "chalk": "^4.1.1",
+    "delay": "^5.0.0",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.1"
   },
