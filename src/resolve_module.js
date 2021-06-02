@@ -3,6 +3,7 @@ const modules = new Map([
   [ 'version', () => require('./version') ],
   [ 'stamp', () => require('./stamp') ],
   [ 'verify', () => require('./verify') ],
+  [ 'manual-verify', () => require('./manual_verify') ],
   [ 'derive', () => require('./derive') ]
 ])
 
