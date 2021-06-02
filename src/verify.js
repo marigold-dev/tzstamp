@@ -50,7 +50,7 @@ async function handler (options) {
         case VerifyStatus.NotFound:
           console.log('The block hash asserted by the proof was not found')
           console.log(`Asserted block hash: ${proof.blockHash}`)
-          console.log(`Node queried: ${getNode()}`)
+          console.log(`Node queried: ${node}`)
           break
         case VerifyStatus.Mismatch:
           console.log('The proof timestamp does not match on-chain timestamp')
@@ -62,7 +62,7 @@ async function handler (options) {
     console.log(`Target: ${target}`)
     console.log(`Hash existed at ${proof.timestamp.toLocaleString()}`)
     console.log(`Block hash: ${proof.blockHash}`)
-    console.log(`Node queried: ${getNode()}`)
+    console.log(`Node queried: ${node}`)
     console.log()
   } catch (error) {
     throw new Error(`Could not verify proof: ${error.message}`)
