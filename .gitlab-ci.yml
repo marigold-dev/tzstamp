@@ -33,7 +33,6 @@ test:
   before_script:
     - npm ci --cache .npm --prefer-offline
     - mv $TESTNET_FAUCET faucet.json
-    - mv $CONFIG .env
     - node .server &
     - sleep 20 # wait for server to start
   script:
