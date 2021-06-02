@@ -134,6 +134,23 @@ function getNode (network) {
     : 'https://testnet-tezos.giganode.io/'
 }
 
+/**
+ * Gets an appropriate indexer.
+ *
+ * @param {string} network
+ * @returns {string|undefined} Indexer URL
+ */
+function getIndexer (network) {
+  switch (network) {
+    case 'NetXdQprcVkpaWU':
+      return 'http://tzkt.io/'
+    case 'NetXxkAx4woPLyu':
+      return 'https://florencenet.tzkt.io/'
+    case 'NetXSgo1ZT2DRUG':
+      return 'https://edo2net.tzkt.io/'
+  }
+}
+
 function *nameCandidates (base) {
   yield `${base}.proof.json`
   for (let i = 1;; ++i) {
@@ -188,5 +205,6 @@ module.exports = {
   getHash,
   getProof,
   getNode,
+  getIndexer,
   getSafeNames
 }
