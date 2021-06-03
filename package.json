@@ -7,7 +7,9 @@
     "tzstamp": "./bin/index.js"
   },
   "files": [
-    "bin"
+    "bin",
+    "src",
+    "man"
   ],
   "scripts": {
     "lint": "npx --yes eslint **/*.js --fix",
