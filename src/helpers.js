@@ -119,6 +119,11 @@ async function getProof (location, verbose) {
       } is not valid JSON`
     )
   }
+  if (json instanceof Object && json.version === 0) {
+    throw new Error(
+      'Unable to parse version 0 proofs. Use <https://gitlab.com/tzstamp/upgrade> to upgrade the proofs manually.'
+    )
+  }
   return Proof.from(json)
 }
 
