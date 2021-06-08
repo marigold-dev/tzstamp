@@ -10,6 +10,15 @@ const { ... } = require("@tzstamp/helpers");
 
 See the [reference documentation] for details on exported helpers.
 
+## Build
+
+```sh
+cd ..
+deno run --unstable --allow-read=. --allow-write=node _build.ts
+cd node
+npm clean-install
+```
+
 ## License
 
 [MIT](../license.txt)

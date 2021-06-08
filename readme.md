@@ -10,6 +10,14 @@ import { ... } from "https://gitlab.com/tzstamp/helpers/raw/0.2.0/src/mod.ts";
 
 See the [reference documentation] for details on exported helpers.
 
+## Build
+
+```sh
+deno run --unstable --allow-read=. --allow-write=node _build.ts
+cd node
+npm clean-install
+```
+
 ## License
 
 [MIT](license.txt)
