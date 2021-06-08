@@ -1,8 +1,5 @@
-import { Hex } from "../src/mod.ts";
-import {
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.95.0/testing/asserts.ts";
+import * as Hex from "./hex.ts";
+import { assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test({
   name: "Encode byte array as hex string",

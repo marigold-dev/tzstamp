@@ -1,4 +1,4 @@
-import { assert } from "./deps.deno.ts";
+import { assert } from "./deps.ts";
 
 /**
  * Hexidecimal string validation regular expression.

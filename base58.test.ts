@@ -1,8 +1,5 @@
-import { Base58 } from "../src/mod.ts";
-import {
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.95.0/testing/asserts.ts";
+import * as Base58 from "./base58.ts";
+import { assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test({
   name: "Encode byte array as Base-58 string",

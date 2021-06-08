@@ -1,9 +1,5 @@
-import { compare, concat } from "../src/mod.ts";
-
-import {
-  assert,
-  assertEquals,
-} from "https://deno.land/std@0.95.0/testing/asserts.ts";
+import { compare, concat } from "./bytes.ts";
+import { assert, assertEquals } from "./dev_deps.ts";
 
 Deno.test({
   name: "Concatenation",
