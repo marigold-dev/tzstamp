@@ -2,8 +2,6 @@
 
 import { basename, join } from "./dev_deps.ts";
 
-const readme = await Deno.readTextFile("readme.md");
-
 console.log("Emitting node source");
 const nodeSource = await Deno.emit("mod.ts", {
   compilerOptions: {
@@ -56,11 +54,3 @@ for (const [filePath, source] of Object.entries(nodeTypes.files)) {
       .replace(/\.\/(.*)\.ts/g, "./$1"),
   );
 }
-
-console.log("Emitting node readme");
-await Deno.writeTextFile(
-  join("node", "readme.md"),
-  readme
-    .replace(/import (.*) from .*;/, 'const $1 = require("@tzstamp/helpers");')
-    .replace(/\(license\.txt\)/g, "(./license.txt)"),
-);

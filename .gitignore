@@ -1,5 +1,4 @@
 node/*.js
 node/*.d.ts
 node/node_modules/
-node/readme.md
 !node/deps.js
