@@ -1,20 +1,11 @@
 {
   "name": "@tzstamp/helpers",
   "version": "0.2.0",
-  "description": "tzstamp helper functions",
-  "main": "dist/mod.js",
-  "types": "dist/mod.d.ts",
-  "files": [
-    "dist"
-  ],
+  "description": "TzStamp helper functions",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "lint": "deno lint src/* tests/*",
-    "postlint": "deno fmt README.md CHANGELOG.md src/* tests/*",
-    "prebuild": "rm -f dist/*",
-    "build": "npx deno2node src/tsconfig.json",
-    "pretest": "rm -f coverage/*",
-    "test": "deno test --coverage=coverage tests/",
-    "posttest": "deno coverage coverage/"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -27,7 +18,7 @@
   "bugs": {
     "url": "https://gitlab.com/tzstamp/helpers/issues"
   },
-  "homepage": "https://gitlab.com/tzstamp/helpers",
+  "homepage": "https://gitlab.com/tzstamp/helpers/node",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^15.0.1"
