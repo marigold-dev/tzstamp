@@ -19,8 +19,5 @@
     "url": "https://gitlab.com/tzstamp/helpers/issues"
   },
   "homepage": "https://gitlab.com/tzstamp/helpers/node",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^15.0.1"
-  }
+  "license": "MIT"
 }
