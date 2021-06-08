@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --unstable --allow-read --allow-write
+#!/usr/bin/env -S deno run --unstable --allow-read=. --allow-write=node
 
 import { basename, join } from "./dev_deps.ts";
 
