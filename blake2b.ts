@@ -1,4 +1,4 @@
-import { assert } from "./deps.deno.ts";
+import { assert } from "./deps.ts";
 import { blake2bWasm } from "./blake2b-wasm.ts";
 
 const instance = new WebAssembly.Instance(blake2bWasm);

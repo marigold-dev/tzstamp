@@ -1,6 +1,6 @@
 import * as Hex from "./hex.ts";
 import { compare, concat } from "./bytes.ts";
-import { assert, createHash } from "./deps.deno.ts";
+import { assert, createHash } from "./deps.ts";
 
 function sha256(bytes: Uint8Array): Uint8Array {
   const digest = createHash("sha256")

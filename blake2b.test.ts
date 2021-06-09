@@ -1,9 +1,6 @@
-import { Blake2b, blake2b } from "../src/mod.ts";
+import { Blake2b, blake2b } from "./blake2b.ts";
 import { vectors } from "./blake2b-vectors.test.ts";
-import {
-  assert,
-  assertEquals,
-} from "https://deno.land/std@0.95.0/testing/asserts.ts";
+import { assert, assertEquals } from "./dev_deps.ts";
 
 Deno.test({
   name: "Test vectors",
