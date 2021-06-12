@@ -1,19 +1,19 @@
-import { Blake2b, blake2b } from "./blake2b.ts";
-import { vectors } from "./blake2b-vectors.test.ts";
-import { assert, assertEquals } from "./dev_deps.ts";
+import { Blake2b } from "./blake2b.ts";
+import { vectors } from "./_blake2b_vectors.test.ts";
+import { assert, assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test({
   name: "Test vectors",
   fn() {
     for (const vector of vectors) {
       // Class interface
-      const digest = new Blake2b(64, vector.key)
+      const digest = new Blake2b(vector.key, 64)
         .update(vector.input)
         .digest();
       assertEquals(digest, vector.digest);
 
       // Convenience function
-      const digestQuick = blake2b(vector.input, 64, vector.key);
+      const digestQuick = Blake2b.digest(vector.input, vector.key, 64);
       assertEquals(digestQuick, vector.digest);
     }
   },
@@ -22,30 +22,17 @@ Deno.test({
 Deno.test({
   name: "Blake2b class interface",
   fn() {
-    const hash = new Blake2b(54);
+    const hash = new Blake2b(undefined, 54);
     assert(!hash.finalized);
     assertEquals(hash.digestLength, 54);
     hash.update(new Uint8Array([]));
     assert(!hash.finalized);
-    hash.digest();
+    const digest = hash.digest();
     assert(hash.finalized);
-  },
-});
-
-Deno.test({
-  name: "Memory reallocation",
-  fn() {
-    const hashes = [];
-
-    // Force instance memory reallocation
-    for (let i = 0; i < 10000; ++i) {
-      const block = new Uint8Array([0]);
-      hashes.push(new Blake2b().update(block));
-    }
-
-    // Free up memory
-    for (const hash of hashes) {
-      hash.digest();
-    }
+    assertEquals(digest, hash.digest());
+    assertThrows(() => hash.update(new Uint8Array([])));
+    assertThrows(() => new Blake2b(new Uint8Array(65)));
+    assertThrows(() => new Blake2b(undefined, -1));
+    assertThrows(() => new Blake2b(undefined, 65));
   },
 });
