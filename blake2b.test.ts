@@ -20,7 +20,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Test vectors",
+  name: "BLAKE2b test vectors",
   fn() {
     assertEquals(
       Blake2b.digest(new Uint8Array(), undefined, 64),
