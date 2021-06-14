@@ -12,6 +12,7 @@ Deno.test({
     hash.digest();
     assert(hash.finalized);
     assertThrows(() => hash.update(new Uint8Array([])));
+    assertThrows(() => hash.digest());
     assertThrows(() => new Blake2b(new Uint8Array(65)));
     assertThrows(() => new Blake2b(undefined, -1));
     assertThrows(() => new Blake2b(undefined, 65));
