@@ -1,5 +1,5 @@
 /** Initialization vector */
-const IV = new BigInt64Array([
+const IV = [
   0x6a09e667f3bcc908n,
   0xbb67ae8584caa73bn,
   0x3c6ef372fe94f82bn,
@@ -8,7 +8,7 @@ const IV = new BigInt64Array([
   0x9b05688c2b3e6c1fn,
   0x1f83d9abfb41bd6bn,
   0x5be0cd19137e2179n,
-]);
+] as const;
 
 /** Message Schedule */
 const SIGMA = [
@@ -35,12 +35,6 @@ const MIX_INDICES = [
   [2, 7, 8, 13],
   [3, 4, 9, 14],
 ] as const;
-
-/** Cyclic rotate right */
-function rotate(x: bigint, y: bigint) {
-  const n = (x + 2n ** 64n) % 2n ** 64n;
-  return n >> y ^ n << 64n - y;
-}
 
 /**
  * [BLAKE2b] streaming hash function.
@@ -95,8 +89,7 @@ export class Blake2b {
   }
 
   private init(key: Uint8Array): void {
-    const state = new BigInt64Array(this.state);
-    // const buffer = new Uint8Array(this.buffer);
+    const state = new BigUint64Array(this.state);
     state.set(IV);
     state[0] ^= 0x01010000n ^ BigInt(key.length << 8 ^ this.digestLength);
     if (key.length) {
@@ -128,9 +121,9 @@ export class Blake2b {
   }
 
   private compress(last = false): void {
-    const state = new BigInt64Array(this.state);
-    const buffer = new BigInt64Array(this.buffer);
-    const vector = new BigInt64Array(16);
+    const state = new BigUint64Array(this.state);
+    const buffer = new DataView(this.buffer);
+    const vector = new BigUint64Array(16);
 
     // Initialize work vector
     vector.set(state);
@@ -142,11 +135,12 @@ export class Blake2b {
     }
 
     // Twelve rounds of mixing
+    const rotate = (x: bigint, y: bigint) => x >> y ^ x << 64n - y;
     for (let i = 0; i < 12; ++i) {
       const s = SIGMA[i % 10];
       for (let j = 0; j < 8; ++j) {
-        const x = buffer[s[2 * j]];
-        const y = buffer[s[2 * j + 1]];
+        const x = buffer.getBigUint64(s[2 * j] * 8, true);
+        const y = buffer.getBigUint64(s[2 * j + 1] * 8, true);
         const [a, b, c, d] = MIX_INDICES[j];
         vector[a] += vector[b] + x;
         vector[d] = rotate(vector[d] ^ vector[a], 32n);
