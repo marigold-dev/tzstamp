@@ -9,9 +9,8 @@ Deno.test({
     assertEquals(hash.digestLength, 54);
     hash.update(new Uint8Array([]));
     assert(!hash.finalized);
-    const digest = hash.digest();
+    hash.digest();
     assert(hash.finalized);
-    assertEquals(digest, hash.digest());
     assertThrows(() => hash.update(new Uint8Array([])));
     assertThrows(() => new Blake2b(new Uint8Array(65)));
     assertThrows(() => new Blake2b(undefined, -1));

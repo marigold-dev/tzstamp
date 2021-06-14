@@ -89,9 +89,14 @@ export class Blake2b {
   }
 
   private init(key: Uint8Array): void {
-    const state = new BigUint64Array(this.state);
-    state.set(IV);
-    state[0] ^= 0x01010000n ^ BigInt(key.length << 8 ^ this.digestLength);
+    const state = new DataView(this.state);
+    for (let i = 0; i < 8; ++i) {
+      state.setBigUint64(i * 8, IV[i], true);
+    }
+    const firstWord = state.getBigUint64(0, true) ^
+      0x01010000n ^
+      BigInt(key.length << 8 ^ this.digestLength);
+    state.setBigUint64(0, firstWord, true);
     if (key.length) {
       this.update(key);
       this.counter = 128;
@@ -100,7 +105,7 @@ export class Blake2b {
 
   /**
    * Feeds input into the hash function in 128 byte blocks.
-   * Throws is the hash function is finalized.
+   * Throws if the hash function is finalized.
    *
    * @param input Input bytes
    */
@@ -121,12 +126,14 @@ export class Blake2b {
   }
 
   private compress(last = false): void {
-    const state = new BigUint64Array(this.state);
+    const state = new DataView(this.state);
     const buffer = new DataView(this.buffer);
     const vector = new BigUint64Array(16);
 
     // Initialize work vector
-    vector.set(state);
+    for (let i = 0; i < 8; ++i) {
+      vector[i] = state.getBigUint64(i * 8, true);
+    }
     vector.set(IV, 8);
     vector[12] ^= this.offset;
     vector[13] ^= this.offset >> 64n;
@@ -155,15 +162,18 @@ export class Blake2b {
 
     // Update state
     for (let i = 0; i < 8; ++i) {
-      state[i] ^= vector[i] ^ vector[i + 8];
+      const word = state.getBigUint64(i * 8, true) ^ vector[i] ^ vector[i + 8];
+      state.setBigUint64(i * 8, word, true);
     }
   }
 
-  /** Finalizes the state and produces a digest. */
+  /**
+   * Finalizes the state and produces a digest.
+   * Throws if the hash function is already finalized.
+   */
   digest(): Uint8Array {
-    const state = new Uint8Array(this.state);
     if (this.final) {
-      return state.slice(0, this.digestLength);
+      throw new Error("Cannot re-finalize hash function.");
     }
     this.offset += BigInt(this.counter);
     const buffer = new Uint8Array(this.buffer);
@@ -172,7 +182,7 @@ export class Blake2b {
     }
     this.compress(true);
     this.final = true;
-    return state.slice(0, this.digestLength);
+    return new Uint8Array(this.state).slice(0, this.digestLength);
   }
 
   /**
