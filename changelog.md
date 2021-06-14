@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
+## Unreleased
+
+### Added
+
+- SHA-256 helper
+
+### Changed
+
+- Moved `blake2b` convenience function to `Blake2b.digest`.
+
 ## [0.2.0] - 2021-05-14
 
 ### Added
@@ -11,7 +21,7 @@ This project adheres to [Semantic Versioning].
 - `Blake2b` class underpinning the `blake2b` convenience function
 - Variable BLAKE2b digest lengths and keying
 - Node read-stream collection helper
-- Hexidecimal and Base58 string validators
+- Hexadecimal and Base58 string validators
 
 ### Changed
 
