@@ -142,7 +142,7 @@ export class Blake2b {
     }
 
     // Twelve rounds of mixing
-    const rotate = (x: bigint, y: bigint) => x >> y ^ x << 64n - y;
+    const rotate = (x: bigint, y: bigint) => x >> y | x << 64n - y;
     for (let i = 0; i < 12; ++i) {
       const s = SIGMA[i % 10];
       for (let j = 0; j < 8; ++j) {
