@@ -1,14 +1,12 @@
-import { assert } from "./deps.ts";
-
 /**
- * Hexidecimal string validation regular expression.
- * Matches strings comprised of only the 16 hexidecimal symbols,
+ * Hexadecimal string validation regular expression.
+ * Matches strings comprised of only the 16 hexadecimal symbols,
  * case-insensitively.
  */
 export const validator = /^[0-9a-fA-F]+$/;
 
 /**
- * Creates a hexidecimal string from a byte array.
+ * Creates a hexadecimal string from a byte array.
  *
  * ```js
  * Hex.stringify(new Uint8Array([49, 125, 7]));
@@ -18,8 +16,6 @@ export const validator = /^[0-9a-fA-F]+$/;
  * @param bytes Byte array
  */
 export function stringify(bytes: Uint8Array): string {
-  assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
-
   return Array
     .from(bytes)
     .map((byte) =>
@@ -33,18 +29,16 @@ export function stringify(bytes: Uint8Array): string {
 
 /**
  * Parses a hexadecimal string to a byte array.
- * Throws `SyntaxError` if the hexidecimal string is invalid.
+ * Throws `SyntaxError` if the hexadecimal string is invalid.
  *
  * ```js
  * Hex.parse("395f001");
  * // Uint8Array(4) [ 3, 149, 240, 1 ]
  * ```
  *
- * @param input Hexidecimal string
+ * @param input Hexadecimal string
  */
 export function parse(input: string): Uint8Array {
-  assert(typeof input == "string", "input must be a string");
-
   // Empty string
   if (input.length == 0) {
     return new Uint8Array([]);
@@ -52,7 +46,7 @@ export function parse(input: string): Uint8Array {
 
   // Validate hex string
   if (!validator.test(input)) {
-    throw new SyntaxError("Invalid hexidecimal string");
+    throw new SyntaxError("Invalid hexadecimal string");
   }
 
   // Setup byte array
