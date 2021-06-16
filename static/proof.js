@@ -1299,7 +1299,7 @@ class AffixedProof1 extends Proof1 {
         try {
             const response = await fetch(endpoint, {
                 headers: {
-                    accepts: "application/json"
+                    accept: "application/json"
                 }
             });
             switch(response.status){
