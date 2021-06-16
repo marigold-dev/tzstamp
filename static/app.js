@@ -187,7 +187,7 @@ async function handleVerifyProofChange() {
       uploadedProof = undefined;
       proofInput.value = null;
       console.error(error);
-      alert("Count not parse proof.");
+      alert("Could not parse proof. Are you sure this is the right file?");
     }
   }
   while (uploadedProof instanceof PendingProof) {
