@@ -213,11 +213,23 @@ async function handleVerifyProofChange() {
   updateVerifyButton();
 }
 
+function hexString(array) {
+  return Array.from(array)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 async function submitVerify() {
   const hashInput = document.getElementById("verify-hash");
   const status = await uploadedProof.verify(
     "https://mainnet-tezos.giganode.io/",
   );
+  if (hashInput.value != hexString(uploadedProof.hash)) {
+    console.debug(hashInput.value);
+    console.debug(hexString(uploadedProof.hash));
+    alert("Can not verify proof: Proof does not correspond to hash!");
+    return;
+  }
   switch (status) {
     case VerifyStatus.Verified:
       alert(
@@ -225,16 +237,16 @@ async function submitVerify() {
       );
       break;
     case VerifyStatus.NetError:
-      alert("Could not verify proof: a network error occurred.");
+      alert("Can not verify proof: a network error occurred.");
       break;
     case VerifyStatus.NotFound:
       alert(
-        "Could not verify proof: the block hash asserted by the proof was not found.",
+        "Can not verify proof: the block hash asserted by the proof was not found.",
       );
       break;
     case VerifyStatus.Mismatch:
       alert(
-        "Could not verify proof: the asserted timestamp does not match the on-chain timestamp.",
+        "Can not verify proof: the asserted timestamp does not match the on-chain timestamp.",
       );
   }
   document.forms.verify.reset();
