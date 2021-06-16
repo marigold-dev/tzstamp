@@ -1,4 +1,4 @@
-import { Proof, Hex } from "./proof.js";
+import { AffixedProof, PendingProof, Proof, VerifyStatus } from "./proof.js";
 
 let proofs = loadProofs();
 let uploadedProof;
@@ -32,7 +32,7 @@ function deleteProof(url) {
   const proofList = document.getElementById("proof-list");
   const proofItem = Array
     .from(proofList.children)
-    .find(item => item.dataset.url == String(url))
+    .find((item) => item.dataset.url == String(url));
   if (proofItem) {
     proofList.removeChild(proofItem);
   }
@@ -97,7 +97,9 @@ async function submitStamp() {
     });
     const { url } = await response.json();
     if (proofs.includes(url)) {
-      alert(`You have already timestamped this file hash. Download the proof here: ${url}`);
+      alert(
+        `You have already timestamped this file hash. Download the proof here: ${url}`,
+      );
     } else {
       proofs.push(url);
       saveProofs();
@@ -120,25 +122,36 @@ function renderProof(url) {
   const proofList = document.getElementById("proof-list");
   const proofItem = document.createElement("li");
   proofItem.dataset.url = url;
-  proofItem.innerHTML = `<a href="${url}" rel="noopener noreferrer">${url}</a> `
+  proofItem.innerHTML =
+    `<a href="${url}" rel="noopener noreferrer">${url}</a> `;
   const deleteButton = document.createElement("a");
   deleteButton.textContent = "(Remove)";
   deleteButton.href = "javascript:void";
   deleteButton.addEventListener("click", () => {
-    if(confirm("Delete proof?")) {
+    if (confirm("Delete proof?")) {
       deleteProof(url);
     }
-  })
+  });
   proofItem.appendChild(deleteButton);
   proofList.appendChild(proofItem);
 }
 
 function initVerifyForm() {
   const form = document.forms.verify;
-  form.elements["verify-file"].addEventListener("change", handleVerifyFileChange);
-  form.elements["verify-hash"].addEventListener("change", updateVerifyButton);
-  form.elements["verify-proof"].addEventListener("change", handleVerifyProofChange);
-  form.elements["verify-button"].addEventListener("click", submitVerify);
+  form.elements["verify-file"]
+    .addEventListener(
+      "change",
+      handleVerifyFileChange,
+    );
+  form.elements["verify-hash"]
+    .addEventListener("change", updateVerifyButton);
+  form.elements["verify-proof"]
+    .addEventListener(
+      "change",
+      handleVerifyProofChange,
+    );
+  form.elements["verify-button"]
+    .addEventListener("click", submitVerify);
 }
 
 async function handleVerifyFileChange() {
@@ -167,8 +180,9 @@ async function handleVerifyProofChange() {
   const proofInput = document.getElementById("verify-proof");
   if (proofInput.files.length) {
     const text = await proofInput.files[0].text();
+    const template = JSON.parse(text);
     try {
-      uploadedProof = Proof.parse(text);
+      uploadedProof = Proof.from(template);
     } catch (error) {
       uploadedProof = undefined;
       proofInput.value = null;
@@ -176,18 +190,52 @@ async function handleVerifyProofChange() {
       alert("Count not parse proof.");
     }
   }
+  while (uploadedProof instanceof PendingProof) {
+    try {
+      uploadedProof = uploadedProof.resolve();
+    } catch (error) {
+      uploadedProof = undefined;
+      proofInput.value = null;
+      console.error(error);
+      alert("Can not resolve pending proof.");
+    }
+  }
+  if (uploadedProof && !(uploadedProof instanceof AffixedProof)) {
+    uploadedProof = undefined;
+    proofInput.value = null;
+    alert("Can not load incomplete proof.");
+  }
+  if (uploadedProof && !uploadedProof.mainnet) {
+    alert(
+      `Caution: the proof is affixed to the alternative Tezos network "${uploadedProof.network}". It might not be trustworthy.`,
+    );
+  }
   updateVerifyButton();
 }
 
 async function submitVerify() {
   const hashInput = document.getElementById("verify-hash");
-  const block = uploadedProof.derive(Hex.parse(hashInput.value));
-  try {
-    const time = await block.lookup("https://mainnet.smartpy.io");
-    alert(`Verified. File existed at ${time.toISOString()}.`);
-  } catch (error) {
-    console.error(error);
-    alert("Could not verify file hash.");
+  const status = await uploadedProof.verify(
+    "https://mainnet-tezos.giganode.io/",
+  );
+  switch (status) {
+    case VerifyStatus.Verified:
+      alert(
+        `Verified!\nHash existed at ${uploadedProof.timestamp.toLocaleString()}\nBlock hash: ${uploadedProof.blockHash}`,
+      );
+      break;
+    case VerifyStatus.NetError:
+      alert("Could not verify proof: a network error occurred.");
+      break;
+    case VerifyStatus.NotFound:
+      alert(
+        "Could not verify proof: the block hash asserted by the proof was not found.",
+      );
+      break;
+    case VerifyStatus.Mismatch:
+      alert(
+        "Could not verify proof: the asserted timestamp does not match the on-chain timestamp.",
+      );
   }
   document.forms.verify.reset();
 }

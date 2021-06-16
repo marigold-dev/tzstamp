@@ -34,9 +34,6 @@
         <li>
           <a href="https://gitlab.com/tzstamp/cli" rel="noopener noreferrer">TzStamp CLI</a>
         </li>
-        <li>
-          <a href="https://better-call.dev/mainnet/KT1K5npkpWK6wxkcBg97dZD77c2J7DmWvxSb/operations" rel="noopener noreferrer">BCD Contract</a>
-        </li>
       </ul>
     </div>
   </nav>
@@ -49,7 +46,7 @@
     <div class="content">
       <h2>Timestamp Files</h2>
       <p>Choose a file to calculate its SHA-256 hash locally in your browser. Alternatively, <a href="https://linux.die.net/man/1/sha256sum" rel="noopener noreferrer">hash the file yourself</a> and paste the hexidecimal representation into the field below. Submitting will send the hash to the <code>api.tzstamp.io</code> aggregator server, which will include your file hash in its next publication. Once published to the blockchain, your timestamp proof will become available to download below.</p>
-      <p><b>The aggregator root is published every six hours.</b></p>
+      <p><b>The aggregator root is published every five minutes.</b></p>
       <form id="stamp">
         <label for="stamp-file">Target File</label>
         <input id="stamp-file" type="file">
@@ -69,7 +66,7 @@
   <section>
     <div class="content">
       <h2>Verify Proofs</h2>
-      <p>Choose a file (or enter its SHA-256 hash) and a corresponding timestamp proof. Send a request to the <code>mainnet.smartpy.io</code> public Tezos node to verify the proof and display the timestamp.</p>
+      <p>Choose a file (or enter its SHA-256 hash) and a corresponding timestamp proof. Send a request to the <code>mainnet-tezos.giganode.io</code> public Tezos node to verify the proof and display the timestamp.</p>
       <form id="verify">
         <label for="verify-file">Target File</label>
         <input id="verify-file" type="file">
@@ -116,7 +113,7 @@
   </section>
   <footer id="footer">
     <div class="content">
-      <p>Copyright &copy;2020-2021 John David Pressman, Benjamin Herman. Website code licensed for use under the <a href="https://gitlab.com/tzstamp/website/raw/main/LICENSE.txt" rel="noopener noreferrer">MIT</a>. Version 21.19.0</p>
+      <p>Copyright &copy;2020-2021 John David Pressman, Benjamin Herman. Website code licensed for use under the <a href="https://gitlab.com/tzstamp/website/raw/main/LICENSE.txt" rel="noopener noreferrer">MIT</a>. Version 21.24.0</p>
     </div>
   </footer>
   <svg style="display: none">
