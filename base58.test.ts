@@ -51,6 +51,13 @@ Deno.test({
     // Checksum-encode empty byte array
     const empty = new Uint8Array([]);
     assertEquals(Base58.encodeCheck(empty), "3QJmnh");
+
+    // Checksum-encode with prefix
+    const random = crypto.getRandomValues(new Uint8Array(20));
+    assertEquals(
+      Base58.encodeCheck(random.slice(10, 20), random.slice(0, 10)),
+      Base58.encodeCheck(random),
+    );
   },
 });
 
@@ -69,7 +76,18 @@ Deno.test({
     // Checksum-decode empty string
     assertEquals(Base58.decodeCheck("3QJmnh"), new Uint8Array([]));
 
-    // Checksim-decode invalid base-58 string ('l' is not in the base-58 alphabet)
+    // Checksum-decode invalid base-58 string ('l' is not in the base-58 alphabet)
     assertThrows(() => Base58.decodeCheck("malformed"), SyntaxError);
+
+    // Checksum-decode with correct prefix
+    assertEquals(
+      Base58.decodeCheck("4HUtdVgL7ZXk3", new Uint8Array([1, 2, 3])),
+      new Uint8Array([5, 6, 7]),
+    );
+
+    // Checksum-decode with incorrect prefix
+    assertThrows(() =>
+      Base58.decodeCheck("4HUtdVgL7ZXk3", new Uint8Array([2, 4, 6]))
+    );
   },
 });

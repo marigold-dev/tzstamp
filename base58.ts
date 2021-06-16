@@ -1,15 +1,17 @@
-import * as Hex from "./hex.ts";
+import { Sha256 } from "./sha256.ts";
 import { compare, concat } from "./bytes.ts";
-import { assert, createHash } from "./deps.ts";
-
-function sha256(bytes: Uint8Array): Uint8Array {
-  const digest = createHash("sha256")
-    .update(bytes)
-    .digest();
-  return new Uint8Array(digest);
-}
 
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+/** Mismatched prefix error */
+export class PrefixError extends Error {
+  name = "PrefixError";
+}
+
+/** Mismatched checksum error */
+export class ChecksumError extends Error {
+  name = "ChecksumError";
+}
 
 /**
  * Base58 string validation regular expression.
@@ -21,8 +23,8 @@ const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 export const validator = /^[1-9A-HJ-NP-Za-km-z]*$/;
 
 /**
- * Encodes a byte array as a Base58 string as
- * described in the [Base58 Encoding Scheme].
+ * Encodes a byte array payload as a Base58 string
+ * as described in the [Base58 Encoding Scheme].
  *
  * ```js
  * Base58.encode(new Uint8Array([55, 66, 77]));
@@ -30,17 +32,20 @@ export const validator = /^[1-9A-HJ-NP-Za-km-z]*$/;
  * ```
  *
  * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#encode
+ *
+ * @param payload Byte array to encode
  */
-export function encode(bytes: Uint8Array): string {
-  assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
-
+export function encode(payload: Uint8Array): string {
   // Empty array
-  if (bytes.length == 0) {
+  if (payload.length == 0) {
     return "";
   }
 
   // Convert to integer
-  const int = BigInt("0x" + Hex.stringify(bytes));
+  let int = 0n;
+  for (const byte of payload) {
+    int = BigInt(byte) + (int << 8n);
+  }
 
   let encoding = "";
 
@@ -51,7 +56,7 @@ export function encode(bytes: Uint8Array): string {
   }
 
   // Prepend padding for leading zeroes in the byte array
-  for (let i = 0; bytes[i] == 0; ++i) {
+  for (let i = 0; payload[i] == 0; ++i) {
     encoding = ALPHABET[0] + encoding;
   }
 
@@ -59,8 +64,9 @@ export function encode(bytes: Uint8Array): string {
 }
 
 /**
- * Decodes a Base58 string to a byte array
+ * Decodes a Base58 string to a byte array payload
  * as described in the [Base58 Encoding Scheme].
+ *
  * Throws `SyntaxError` if the input string contains letters
  * not included in the [Base58 Alphabet].
  *
@@ -71,23 +77,18 @@ export function encode(bytes: Uint8Array): string {
  *
  * [Base58 Alphabet]: https://tools.ietf.org/id/draft-msporny-base58-01.html#alphabet
  * [Base58 Encoding Scheme]: https://tools.ietf.org/id/draft-msporny-base58-01.html#decode
+ *
+ * @param string Base58 string to decode
  */
-export function decode(input: string): Uint8Array {
-  assert(typeof input == "string", "input must be a string");
-
+export function decode(string: string): Uint8Array {
   // Validate string
-  if (!validator.test(input)) {
+  if (!validator.test(string)) {
     throw new SyntaxError(`Invalid Base58 string`);
-  }
-
-  // Empty string
-  if (input.length == 0) {
-    return new Uint8Array([]);
   }
 
   // Convert to integer
   let int = 0n;
-  for (const char of input) {
+  for (const char of string) {
     const index = ALPHABET.indexOf(char);
     int = int * 58n + BigInt(index);
   }
@@ -100,7 +101,7 @@ export function decode(input: string): Uint8Array {
   }
 
   // Prepend leading zeroes
-  for (let i = 0; input[i] == ALPHABET[0]; ++i) {
+  for (let i = 0; string[i] == ALPHABET[0]; ++i) {
     bytes.push(0);
   }
 
@@ -108,44 +109,93 @@ export function decode(input: string): Uint8Array {
 }
 
 /**
- * Encodes a byte array as a Base58 string with a checksum.
- * See the [Bitcoin source code] for the original C++ implementation.
+ * Encodes a byte array payload as a Base58
+ * string with a checksum.
+ *
+ * See the [Bitcoin source code] for the
+ * original C++ implementation.
  *
  * ```js
  * Base58.encodeCheck(new Uint8Array([55, 66, 77]));
  * // "36TSqepyLV"
  * ```
  *
+ * Optionally, a prefix can be specified, which
+ * will be concatenated with the payload before
+ * encoding.
+ *
+ * ```js
+ * Base58.encodeCheck(
+ *   new Uint8Array([55, 66, 77]),
+ *   new Uint8Array([22, 33, 44]), // prefix
+ * );
+ * // "2F7PrbRwKSeYvf"
+ * ```
+ *
  * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L135
+ *
+ * @param payload Byte array to encode
+ * @param prefix Optional prefix bytes
  */
-export function encodeCheck(bytes: Uint8Array): string {
-  assert(bytes instanceof Uint8Array, "bytes must be a Uint8Array");
-  const checksum = sha256(sha256(bytes)).slice(0, 4);
-  return encode(concat(bytes, checksum));
+export function encodeCheck(
+  payload: Uint8Array,
+  prefix = new Uint8Array(),
+): string {
+  const input = concat(prefix, payload);
+  const checksum = Sha256.digest(Sha256.digest(input)).slice(0, 4);
+  return encode(concat(input, checksum));
 }
 
 /**
- * Decodes and validates a Base58 string with a checksum to a byte array.
- * Throws `AssertionError` if the checksum does not match.
- * See the [Bitcoin source code] for the original C++ implementation.
+ * Decodes and validates a Base58 string with a
+ * checksum to a byte array.
+ *
+ * Throws `ChecksumError` if the checksum does not match.
+ *
+ * Throws `SyntaxError` if the input string contains
+ * letters not included in the [Base58 Alphabet].
+ *
+ * See the [Bitcoin source code] for the
+ * original C++ implementation.
  *
  * ```js
  * Base58.decodeCheck("6sx8oP1Sgpe");
  * // Uint8Array(4) [ 35, 37, 31, 49 ]
  * ```
  *
+ * Optionally, a prefix can be specified, which will
+ * be separated from the payload after decoding.
+ *
+ * Throws `PrefixError` if the prefix does not match
+ * the leading decoded bytes.
+ *
+ * ```js
+ * Base58.decodeCheck(
+ *   "2dWKxb85CS1cWb5mm",
+ *   new Uint8Array([ 86, 88, 92, 84 ])
+ * );
+ * // Uint8Array(4) [ 35, 37, 31, 49 ]
+ * ```
+ *
  * [Bitcoin source code]: https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp#L144
+ *
+ * @param string Base58 string to decode
+ * @param prefix Optional prefix bytes
  */
-export function decodeCheck(input: string): Uint8Array {
-  assert(typeof input == "string", "input must be a string");
+export function decodeCheck(string: string, prefix = new Uint8Array()) {
+  const raw = decode(string);
+  const prefixedPayload = raw.slice(0, -4);
+  const checksum = Sha256.digest(Sha256.digest(prefixedPayload)).slice(0, 4);
 
-  const bytes = decode(input);
-  const payload = bytes.slice(0, -4);
-  const checksum = sha256(sha256(payload)).slice(0, 4);
-
-  if (!(compare(checksum, bytes.slice(-4)))) {
-    throw new Error("Base58 checksum did not match");
+  // Validate checksum
+  if (!compare(checksum, raw.slice(-4))) {
+    throw new ChecksumError("Base58 checksum does not match");
   }
 
-  return payload;
+  // Check prefix
+  if (!compare(prefixedPayload.slice(0, prefix.length), prefix)) {
+    throw new PrefixError("Prefix bytes do not match");
+  }
+
+  return prefixedPayload.slice(prefix.length);
 }
