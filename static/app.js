@@ -180,8 +180,8 @@ async function handleVerifyProofChange() {
   const proofInput = document.getElementById("verify-proof");
   if (proofInput.files.length) {
     const text = await proofInput.files[0].text();
-    const template = JSON.parse(text);
     try {
+      const template = JSON.parse(text);
       uploadedProof = Proof.from(template);
     } catch (error) {
       uploadedProof = undefined;
