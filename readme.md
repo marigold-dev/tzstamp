@@ -28,4 +28,4 @@ deno run --unstable --allow-read=. --allow-write=dist _build.ts
 [MIT](license.txt)
 
 [TzStamp]: https://tzstamp.io
-[reference documentation]: https://doc.deno.land/https/gitlab.com/tzstamp/helpers/raw/0.3.0/src/mod.ts
+[reference documentation]: https://doc.deno.land/https/gitlab.com/tzstamp/helpers/raw/0.3.0/mod.ts
