@@ -1,4 +1,4 @@
-import { Schema, validate } from "./deps.deno.ts";
+import { Schema, validate } from "./deps.ts";
 export type { Schema };
 
 /**

@@ -1,5 +1,5 @@
 import { Operation, OperationTemplate } from "./operation.ts";
-import { Base58, compare, concat, Hex } from "./deps.deno.ts";
+import { Base58, compare, concat, Hex } from "./deps.ts";
 import { isValid, Schema } from "./_validate.ts";
 import {
   FetchError,

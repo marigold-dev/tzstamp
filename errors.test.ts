@@ -5,7 +5,7 @@ import {
   MismatchedHashError,
   UnsupportedOperationError,
   UnsupportedVersionError,
-} from "../src/errors.ts";
+} from "./errors.ts";
 import { assertEquals } from "./dev_deps.ts";
 
 Deno.test({
