@@ -374,7 +374,7 @@ export class AffixedProof extends Proof {
     try {
       const response = await fetch(endpoint, {
         headers: {
-          accepts: "application/json",
+          accept: "application/json",
         },
       });
       switch (response.status) {
