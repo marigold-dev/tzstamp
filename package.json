@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "npx jest",
-    "lint": "npx eslint index.js tests.js lib/**/*.js --fix"
+    "lint": "npx eslint index.js lib/**/*.js --fix"
   },
   "license": "MIT",
   "dependencies": {
