@@ -5,7 +5,7 @@ const { ProofStorage } = require('./lib/storage')
 const { Aggregator } = require('./lib/aggregator')
 const { configureAPI } = require('./lib/api')
 const { configureTezosClient } = require('./lib/tezos')
-const { configurePublisher } = require('./lib/publisher')
+const { Publisher } = require('./lib/publisher')
 
 const {
   PROOFS_DIR: proofsDirectory = 'proofs',
@@ -33,14 +33,10 @@ void async function () {
     faucetKeyPath,
     rpcURL
   )
-  const publisher = await configurePublisher(
-    storage,
-    aggregator,
-    tezosClient,
-    contractAddress
-  )
+  const publisher = new Publisher(storage, aggregator, tezosClient)
+  await publisher.bind(contractAddress)
   setInterval(
-    publisher,
-    interval * 1000
+    () => publisher.publish(),
+    +interval * 1000
   )
 }()
