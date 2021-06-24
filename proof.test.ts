@@ -6,20 +6,16 @@ import {
   Proof,
   ProofTemplate,
   VerifyStatus,
-} from "../src/proof.ts";
+} from "./proof.ts";
 import {
   FetchError,
   InvalidTemplateError,
   InvalidTezosNetworkError,
   MismatchedHashError,
   UnsupportedVersionError,
-} from "../src/errors.ts";
-import {
-  Blake2bOperation,
-  JoinOperation,
-  Operation,
-} from "../src/operation.ts";
-import { Base58, Blake2b, concat, Hex } from "../src/deps.deno.ts";
+} from "./errors.ts";
+import { Blake2bOperation, JoinOperation, Operation } from "./operation.ts";
+import { Base58, Blake2b, concat, Hex } from "./deps.ts";
 import {
   assert,
   assertEquals,

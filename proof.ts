@@ -1,5 +1,5 @@
 import { Operation, OperationTemplate } from "./operation.ts";
-import { Base58, compare, concat, Hex } from "./deps.deno.ts";
+import { Base58, compare, concat, Hex } from "./deps.ts";
 import { isValid, Schema } from "./_validate.ts";
 import {
   FetchError,
@@ -374,7 +374,7 @@ export class AffixedProof extends Proof {
     try {
       const response = await fetch(endpoint, {
         headers: {
-          accepts: "application/json",
+          accept: "application/json",
         },
       });
       switch (response.status) {

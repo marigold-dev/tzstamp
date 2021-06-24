@@ -6,13 +6,10 @@ import {
   Operation,
   Sha256Operation,
   Sha256Template,
-} from "../src/operation.ts";
-import {
-  InvalidTemplateError,
-  UnsupportedOperationError,
-} from "../src/errors.ts";
-import { Blake2b, concat, Hex } from "../src/deps.deno.ts";
-import { assertEquals, assertThrows, createHash } from "./dev_deps.ts";
+} from "./operation.ts";
+import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
+import { Blake2b, concat, Hex, Sha256 } from "./deps.ts";
+import { assertEquals, assertThrows } from "./dev_deps.ts";
 
 Deno.test({
   name: "Invalid operation templating",
@@ -152,15 +149,15 @@ Deno.test({
     );
     assertEquals(
       lenKeyOp.commit(input),
-      new Blake2b(64, key).update(input).digest(),
+      new Blake2b(key, 64).update(input).digest(),
     );
     assertEquals(
       lenOp.commit(input),
-      new Blake2b(44).update(input).digest(),
+      new Blake2b(undefined, 44).update(input).digest(),
     );
     assertEquals(
       keyOp.commit(input),
-      new Blake2b(32, key).update(input).digest(),
+      new Blake2b(key, 32).update(input).digest(),
     );
     assertEquals(
       defaultOp.commit(input),
@@ -175,15 +172,11 @@ Deno.test({
     assertEquals(keyOp, Operation.from(keyTemplate));
     assertEquals(defaultOp, Operation.from(defaultTemplate));
     assertThrows(
-      () => new Blake2bOperation(0),
+      () => new Blake2bOperation(-1),
       RangeError,
     );
     assertThrows(
       () => new Blake2bOperation(65),
-      RangeError,
-    );
-    assertThrows(
-      () => new Blake2bOperation(undefined, new Uint8Array(0)),
       RangeError,
     );
     assertThrows(
@@ -202,7 +195,7 @@ Deno.test({
     assertEquals(op.toString(), "SHA-256 hash");
     assertEquals(
       op.commit(input),
-      new Uint8Array(createHash("sha256").update(input).digest()),
+      Sha256.digest(input),
     );
     assertEquals(op.toJSON(), template);
     assertEquals(op, Operation.from(template));

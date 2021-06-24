@@ -1,4 +1,4 @@
-import { Blake2b, concat, createHash, Hex } from "./deps.deno.ts";
+import { Blake2b, concat, Hex, Sha256 } from "./deps.ts";
 import { isValid, Schema } from "./_validate.ts";
 import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
 
@@ -205,19 +205,12 @@ export class Blake2bOperation extends Operation {
    */
   constructor(length = 32, key?: Uint8Array) {
     super();
-    if (
-      length < Blake2b.MIN_DIGEST_BYTES || length > Blake2b.MAX_DIGEST_BYTES
-    ) {
-      throw new RangeError(
-        `BLAKE2b digest length must be between ${Blake2b.MIN_DIGEST_BYTES}–${Blake2b.MAX_DIGEST_BYTES} bytes.`,
-      );
+    if (length < 0 || length > 64) {
+      throw new RangeError("BLAKE2b digest length must be between 0-64 bytes.");
     }
-    if (
-      key instanceof Uint8Array &&
-      (key.length < Blake2b.MIN_KEY_BYTES || key.length > Blake2b.MAX_KEY_BYTES)
-    ) {
+    if (key && key.length > 64) {
       throw new RangeError(
-        `BLAKE2b key length must be between ${Blake2b.MIN_KEY_BYTES}–${Blake2b.MAX_KEY_BYTES} bytes.`,
+        "BLAKE2b key length must be no longer than 64 bytes.",
       );
     }
     this.length = length;
@@ -241,9 +234,7 @@ export class Blake2bOperation extends Operation {
   }
 
   commit(input: Uint8Array): Uint8Array {
-    return new Blake2b(this.length, this.key)
-      .update(input)
-      .digest();
+    return Blake2b.digest(input, this.key, this.length);
   }
 
   /**
@@ -282,9 +273,7 @@ export class Sha256Operation extends Operation {
   }
 
   commit(input: Uint8Array): Uint8Array {
-    const digest = createHash("sha256")
-      .update(input)
-      .digest();
+    const digest = Sha256.digest(input);
     return new Uint8Array(digest);
   }
 
