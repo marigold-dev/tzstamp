@@ -66,15 +66,30 @@ Install the tzstamp server dependencies.
 
     npm install
 
-Edit the file `.env.defaults` with your contract KT1 in `CONTRACT_ADDRESS` and
-the path to your faucet key in `FAUCET_KEY_PATH`. Be sure to set your `INTERVAL`
-between publishing merkle roots to the desired value.
+Create a `.env` config file in the project root. Here is an
+example setup:
 
-    emacs .env.defaults
+    PORT=80
+    BASE_URL=https://tzstamp.example.com/ # Base URL for the API
+    SECRET=edpk... # Tezos wallet secret
+    CONTRACT_ADDRESS=KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj # On mainnet
+    SCHEDULE="0 0 * * *" # Publish at midnight every day
+
+Used variables are as follows:
+- `PROOFS_DIR`: Directory to store proofs in. Defaults to `"proofs"`. Can be an absolute or relative path.
+- `PORT`: API server port to listen on. Defaults to `"8000"`.
+- `BASE_URL`: Base URL for the API. Used in responses containing a dynamic endpoint. Does not need to match the server port if, for example, a reverse proxy is being used. Defaults to `"http://localhost:8000"`
+- `KEY_FILE`: Path to JSON key file.
+- `SECRET`: Bare secret key. Takes precedence over `KEY_KEY`.
+- `CONTRACT_ADDRESS`: "KT1..." smart contract address. Defaults to `"KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj"`.
+- `RPC_URL`: Tezos node RPC base URL. Defaults to `"https://mainnet-tezos.giganode.io/"`. Any public or private accessible Tezos RPC may be used.
+- `SCHEDULE`: 5- or 6-field [cron expression](https://docs.oracle.com/cd/E12058_01/doc/doc.1014/e12030/cron_expressions.htm). Defaults to `"0 0 * * *"`, which is daily at midnight, local to the server.
+
+One of `SECRET` or `KEY_FILE` must be set.
 
 Run the server.
 
-    ./index.js
+    npm start
 
 ## Setup TestNet TzStamp On MacOS
 
