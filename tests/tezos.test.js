@@ -5,14 +5,14 @@ const { Base58 } = require('@tzstamp/helpers')
 
 const {
   RPC_URL: rpcURL = 'https://testnet-tezos.giganode.io/',
-  FAUCET_KEY_PATH: faucetKeyPath
+  KEY_FILE: keyFile
 } = process.env
 
 describe('Configure a tezos client', () => {
   test('with a faucet key', async () => {
     const client = await configureTezosClient(
       undefined,
-      faucetKeyPath,
+      keyFile,
       rpcURL
     )
     expect(client.rpc.url).toBe(rpcURL)
