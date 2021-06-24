@@ -6,16 +6,17 @@ const { Aggregator } = require('./lib/aggregator')
 const { configureAPI } = require('./lib/api')
 const { configureTezosClient } = require('./lib/tezos')
 const { Publisher } = require('./lib/publisher')
+const { CronJob } = require('cron')
 
 const {
   PROOFS_DIR: proofsDirectory = 'proofs',
   PORT: port = '8080',
-  INTERVAL: interval = '60',
   BASE_URL: baseURL = 'http://localhost:8080',
   FAUCET_KEY_PATH: faucetKeyPath,
   TEZOS_WALLET_SECRET: tezosWalletSecret,
   CONTRACT_ADDRESS: contractAddress = 'KT1RHdBdefx1iRMHmgwvzb6oMR2HyWQuayzx',
-  RPC_URL: rpcURL = 'https://testnet-tezos.giganode.io/'
+  RPC_URL: rpcURL = 'https://testnet-tezos.giganode.io/',
+  SCHEDULE: schedule = '* * * * *'
 } = process.env
 
 /**
@@ -24,10 +25,6 @@ const {
 void async function () {
   const storage = new ProofStorage(proofsDirectory)
   const aggregator = new Aggregator()
-  const app = await configureAPI(baseURL, storage, aggregator)
-  app.listen(port, () => {
-    console.log(`Serving on port ${port}`)
-  })
   const tezosClient = await configureTezosClient(
     tezosWalletSecret,
     faucetKeyPath,
@@ -35,8 +32,10 @@ void async function () {
   )
   const publisher = new Publisher(storage, aggregator, tezosClient)
   await publisher.bind(contractAddress)
-  setInterval(
-    () => publisher.publish(),
-    +interval * 1000
-  )
+  const job = new CronJob(schedule, () => publisher.publish())
+  const app = await configureAPI(baseURL, storage, aggregator)
+  app.listen(port, () => {
+    console.log(`Serving on port ${port}`)
+  })
+  job.start()
 }()
