@@ -4,18 +4,20 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests.js",
-    "lint": "npx eslint index.js tests.js lib/**/*.js --fix"
+    "test": "npx jest",
+    "lint": "npx eslint index.js lib/**/*.js --fix"
   },
   "license": "MIT",
   "dependencies": {
     "@koa/router": "^10.0.0",
-    "@taquito/signer": "^7.0.1-beta.0",
-    "@taquito/taquito": "^9.0.1",
-    "@tzstamp/helpers": "^0.2.0",
+    "@taquito/signer": "^9.1.1",
+    "@taquito/taquito": "^9.1.1",
+    "@tzstamp/helpers": "^0.3.1",
     "@tzstamp/proof": "^0.2.0",
     "@tzstamp/tezos-merkle": "^0.2.0",
-    "dotenv-defaults": "^2.0.1",
-    "koa": "^2.13.1"
+    "cron": "^1.8.2",
+    "dotenv": "^10.0.0",
+    "koa": "^2.13.1",
+    "koa-bodyparser": "^4.3.0"
   }
 }
