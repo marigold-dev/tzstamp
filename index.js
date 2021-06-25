@@ -29,7 +29,7 @@ void async function () {
   const publisher = new Publisher(storage, aggregator, tezosClient)
   await publisher.bind(contractAddress)
   const job = new CronJob(schedule, () => publisher.publish())
-  const app = await configureAPI(baseURL, storage, aggregator)
+  const app = await configureAPI(baseURL, storage, aggregator, tezosClient, publisher, job)
   app.listen(port, () => {
     console.log(`Serving on port ${port}`)
   })
