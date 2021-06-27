@@ -12,5 +12,8 @@ test:
 
 build:
   stage: build
+  before_script:
+    - apt-get install npm -y
+    - npm install
   script:
     - deno run --unstable --allow-read=. --allow-write=dist _build.ts
