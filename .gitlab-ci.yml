@@ -7,10 +7,10 @@ stages:
 test:
   stage: test
   script:
-    - deno lint *.ts
+    - deno lint --ignore=node_modules,dist
     - deno test --unstable --allow-net *.test.ts
 
 build:
   stage: build
   script:
-    - deno run --unstable --allow-read --allow-write=dist _build.ts
+    - deno run --unstable --allow-read=. --allow-write=dist _build.ts
