@@ -1,4 +1,4 @@
-import { blake2b, concat, Hex } from "./deps.deno.ts";
+import { Blake2b, concat, Hex } from "./deps.ts";
 import { Path, Sibling } from "./path.ts";
 
 /**
@@ -94,7 +94,7 @@ export class MerkleTree {
       this.blockSet.add(blockHex);
 
       // Create leaf
-      const leaf = blake2b(block);
+      const leaf = Blake2b.digest(block);
 
       // Create cursor variables
       let index = this.layers[0].length;
@@ -114,7 +114,7 @@ export class MerkleTree {
         const concatenation = (index % 2)
           ? concat(this.layers[height][index - 1], this.layers[height][index]) // Concat with left sibling
           : concat(this.layers[height][index], tail); // There is no  right sibling; concat with tail
-        const parent = blake2b(concatenation);
+        const parent = Blake2b.digest(concatenation);
 
         // Advance cursor
         index = Math.floor(index / 2);
@@ -135,7 +135,7 @@ export class MerkleTree {
 
         // Advance tail
         if (computeTail) {
-          tail = blake2b(concat(tail, tail));
+          tail = Blake2b.digest(concat(tail, tail));
         }
       }
     }
@@ -178,7 +178,7 @@ export class MerkleTree {
 
       ++height;
       cursor = Math.floor(cursor / 2);
-      tail = blake2b(concat(tail, tail));
+      tail = Blake2b.digest(concat(tail, tail));
     }
 
     return new Path({

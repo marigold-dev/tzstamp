@@ -1,10 +1,10 @@
 import {
-  blake2b,
+  Blake2b,
   Blake2bOperation,
   JoinOperation,
   Operation,
   Proof,
-} from "./deps.deno.ts";
+} from "./deps.ts";
 
 /**
  * Sibling node
@@ -74,7 +74,7 @@ export class Path {
    * Leaf node hash
    */
   get leaf(): Uint8Array {
-    return blake2b(this.block);
+    return Blake2b.digest(this.block);
   }
 
   /**
