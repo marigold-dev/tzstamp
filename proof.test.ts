@@ -1,21 +1,23 @@
 import {
   AffixedProof,
+  AffixedProofOptions,
   AffixedProofTemplate,
-  PendingProof,
-  PendingProofTemplate,
   Proof,
+  ProofOptions,
   ProofTemplate,
+  UnresolvedProof,
+  UnresolvedProofOptions,
+  UnresolvedProofTemplate,
   VerifyStatus,
 } from "./proof.ts";
 import {
   FetchError,
-  InvalidTemplateError,
   InvalidTezosNetworkError,
   MismatchedHashError,
   UnsupportedVersionError,
 } from "./errors.ts";
-import { Blake2bOperation, JoinOperation, Operation } from "./operation.ts";
-import { Base58, Blake2b, concat, Hex } from "./deps.ts";
+import { Blake2bOperation, JoinOperation } from "./operation.ts";
+import { Blake2b, concat, Hex } from "./deps.ts";
 import {
   assert,
   assertEquals,
@@ -30,7 +32,7 @@ const DATE_0 = new Date("1970-01-01T00:00:00.000Z");
 // HTTP mock server
 const server = Deno.listen({ port: 57511 });
 const serverAddr = server.addr as Deno.NetAddr;
-const serverURL = new URL(`http://${serverAddr.hostname}:${serverAddr.port}/`);
+const serverURL = `http://${serverAddr.hostname}:${serverAddr.port}/`;
 void async function () {
   for await (const conn of server) {
     void async function () {
@@ -63,7 +65,7 @@ void async function () {
           const headers = new Headers();
           headers.set("Content-Type", "application/json");
           const body = JSON.stringify(
-            new AffixedProof({
+            AffixedProof.create({
               hash: new Blake2b().update(new Uint8Array()).digest(),
               operations: [],
               network: MAINNET,
@@ -88,36 +90,44 @@ void async function () {
 Deno.test({
   name: "Proof construction and templating",
   fn() {
-    const hash = crypto.getRandomValues(new Uint8Array(32));
-    const operations: Operation[] = [
-      new JoinOperation({
-        append: new Uint8Array([1]),
-      }),
-    ];
-    const proof = new Proof({ hash, operations });
+    const options: ProofOptions = {
+      hash: crypto.getRandomValues(new Uint8Array(32)),
+      operations: [
+        new JoinOperation({
+          append: new Uint8Array([1]),
+        }),
+      ],
+    };
+    const proof = new Proof(options);
     const template: ProofTemplate = {
       version: 1,
-      hash: Hex.stringify(hash),
-      operations: [{
-        type: "join",
-        append: "01",
-      }],
+      hash: Hex.stringify(options.hash),
+      operations: options.operations.map((op) => op.toJSON()),
     };
-    assertEquals(proof.hash, hash);
-    assertEquals(proof.operations, operations);
+    assertEquals(proof.hash, options.hash);
+    assertEquals(proof.operations, options.operations);
     assertEquals(
       proof.derivation,
-      concat(hash, 1),
+      concat(options.hash, 1),
     );
+    assert(!proof.isAffixed());
+    assert(!proof.isUnresolved());
     assertEquals(proof.toJSON(), template);
     assertEquals(proof, Proof.from(template));
+    assertEquals(proof, Proof.create(options));
+  },
+});
+
+Deno.test({
+  name: "Invalid proof templating",
+  fn() {
     assertThrows(
       () => Proof.from(null),
-      InvalidTemplateError,
+      SyntaxError,
     );
     assertThrows(
       () => Proof.from({}),
-      InvalidTemplateError,
+      SyntaxError,
     );
     assertThrows(
       () =>
@@ -154,14 +164,9 @@ Deno.test({
   fn() {
     const hashA = crypto.getRandomValues(new Uint8Array(32));
     const hashB = new Blake2b().update(hashA).digest();
-    const proofA = new Proof({
-      hash: hashA,
-      operations: [new Blake2bOperation()],
-    });
-    const proofB = new Proof({
-      hash: hashB,
-      operations: [new Blake2bOperation()],
-    });
+    const operations = [new Blake2bOperation()];
+    const proofA = new Proof({ hash: hashA, operations });
+    const proofB = new Proof({ hash: hashB, operations });
     const proofAB = proofA.concat(proofB);
     assertEquals(proofAB.hash, proofA.hash);
     assertEquals(
@@ -172,87 +177,62 @@ Deno.test({
       proofAB.derivation,
       new Blake2b().update(hashB).digest(),
     );
-    const dummyAffixedProof = new AffixedProof({
+    assert(!proofAB.isAffixed());
+    assert(!proofAB.isUnresolved());
+    const affixedProof = new AffixedProof({
       hash: hashB,
       operations: [],
       network: NULLNET,
       timestamp: new Date(),
     });
-    assertThrows(() => dummyAffixedProof.concat(proofA), TypeError);
+    assertThrows(() => affixedProof.concat(proofA), TypeError);
+    assert(proofA.concat(affixedProof).isAffixed());
     assertThrows(
-      () =>
-        proofA.concat(
-          new Proof({
-            hash: hashA,
-            operations: [],
-          }),
-        ),
+      () => proofA.concat(proofAB),
       MismatchedHashError,
     );
-    assert(proofA.concat(dummyAffixedProof) instanceof AffixedProof);
-    assert(
-      proofA.concat(
-        new PendingProof({
-          hash: hashB,
-          operations: [],
-          remote: serverURL,
-        }),
-      ) instanceof PendingProof,
-    );
+    const unresolvedProof = new UnresolvedProof({
+      hash: hashB,
+      operations: [],
+      remote: serverURL,
+    });
+    assert(proofA.concat(unresolvedProof).isUnresolved());
   },
 });
 
 Deno.test({
   name: "Affixed proof construction and templating",
   fn() {
-    const hash = crypto.getRandomValues(new Uint8Array(32));
-    const network = MAINNET;
-    const timestamp = DATE_0;
-    const proof = new AffixedProof({
-      hash,
+    const options: AffixedProofOptions = {
+      hash: crypto.getRandomValues(new Uint8Array(32)),
       operations: [
         new JoinOperation({
           prepend: new Uint8Array([2]),
         }),
       ],
-      network,
-      timestamp,
-    });
+      network: MAINNET,
+      timestamp: DATE_0,
+    };
+    const proof = new AffixedProof(options);
     const template: AffixedProofTemplate = {
       version: 1,
-      hash: Hex.stringify(hash),
-      operations: [{
-        type: "join",
-        prepend: "02",
-      }],
-      network,
-      timestamp: timestamp.toISOString(),
+      hash: Hex.stringify(options.hash),
+      operations: options.operations.map((op) => op.toJSON()),
+      network: options.network,
+      timestamp: options.timestamp.toISOString(),
     };
-    assertEquals(proof.network, network);
-    assertEquals(proof.timestamp, timestamp);
+    assertEquals(proof.network, options.network);
+    assertEquals(proof.timestamp, options.timestamp);
     assert(proof.mainnet);
-    assert(
-      !(new AffixedProof({
-        hash,
-        operations: [],
-        network: NULLNET,
-        timestamp,
-      })).mainnet,
-    );
-    assertEquals(
-      proof.blockHash,
-      Base58.encodeCheck(concat(1, 52, proof.derivation)),
-    );
+    assert(proof.isAffixed());
+    assert(proof instanceof AffixedProof);
+    assert(!proof.isUnresolved());
+    assert(!new AffixedProof({ ...options, network: NULLNET }).mainnet);
     assertEquals(proof.toJSON(), template);
     assertEquals(proof, Proof.from(template));
+    assertEquals(proof, Proof.create(options));
     assertThrows(
-      () =>
-        new AffixedProof({
-          hash,
-          operations: [],
-          network: "invalid",
-          timestamp,
-        }),
+      () => new AffixedProof({ ...options, network: "invalid" }),
       InvalidTezosNetworkError,
     );
   },
@@ -263,86 +243,65 @@ Deno.test({
   permissions: {
     net: true,
   },
-  sanitizeResources: false,
   async fn() {
-    const hash = crypto.getRandomValues(new Uint8Array(32));
-    await assertThrowsAsync(
-      () =>
-        new AffixedProof({
-          hash,
-          operations: [new Blake2bOperation()],
-          network: MAINNET,
-          timestamp: DATE_0,
-        }).verify("invalid"),
-      TypeError,
-    );
-    assertEquals(
-      await new AffixedProof({
-        hash,
-        operations: [new Blake2bOperation()],
-        network: MAINNET,
-        timestamp: DATE_0,
-      }).verify("http://unresolvable"),
-      VerifyStatus.NetError,
-    );
-    assertEquals(
-      await new AffixedProof({
-        hash,
-        operations: [new Blake2bOperation()],
-        network: MAINNET,
-        timestamp: DATE_0,
-      }).verify(serverURL + "unauthorized/"),
-      VerifyStatus.NetError,
-    );
-    assertEquals(
-      await new AffixedProof({
-        hash,
-        operations: [new Blake2bOperation()],
-        network: NULLNET,
-        timestamp: DATE_0,
-      }).verify(serverURL),
-      VerifyStatus.NotFound,
-    );
-    assertEquals(
-      await new AffixedProof({
-        hash,
-        operations: [new Blake2bOperation()],
-        network: MAINNET,
-        timestamp: new Date(),
-      }).verify(serverURL),
-      VerifyStatus.Mismatch,
-    );
-    assertEquals(
-      await new AffixedProof({
-        hash,
-        operations: [new Blake2bOperation()],
-        network: MAINNET,
-        timestamp: DATE_0,
-      }).verify(serverURL),
-      VerifyStatus.Verified,
-    );
+    const options: AffixedProofOptions = {
+      hash: crypto.getRandomValues(new Uint8Array(32)),
+      operations: [new Blake2bOperation()],
+      network: MAINNET,
+      timestamp: DATE_0,
+    };
+    const proof = new AffixedProof(options);
+    const nullProof = new AffixedProof({ ...options, network: NULLNET });
+    const mismatchProof = new AffixedProof({
+      ...options,
+      timestamp: new Date(),
+    });
+    const results = await Promise.all([
+      proof.verify(serverURL),
+      nullProof.verify(serverURL),
+      mismatchProof.verify(serverURL),
+    ]);
+    assertEquals(results[0].status, VerifyStatus.Verified);
+    assertEquals(results[1].status, VerifyStatus.NotFound);
+    assertEquals(results[2].status, VerifyStatus.Mismatch);
+    await Promise.all([
+      assertThrowsAsync(
+        () => proof.verify("invalid"),
+        TypeError,
+      ),
+      assertThrowsAsync(
+        () => proof.verify("http://unresolvable"),
+        TypeError,
+      ),
+      assertThrowsAsync(
+        () => proof.verify(serverURL + "unauthorized/"),
+        FetchError,
+      ),
+    ]);
   },
 });
 
 Deno.test({
-  name: "Pending proof construction and templating",
+  name: "Unresolved proof construction and templating",
   fn() {
-    const hash = crypto.getRandomValues(new Uint8Array(32));
-    const remote = serverURL + "proof/myProof";
-    const proof = new PendingProof({
-      hash,
+    const options: UnresolvedProofOptions = {
+      hash: crypto.getRandomValues(new Uint8Array(32)),
       operations: [],
-      remote,
-    });
-    const template: PendingProofTemplate = {
-      version: 1,
-      hash: Hex.stringify(hash),
-      operations: [],
-      remote,
+      remote: serverURL + "proof/myProof",
     };
-    assertEquals(proof.remote.toString(), remote);
+    const proof = new UnresolvedProof(options);
+    const template: UnresolvedProofTemplate = {
+      version: 1,
+      hash: Hex.stringify(options.hash),
+      operations: options.operations.map((op) => op.toJSON()),
+      remote: options.remote,
+    };
+    assertEquals(proof.remote, options.remote);
     assertEquals(proof.toJSON(), template);
     assertEquals(proof, Proof.from(template));
+    assert(proof.isUnresolved());
+    assert(proof instanceof UnresolvedProof);
+    assert(!proof.isAffixed());
   },
 });
 
@@ -351,23 +310,25 @@ Deno.test({
   permissions: {
     net: true,
   },
-  sanitizeResources: false,
   async fn() {
-    const proof = new PendingProof({
+    const options: UnresolvedProofOptions = {
       hash: new Uint8Array(),
       operations: [new Blake2bOperation()],
       remote: serverURL + "proof/myProof",
+    };
+    const proof = new UnresolvedProof(options);
+    const unauthProof = new UnresolvedProof({
+      ...options,
+      remote: serverURL + "unauthorized/proof/myProof",
     });
     const resolvedProof = await proof.resolve();
-    assert(resolvedProof instanceof AffixedProof);
+    assert(resolvedProof instanceof Proof);
     assertEquals(resolvedProof.hash, proof.hash);
     assertEquals(resolvedProof.derivation, proof.derivation);
-    await assertThrowsAsync(() =>
-      new PendingProof({
-        hash: new Uint8Array(),
-        operations: [],
-        remote: serverURL + "unauthorized/proof/myProof",
-      }).resolve(), FetchError);
+    await assertThrowsAsync(
+      () => unauthProof.resolve(),
+      FetchError,
+    );
   },
 });
 
