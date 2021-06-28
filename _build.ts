@@ -9,7 +9,7 @@ await exportCommonJS({
     "operation.ts",
     "proof.ts",
     "errors.ts",
-    "_validate.ts",
+    "schemas.ts",
   ],
   dependencyMap: new Map([
     ["https://gitlab.com/tzstamp/helpers/raw/0.3.0/mod.ts", "@tzstamp/helpers"],
