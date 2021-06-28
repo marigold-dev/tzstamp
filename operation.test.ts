@@ -7,7 +7,6 @@ import {
   Sha256Operation,
   Sha256Template,
 } from "./operation.ts";
-import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
 import { Blake2b, concat, Hex, Sha256 } from "./deps.ts";
 import { assertEquals, assertThrows } from "./dev_deps.ts";
 
@@ -16,27 +15,15 @@ Deno.test({
   fn() {
     assertThrows(
       () => Operation.from(null),
-      InvalidTemplateError,
+      SyntaxError,
     );
     assertThrows(
       () => Operation.from({}),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () => Operation.from({ type: "join", foo: true }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () => Operation.from({ type: "blake2b", foo: true }),
-      InvalidTemplateError,
-    );
-    assertThrows(
-      () => Operation.from({ type: "sha256", foo: true }),
-      InvalidTemplateError,
+      SyntaxError,
     );
     assertThrows(
       () => Operation.from({ type: "bogus" }),
-      UnsupportedOperationError,
+      SyntaxError,
     );
   },
 });
@@ -101,6 +88,10 @@ Deno.test({
     assertEquals(prependOp, Operation.from(prependTemplate));
     assertEquals(appendOp, Operation.from(appendTemplate));
     assertEquals(nullOp, Operation.from(nullTemplate));
+    assertThrows(
+      () => Operation.from({ type: "join", extraneous: true }),
+      SyntaxError,
+    );
   },
 });
 
@@ -183,6 +174,10 @@ Deno.test({
       () => new Blake2bOperation(undefined, new Uint8Array(65)),
       RangeError,
     );
+    assertThrows(
+      () => Operation.from({ type: "blake2b", extraneous: true }),
+      SyntaxError,
+    );
   },
 });
 
@@ -199,5 +194,9 @@ Deno.test({
     );
     assertEquals(op.toJSON(), template);
     assertEquals(op, Operation.from(template));
+    assertThrows(
+      () => Operation.from({ type: "sha256", extraneous: true }),
+      SyntaxError,
+    );
   },
 });

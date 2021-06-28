@@ -49,7 +49,9 @@ export const operationSchema: Schema = {
         key: { type: "string" },
       },
     },
-    "sha256": {},
+    "sha256": {
+      properties: {},
+    },
   },
 } as const;
 

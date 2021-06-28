@@ -1,14 +1,13 @@
 import { Blake2b, concat, Hex, Sha256 } from "./deps.ts";
-import { isValid, Schema } from "./_validate.ts";
-import { InvalidTemplateError, UnsupportedOperationError } from "./errors.ts";
+import { isValid, operationSchema } from "./schemas.ts";
 
 /**
  * Operation template
  */
-export interface OperationTemplate {
-  type: string;
-  [_: string]: unknown;
-}
+export type OperationTemplate =
+  | JoinTemplate
+  | Blake2bTemplate
+  | Sha256Template;
 
 /**
  * Proof operation
@@ -30,18 +29,6 @@ export abstract class Operation {
   abstract commit(input: Uint8Array): Uint8Array;
 
   /**
-   * [JTD] schema for an operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { type: "string" },
-    },
-    additionalProperties: true,
-  };
-
-  /**
    * Creates a subclassed operation from a template object.
    * Throws `InvalidTemplateError` if the template is invalid.
    * Throws `UnsupportedOperationError` if operation is not supported.
@@ -56,36 +43,22 @@ export abstract class Operation {
    * @param template Template object
    */
   static from(template: unknown): Operation {
-    if (!isValid<OperationTemplate>(Operation.schema, template)) {
-      throw new InvalidTemplateError("Invalid operation template");
+    if (!isValid<OperationTemplate>(operationSchema, template)) {
+      throw new SyntaxError("Invalid operation template");
     }
     switch (template.type) {
       case "join":
-        if (!isValid<JoinTemplate>(JoinOperation.schema, template)) {
-          throw new InvalidTemplateError("Invalid join operation template");
-        }
         return new JoinOperation({
           prepend: template.prepend ? Hex.parse(template.prepend) : undefined,
           append: template.append ? Hex.parse(template.append) : undefined,
         });
       case "blake2b":
-        if (!isValid<Blake2bTemplate>(Blake2bOperation.schema, template)) {
-          throw new InvalidTemplateError("Invalid BLAKE2b operation template");
-        }
         return new Blake2bOperation(
           template.length,
           template.key ? Hex.parse(template.key) : undefined,
         );
       case "sha256":
-        if (!isValid<Sha256Template>(Sha256Operation.schema, template)) {
-          throw new InvalidTemplateError("Invalid SHA-256 operation template");
-        }
         return new Sha256Operation();
-      default:
-        throw new UnsupportedOperationError(
-          template.type,
-          `Unsupported operation "${template.type}"`,
-        );
     }
   }
 }
@@ -93,7 +66,7 @@ export abstract class Operation {
 /**
  * Join operation template
  */
-export interface JoinTemplate extends OperationTemplate {
+export interface JoinTemplate {
   type: "join";
   prepend?: string;
   append?: string;
@@ -158,27 +131,12 @@ export class JoinOperation extends Operation {
   commit(input: Uint8Array): Uint8Array {
     return concat(this.prepend, input, this.append);
   }
-
-  /**
-   * [JTD] schema for a join operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["join"] },
-    },
-    optionalProperties: {
-      prepend: { type: "string" },
-      append: { type: "string" },
-    },
-  };
 }
 
 /**
  * BLAKE2b hash operation template
  */
-export interface Blake2bTemplate extends OperationTemplate {
+export interface Blake2bTemplate {
   type: "blake2b";
   length?: number;
   key?: string;
@@ -236,27 +194,12 @@ export class Blake2bOperation extends Operation {
   commit(input: Uint8Array): Uint8Array {
     return Blake2b.digest(input, this.key, this.length);
   }
-
-  /**
-   * [JTD] schema for a BLAKE2b operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["blake2b"] },
-    },
-    optionalProperties: {
-      length: { type: "uint32" },
-      key: { type: "string" },
-    },
-  };
 }
 
 /**
  * SHA-256 hash operation template
  */
-export interface Sha256Template extends OperationTemplate {
+export interface Sha256Template {
   type: "sha256";
 }
 
@@ -276,15 +219,4 @@ export class Sha256Operation extends Operation {
     const digest = Sha256.digest(input);
     return new Uint8Array(digest);
   }
-
-  /**
-   * [JTD] schema for a SHA-256 hash operation template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      type: { enum: ["sha256"] },
-    },
-  };
 }
