@@ -2,7 +2,19 @@ image: denoland/deno:1.11.0
 
 stages:
   - test
+  - setup
   - build
+
+cache:
+  paths:
+    - .npm/
+    - node_modules/
+
+setup:
+  stage: setup
+  image: node:16-alpine
+  script:
+    - npm ci --cache .npm --prefer-offline
 
 test:
   stage: test
@@ -12,9 +24,5 @@ test:
 
 build:
   stage: build
-  before_script:
-    - apt-get update
-    - apt-get install npm -y
-    - npm install
   script:
     - deno run --unstable --allow-read=. --allow-write=dist _build.ts
