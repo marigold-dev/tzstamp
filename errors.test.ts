@@ -1,20 +1,10 @@
 import {
   FetchError,
-  InvalidTemplateError,
   InvalidTezosNetworkError,
   MismatchedHashError,
-  UnsupportedOperationError,
   UnsupportedVersionError,
 } from "./errors.ts";
 import { assertEquals } from "./dev_deps.ts";
-
-Deno.test({
-  name: "Invalid template error",
-  fn() {
-    const error = new InvalidTemplateError("message");
-    assertEquals(error.toString(), "InvalidTemplateError: message");
-  },
-});
 
 Deno.test({
   name: "Unsupported version error",
@@ -30,15 +20,6 @@ Deno.test({
   fn() {
     const error = new MismatchedHashError("message");
     assertEquals(error.toString(), "MismatchedHashError: message");
-  },
-});
-
-Deno.test({
-  name: "Unsupported operation error",
-  fn() {
-    const error = new UnsupportedOperationError("bogus", "message");
-    assertEquals(error.toString(), "UnsupportedOperationError: message");
-    assertEquals(error.operation, "bogus");
   },
 });
 
