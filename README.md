@@ -1,13 +1,14 @@
 # TzStamp Tezos-style Merkle Trees
 
-Fast-appendable Tezos-style Merkle trees for [TzStamp tools][tzstamp].
+Fast-appendable Tezos-style Merkle trees for
+[TzStamp tools](https://tzstamp.io).
 
-Tezos-style Merkle trees use the [BLAKE2b] hashing algorithm and implicitly repeat
-the last leaf until the tree is perfect.
+Tezos-style Merkle trees use the [BLAKE2b](https://www.blake2.net/) hashing
+algorithm and implicitly repeat the last leaf until the tree is perfect.
 
 This implementation has logarithmic time-complexity appends to allow for
 progressive root derivation over a long runtime. You can find the
-[official Tezos implementation here][merkle].
+[official Tezos implementation here](https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml).
 
 ## Usage
 
@@ -19,7 +20,8 @@ const { MerkleTree } = require("@tzstamp/tezos-merkle");
 import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.2.0/src/mod.ts";
 ```
 
-See the [full reference documentation here][docs].
+See the
+[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/src/mod.ts).
 
 ### Building a Merkle tree
 
@@ -72,19 +74,20 @@ path.root; // Uint8Array(32)
 // Sibling nodes along path to root
 path.siblings;
 // [
-//   { sibling: Uint8Array {}, relation: "left" },
+//   { hash: Uint8Array {}, relation: "left" },
 //   ...
 // ]
 ```
 
-A [TzStamp proof] can be constructed with the `.toProof` method:
+A [timestamp proof segment](https://gitlab.com/tzstamp/proof) can be constructed
+with the `.toProof` method:
 
 ```js
-path.toProof(); // Proof {}
+path.toProof(); // Proof{}
 ```
 
-A `paths` generator function is provided to compute paths for all blocks in
-the tree, facilitating mass proof construction.
+A `paths` generator function is provided to compute paths for all blocks in the
+tree, facilitating mass proof construction.
 
 ```js
 for (const path of merkleTree.paths()) {
@@ -96,9 +99,3 @@ for (const path of merkleTree.paths()) {
 ## License
 
 [MIT](LICENSE.txt)
-
-[tzstamp]: https://tzstamp.io
-[BLAKE2b]: https://www.blake2.net/
-[merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
-[docs]: https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.2.0/src/mod.ts
-[TzStamp proof]: https://gitlab.com/tzstamp/proof
