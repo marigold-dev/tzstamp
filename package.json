@@ -9,12 +9,8 @@
     "dist"
   ],
   "scripts": {
-    "lint": "deno lint src/* tests/*",
-    "fmt": "deno fmt README.md CHANGELOG.md src/* tests/*",
-    "build": "npx deno2node src/tsconfig.json",
-    "test": "deno test tests/",
-    "coverage": "rm -f coverage/* && deno test --coverage=coverage tests/ && deno coverage coverage",
-    "stress-test": "deno run tests/stress.ts"
+    "test": "deno test *.test.ts",
+    "build": "deno run --unstable --allow-read=. --allow-write=dist _build.ts"
   },
   "contributors": [
     "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
@@ -27,8 +23,8 @@
   "homepage": "https://gitlab.com/tzstamp/merkle",
   "license": "MIT",
   "dependencies": {
-    "@tzstamp/helpers": "^0.2.0",
-    "@tzstamp/proof": "^0.2.0"
+    "@tzstamp/helpers": "^0.3.1",
+    "@tzstamp/proof": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^15.0.2"
