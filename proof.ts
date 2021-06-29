@@ -1,13 +1,48 @@
 import { Operation, OperationTemplate } from "./operation.ts";
-import { Base58, compare, concat, Hex } from "./deps.ts";
-import { isValid, Schema } from "./_validate.ts";
+import { Base58, compare, Hex } from "./deps.ts";
+import {
+  affixedProofSchema,
+  blockHeaderSchema,
+  isValid,
+  proofSchema,
+  unresolvedProofSchema,
+} from "./schemas.ts";
 import {
   FetchError,
-  InvalidTemplateError,
   InvalidTezosNetworkError,
   MismatchedHashError,
   UnsupportedVersionError,
 } from "./errors.ts";
+
+/**
+ * Tezos network identifier prefix bytes
+ */
+const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
+
+/**
+ * Tezos block hash prefix bytes
+ */
+const BLOCK_PREFIX = new Uint8Array([1, 52]);
+
+/**
+ * Tezos Mainnet network identifier
+ */
+const TEZOS_MAINNET = "NetXdQprcVkpaWU";
+
+type AnyProofTemplate =
+  | ProofTemplate
+  | AffixedProofTemplate
+  | UnresolvedProofTemplate;
+
+type AnyProofOptions =
+  | ProofOptions
+  | AffixedProofOptions
+  | UnresolvedProofOptions;
+
+type AnyProof =
+  | Proof
+  | AffixedProof
+  | UnresolvedProof;
 
 /**
  * Proof template
@@ -16,7 +51,6 @@ export interface ProofTemplate {
   version: number;
   hash: string;
   operations: OperationTemplate[];
-  [_: string]: unknown;
 }
 
 /**
@@ -42,14 +76,10 @@ export class Proof {
   readonly operations: Operation[];
 
   /**
-   * Output of all operations applied sequentially to the input hash.
+   * Output of all operations applied sequentially to the input hash
    */
   readonly derivation: Uint8Array;
 
-  /**
-   * @param hash Input hash
-   * @param operations Proof operations
-   */
   constructor({ hash, operations }: ProofOptions) {
     this.hash = hash;
     this.operations = operations;
@@ -60,39 +90,53 @@ export class Proof {
   }
 
   /**
+   * Narrows the proof to the affixed subclass.
+   */
+  isAffixed(): this is AffixedProof {
+    return false;
+  }
+
+  /**
+   * Narrows the proof to the unresolved subclass.
+   */
+  isUnresolved(): this is UnresolvedProof {
+    return false;
+  }
+
+  /**
    * Concatenates another proof's operations to the current one.
    * Throws `MismatchedHashError` if the derivation of the current proof does not match
    * the stored hash of the passed proof.
    *
-   * ```ts
-   * const proofA = new Proof({ ... });
-   * const proofB = new Proof({ ... });
+   * ```js
+   * const proofA = Proof.create({ ... });
+   * const proofB = Proof.create({ ... });
    * const proofAB = proofA.concat(proofB);
    * // Hash of proofA
    * // Operations of proofA + proofB
    * // Calculates new derivation
    * ```
    *
-   * The `AffixedProof` and `PendingProof` subclasses are viral.
-   * Concatenating to instances of these classes with produce a new
+   * The `AffixedProof` and `UnresolvedProof` subclasses are viral.
+   * Concatenating to instances of these classes will produce a new
    * instance of the same subclass:
    *
-   * ```ts
+   * ```js
    * const affixedProof = new AffixedProof({ ... });
    * proof.concat(affixedProof);
    * // AffixedProof {}
    * // Retains extra fields of affixedProof
    *
-   * const pendingProof = new PendingProof({ ... });
-   * proof.concat(pendingProof);
-   * // PendingProof {}
-   * // Retains extra fields of pendingProof
+   * const unresolvedProof = new UnresolvedProof({ ... });
+   * proof.concat(unresolvedProof);
+   * // UnresolvedProof {}
+   * // Retains extra fields of unresolvedProof
    * ```
    *
-   * The `AffixedProof` class represents the end of a proof
+   * The `AffixedProof` subclass represents the end of a proof
    * and cannot be concatenated to:
    *
-   * ```
+   * ```js
    * affixedProof.concat(proof);
    * // TypeError: Cannot concatenate to an affixed proof
    * ```
@@ -100,41 +144,38 @@ export class Proof {
    * @param proof Proof to append
    */
   concat(proof: AffixedProof): AffixedProof;
-  concat(proof: PendingProof): PendingProof;
+  concat(proof: UnresolvedProof): UnresolvedProof;
   concat(proof: Proof): Proof;
-  concat(proof: Proof): Proof {
-    if (this instanceof AffixedProof) {
-      throw new TypeError("Cannot concatenate to an affixed proof");
-    }
+  concat(proof: AnyProof) {
     if (!compare(this.derivation, proof.hash)) {
       throw new MismatchedHashError(
-        "Derivation of partial proof does not match the stored hash of the appended proof",
+        "Derivation of current proof does not match the stored hash of the appended proof",
       );
     }
-    const hash = this.hash;
-    const operations = this.operations.concat(proof.operations);
-    if (proof instanceof AffixedProof) {
+    const baseOptions: ProofOptions = {
+      hash: this.hash,
+      operations: this.operations.concat(proof.operations),
+    };
+    if (proof.isAffixed()) {
       return new AffixedProof({
-        hash,
-        operations,
+        ...baseOptions,
         network: proof.network,
         timestamp: proof.timestamp,
       });
     }
-    if (proof instanceof PendingProof) {
-      return new PendingProof({
-        hash,
-        operations,
+    if (proof.isUnresolved()) {
+      return new UnresolvedProof({
+        ...baseOptions,
         remote: proof.remote,
       });
     }
-    return new Proof({ hash, operations });
+    return new Proof(baseOptions);
   }
 
   /**
    * Converts the proof to a JSON-serializable template.
    *
-   * ```ts
+   * ```js
    * JSON.stringify(myProof);
    * // `myProof.toJSON` is called implicitly
    * ```
@@ -148,64 +189,74 @@ export class Proof {
   }
 
   /**
-   * [JTD] schema for a proof template
+   * Creates an automatically subclassed proof.
    *
-   * [JTD]: https://jsontypedef.com
+   * ```js
+   * Proof.create({
+   *   hash: ...,
+   *   operations: [...],
+   *   remote: "...",
+   * });
+   * // UnresolvedProof{}
+   * ```
+   *
+   * @param options Proof constructor options
    */
-  static readonly schema: Schema = {
-    properties: {
-      version: { type: "uint32" },
-      hash: { type: "string" },
-      operations: {
-        elements: Operation.schema,
-      },
-    },
-    additionalProperties: true,
-  };
+  static create(options: AffixedProofOptions): AffixedProof;
+  static create(options: UnresolvedProofOptions): UnresolvedProof;
+  static create(options: ProofOptions): Proof;
+  static create(options: AnyProofOptions) {
+    if ("network" in options) {
+      return new AffixedProof(options);
+    }
+    if ("remote" in options) {
+      return new UnresolvedProof(options);
+    }
+    return new Proof(options);
+  }
 
   /**
    * Creates a proof from a template object.
-   * Throws `InvalidTemplateError` if the template is invalid.
-   * Throws `UnsupportedVersionError` if the template version is unsupported.
    *
-   * ```ts
+   * Throws `SyntaxError` if the template is invalid.
+   *
+   * Throws `UnsupportedVersionError` if the template version
+   * is unsupported.
+   *
+   * ```js
    * Proof.from({
    *   version: 1,
    *   hash: "...":
    *   operations: [...]
    * });
-   * // Proof { hash: Uint8Array {...}, operations: [...] }
+   * // Proof {}
    * ```
    *
    * @param template Template object
    */
   static from(template: unknown): Proof {
-    if (!isValid<ProofTemplate>(Proof.schema, template)) {
-      throw new InvalidTemplateError("Invalid proof template");
+    if (!isValid<AnyProofTemplate>(proofSchema, template)) {
+      throw new SyntaxError("Invalid proof template");
     }
-    const supported = [1];
-    if (!supported.includes(template.version)) {
+    if (template.version != 1) {
       throw new UnsupportedVersionError(
         template.version,
         `Unsupported proof version "${template.version}"`,
       );
     }
-    if (!Hex.validator.test(template.hash)) {
-      throw new SyntaxError("Invalid input hash");
-    }
     const baseOptions: ProofOptions = {
       hash: Hex.parse(template.hash),
       operations: template.operations.map(Operation.from),
     };
-    if (isValid<AffixedProofTemplate>(AffixedProof.schema, template)) {
+    if (isValid<AffixedProofTemplate>(affixedProofSchema, template)) {
       return new AffixedProof({
         ...baseOptions,
         network: template.network,
         timestamp: new Date(template.timestamp),
       });
     }
-    if (isValid<PendingProofTemplate>(PendingProof.schema, template)) {
-      return new PendingProof({
+    if (isValid<UnresolvedProofTemplate>(unresolvedProofSchema, template)) {
+      return new UnresolvedProof({
         ...baseOptions,
         remote: template.remote,
       });
@@ -215,7 +266,7 @@ export class Proof {
 }
 
 /**
- * Verification status of a proof
+ * Verification status
  */
 export enum VerifyStatus {
   /**
@@ -223,13 +274,6 @@ export enum VerifyStatus {
    * input hash existed by the stored timestamp.
    */
   Verified = "verified",
-
-  /**
-   * Proof could not be verified. A connection could
-   * not be established to the The Tezos node, or
-   * the server responses were wrong.
-   */
-  NetError = "netError",
 
   /**
    * Proof could not be verified. The Tezos node
@@ -246,11 +290,16 @@ export enum VerifyStatus {
 }
 
 /**
- * Affixed proof constructor options
+ * Verification result
  */
-export interface AffixedProofOptions extends ProofOptions {
-  network: string;
-  timestamp: Date;
+export interface VerifyResult {
+  verified: boolean;
+  status: VerifyStatus;
+  message: string;
+}
+
+interface BlockHeader {
+  timestamp: string;
 }
 
 /**
@@ -262,20 +311,12 @@ export interface AffixedProofTemplate extends ProofTemplate {
 }
 
 /**
- * Tezos network identifier prefix bytes
- *
- * When encoded in [Base58], it renders as the characters "Net" with carry of 15.
- * See [base58.ml] for details.
- *
- * [Base58]: https://tools.ietf.org/id/draft-msporny-base58-01.html
- * [base58.ml]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/base58.ml#L424
+ * Affixed proof constructor options
  */
-const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
-
-/**
- * Tezos Mainnet network identifier
- */
-const TEZOS_MAINNET = "NetXdQprcVkpaWU";
+export interface AffixedProofOptions extends ProofOptions {
+  network: string;
+  timestamp: Date;
+}
 
 /**
  * Cryptographic timestamp proof affixed to the Tezos blockchain
@@ -292,13 +333,14 @@ export class AffixedProof extends Proof {
   readonly timestamp: Date;
 
   /**
-   * Tezos Base-58 encoded block hash
+   * Indicates that the proof is affixed to the Tezos mainnet
    */
-  get blockHash(): string {
-    return Base58.encodeCheck(
-      concat(1, 52, this.derivation), // Tezos block hash prefix is \001\052
-    );
-  }
+  readonly mainnet: boolean;
+
+  /**
+   * Base58 encoded Tezos block hash
+   */
+  readonly blockHash: string;
 
   /**
    * Throws `InvalidTezosNetworkError` if the Tezos network identifier is invalid.
@@ -308,26 +350,33 @@ export class AffixedProof extends Proof {
    * @param network Tezos network identifier
    * @param timestamp Asserted timestamp
    */
-  constructor({ hash, operations, network, timestamp }: AffixedProofOptions) {
+  constructor({
+    hash,
+    operations,
+    network,
+    timestamp,
+  }: AffixedProofOptions) {
     super({ hash, operations });
     try {
-      const rawNetwork = Base58.decodeCheck(network);
-      if (rawNetwork.length != 7) throw null;
-      if (!compare(rawNetwork.slice(0, 3), NETWORK_PREFIX)) throw null;
+      const rawNetwork = Base58.decodeCheck(network, NETWORK_PREFIX);
+      if (rawNetwork.length != 4) throw null;
     } catch (_) {
-      throw new InvalidTezosNetworkError(`Invalid Tezos network "${network}"`);
+      throw new InvalidTezosNetworkError(
+        `Invalid Tezos network "${network}"`,
+      );
     }
     this.network = network;
     this.timestamp = timestamp;
+    this.mainnet = network == TEZOS_MAINNET;
+    this.blockHash = Base58.encodeCheck(this.derivation, BLOCK_PREFIX);
   }
 
-  /**
-   * Checks if the proof is affixed to the Tezos Mainnet.
-   * If `false`, the proof is affixed to an alternate network
-   * and may not be trustworthy.
-   */
-  get mainnet(): boolean {
-    return this.network == TEZOS_MAINNET;
+  isAffixed(): this is AffixedProof {
+    return true;
+  }
+
+  concat(_: AnyProof): never {
+    throw new TypeError("Cannot concatenate to an affixed proof");
   }
 
   /**
@@ -335,64 +384,64 @@ export class AffixedProof extends Proof {
    * block hash and comparing the timestamp of the block header with
    * the timestamp asserted by the proof.
    *
-   * Throws `TypeError` if the RPC URL is invalid.
+   * Throws `TypeError` if the RPC URL is invalid or a network error
+   * is encountered.
    *
-   * Resolves to `VerifyStatus.NotFound` if the node responds with a 404
-   * while querying the block header. Probable causes are:
+   * Throws `FetchError` if the response has a status other than
+   * 200 or 404.
    *
-   * 1. The RPC URL provided does not refer to a Tezos node.
-   * 2. The node does not support the asserted network.
-   * 3. The proof has been tampered with or was constructed incorrectly.
-   * 4. The node is operating in rolling history mode.
+   * Throws `SyntaxError` if the fetched block header is not valid JSON
+   * or does not contain a valid timestamp field.
    *
-   * Resolves to `VerifyStatus.NetError` if a connection could not be established,
-   * the server responds with a status other than 200 or 404, or the response was
-   * not JSON. Probable causes are:
-   *
-   * 1. The RPC URL provided does not refer to a Tezos node.
-   * 2. Network access is unavailable or blocked by the runtime or operating system.
-   * 3. The client is not authorized to access the node.
-   * 4. The node is under strain or temporarily down.
-   *
-   * Resolves to `VerifyStatus.Mismatch` if the block header is successfully
-   * fetched, but the on-chain timestamp is different. Probable causes are:
-   *
-   * 1. The proof has been tampered with or was constructed incorrectly.
-   *
-   * Resolves to `VerifyStatus.Verified` if the block header is successfully
-   * fetched, and the timestamps match. If the proof is committed to the Mainnet
-   * or a trusted alternative network, the proof's hash can be trusted to have
-   * existed by the proof's asserted timestamp.
+   * Resolves a `VerifyResult` containing a explanatory message of
+   * verification success or fail.
    *
    * @param rpcURL Tezos node RPC base URL
    */
-  async verify(rpcURL: string | URL): Promise<VerifyStatus> {
+  async verify(rpcURL: string): Promise<VerifyResult> {
     const endpoint = new URL(
       `chains/${this.network}/blocks/${this.blockHash}/header`,
       rpcURL,
-    );
+    ).toString();
+    const controller = new AbortController();
+    const response = await fetch(endpoint, {
+      signal: controller.signal,
+      headers: {
+        accept: "application/json",
+      },
+    });
+    switch (response.status) {
+      case 200:
+        break;
+      case 404:
+        controller.abort();
+        return {
+          verified: false,
+          status: VerifyStatus.NotFound,
+          message: "Derived block could not be found",
+        };
+      default:
+        controller.abort();
+        throw new FetchError(response.status, response.statusText);
+    }
     try {
-      const response = await fetch(endpoint, {
-        headers: {
-          accept: "application/json",
-        },
-      });
-      switch (response.status) {
-        case 200:
-          break;
-        case 404:
-          return VerifyStatus.NotFound;
-        default:
-          return VerifyStatus.NetError;
-      }
       const header = await response.json();
+      if (!isValid<BlockHeader>(blockHeaderSchema, header)) throw null;
       const timestamp = new Date(header.timestamp);
       if (timestamp.getTime() != this.timestamp.getTime()) {
-        return VerifyStatus.Mismatch;
+        return {
+          verified: false,
+          status: VerifyStatus.Mismatch,
+          message: "Local timestamp differs from the on-chain timestamp",
+        };
       }
-      return VerifyStatus.Verified;
+      return {
+        verified: true,
+        status: VerifyStatus.Verified,
+        message: "Verified proof",
+      };
     } catch (_) {
-      return VerifyStatus.NetError;
+      throw new SyntaxError("Invalid block header");
     }
   }
 
@@ -403,56 +452,43 @@ export class AffixedProof extends Proof {
       timestamp: this.timestamp.toISOString(),
     };
   }
-
-  /**
-   * [JTD] schema for an affixed proof template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      version: { type: "uint32" },
-      hash: { type: "string" },
-      operations: {
-        elements: Operation.schema,
-      },
-      network: { type: "string" },
-      timestamp: { type: "timestamp" },
-    },
-  };
 }
 
 /**
- * Pending proof constructor options
+ * Unresolved proof options
  */
-export interface PendingProofOptions extends ProofOptions {
-  remote: string | URL;
+export interface UnresolvedProofOptions extends ProofOptions {
+  remote: string;
 }
 
 /**
- * Pending proof template
+ * Unresolved proof template
  */
-export interface PendingProofTemplate extends ProofTemplate {
+export interface UnresolvedProofTemplate extends ProofTemplate {
   remote: string;
 }
 
 /**
  * Proof segment awaiting remote proof
  */
-export class PendingProof extends Proof {
+export class UnresolvedProof extends Proof {
   /**
    * Remote proof URL
    */
-  readonly remote: URL;
+  readonly remote: string;
 
   /**
    * @param hash Input hash
    * @param operations Proof operations
    * @param remote Remote proof URL
    */
-  constructor({ hash, operations, remote }: PendingProofOptions) {
+  constructor({ hash, operations, remote }: UnresolvedProofOptions) {
     super({ hash, operations });
-    this.remote = remote instanceof URL ? remote : new URL(remote);
+    this.remote = remote;
+  }
+
+  isUnresolved(): this is UnresolvedProof {
+    return true;
   }
 
   /**
@@ -467,48 +503,39 @@ export class PendingProof extends Proof {
    * Throws `MismatchedHashError` if the derivation of the current
    * proof differs from the input hash of the resolved proof.
    *
-   * ```ts
-   * await pendingProof.resolve();
+   * ```js
+   * await unresolvedProof.resolve();
    * // AffixedProof { ... }
    * ```
    */
   async resolve(): Promise<Proof> {
+    const controller = new AbortController();
     const response = await fetch(this.remote, {
+      signal: controller.signal,
       headers: {
         accept: "application/json",
       },
     });
     if (!response.ok) {
+      controller.abort();
       throw new FetchError(
         response.status,
-        "Could not resolve remote proof",
+        response.statusText,
       );
     }
-    const template = await response.json();
-    const proof = Proof.from(template);
-    return this.concat(proof);
+    try {
+      const template = await response.json();
+      const proof = Proof.from(template);
+      return this.concat(proof);
+    } catch (_) {
+      throw new SyntaxError("Invalid remote proof template");
+    }
   }
 
-  toJSON(): PendingProofTemplate {
+  toJSON(): UnresolvedProofTemplate {
     return {
       ...super.toJSON(),
       remote: this.remote.toString(),
     };
   }
-
-  /**
-   * [JTD] schema for a pending proof template
-   *
-   * [JTD]: https://jsontypedef.com
-   */
-  static readonly schema: Schema = {
-    properties: {
-      version: { type: "uint32" },
-      hash: { type: "string" },
-      operations: {
-        elements: Operation.schema,
-      },
-      remote: { type: "string" },
-    },
-  };
 }

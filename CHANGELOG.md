@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning].
 
+## [0.3.0] - 2021-06-28
+
+### Added
+
+- `Proof.create` static method for automatic subclassing.
+- Type guards for affixed and unresolved proofs.
+
+### Changed
+
+- The `PendingProof` class is renamed to `UnresolvedProof`.
+- Verifying an affixed proof returns a more informative result type.
+
+### Fixed
+
+- Verify and resolve methods do not leak resources on early return.
+
 ## [0.2.0] - 2021-05-30
 
 ### Added
@@ -51,5 +67,7 @@ This project adheres to [Semantic Versioning].
 - Derive block from input
 - Fetch block headers from RPC to check timestamp
 
-[0.1.0]: https://gitlab.com/tzstamp/proof/-/releases/0.1.0
 [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
+[0.1.0]: https://gitlab.com/tzstamp/proof/-/releases/0.1.0
+[0.2.0]: https://gitlab.com/tzstamp/proof/-/releases/0.2.0
+[0.3.0]: https://gitlab.com/tzstamp/proof/-/releases/0.3.0
