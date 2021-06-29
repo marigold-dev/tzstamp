@@ -40,8 +40,8 @@ export interface PathOptions {
   siblings: Sibling[];
 
   /**
-    * Root node hash
-    */
+   * Root node hash
+   */
   root: Uint8Array;
 }
 

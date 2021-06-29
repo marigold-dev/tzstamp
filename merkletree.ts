@@ -36,8 +36,10 @@ export class MerkleTree {
   /**
    * Root hash
    */
-  get root(): Uint8Array | null {
-    return this.blocks.length ? this.layers[this.layers.length - 1][0] : null;
+  get root(): Uint8Array {
+    return this.blocks.length
+      ? this.layers[this.layers.length - 1][0]
+      : Blake2b.digest(new Uint8Array());
   }
 
   /**
@@ -121,7 +123,7 @@ export class MerkleTree {
         ++height;
 
         // Create new layer if needed
-        if (this.layers[height] == null) {
+        if (this.layers[height] == undefined) {
           this.layers[height] = [];
         }
 
@@ -184,7 +186,7 @@ export class MerkleTree {
     return new Path({
       block: this.blocks[index],
       siblings,
-      root: (this.root as Uint8Array),
+      root: this.root,
     });
   }
 
