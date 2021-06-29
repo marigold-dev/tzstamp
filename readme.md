@@ -31,10 +31,10 @@ garbage collect it.
 
 ```js
 // Node + NPM
-const { ... } = require("@tzstamp/proof");
+const {/*...*/} = require("@tzstamp/proof");
 
 // Deno
-import { ... } from "https://gitlab.com/tzstamp/proof/raw/0.3.0/src/mod.ts";
+import {/*...*/} from "https://gitlab.com/tzstamp/proof/raw/0.3.0/mod.ts";
 ```
 
 See the
@@ -158,4 +158,4 @@ fs.writeFileSync("my-proof.json", json);
 
 ## License
 
-[MIT](LICENSE.txt)
+[MIT](license.txt)
