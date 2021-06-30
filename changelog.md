@@ -47,4 +47,4 @@ This project adheres to
 [0.1.0]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.1.0
 [0.2.0]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.2.0
 [0.3.0]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.3.0
-[0.3.0]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.3.1
+[0.3.1]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.3.1
