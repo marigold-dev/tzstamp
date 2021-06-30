@@ -17,11 +17,11 @@ progressive root derivation over a long runtime. You can find the
 const { MerkleTree } = require("@tzstamp/tezos-merkle");
 
 // Deno
-import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.2.0/src/mod.ts";
+import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/mod.ts";
 ```
 
 See the
-[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/src/mod.ts).
+[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/mod.ts).
 
 ### Building a Merkle tree
 
@@ -73,10 +73,7 @@ path.root; // Uint8Array(32)
 
 // Sibling nodes along path to root
 path.siblings;
-// [
-//   { hash: Uint8Array {}, relation: "left" },
-//   ...
-// ]
+// [ { hash: Uint8Array {}, relation: "left" }, ... ]
 ```
 
 A [timestamp proof segment](https://gitlab.com/tzstamp/proof) can be constructed
@@ -98,4 +95,4 @@ for (const path of merkleTree.paths()) {
 
 ## License
 
-[MIT](LICENSE.txt)
+[MIT](license.txt)
