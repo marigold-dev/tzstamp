@@ -55,7 +55,7 @@ export class Path {
   block: Uint8Array;
 
   /**
-   * Sibling nodes along path from the block to the root hash.
+   * Sibling nodes along path from the block to the root hash
    */
   siblings: Sibling[];
 
@@ -78,9 +78,7 @@ export class Path {
   }
 
   /**
-   * Creates a [TzStamp proof] from the path.
-   *
-   * [TzStamp proof]: https://gitlab.com/tzstamp/proof
+   * Creates a [timestamp proof](https://gitlab.com/tzstamp/proof) from the path.
    */
   toProof(): Proof {
     const operations: Operation[] = [new Blake2bOperation()];

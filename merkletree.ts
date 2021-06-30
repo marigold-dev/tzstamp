@@ -12,13 +12,13 @@ export interface MerkleTreeOptions {
  * Appendable Tezos-style Merkle tree
  *
  * Based on the Merkle tree implementation found within the
- * [Tezos source code][merkle].
+ * [Tezos source code](https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml).
  *
  * The hashing algorithm is BLAKE2b with 32-byte digests. The last
- * leaf is implicitly duplicated until the tree is perfect. Appends
- * have a logarithmic time complexity.
+ * leaf is implicitly duplicated until the tree is perfect. The root
+ * of an empty tree is the BLAKE2b digest of no input.
  *
- * [merkle]: https://gitlab.com/tezos/tezos/-/blob/master/src/lib_crypto/blake2B.ml
+ * Appends have a logarithmic time complexity.
  */
 export class MerkleTree {
   private blockSet = new Set<string>();
@@ -50,9 +50,9 @@ export class MerkleTree {
   }
 
   /**
-   * Appends data blocks to the Merkle tree
+   * Appends data blocks to the Merkle tree.
    *
-   * ```ts
+   * ```js
    * const merkleTree = new MerkleTree();
    *
    * merkleTree.append(
@@ -67,7 +67,7 @@ export class MerkleTree {
    * Merkle trees configured to deduplicate blocks will silently
    * drop previously-included blocks:
    *
-   * ```ts
+   * ```js
    * const merkleTree = new MerkleTree({
    *   deduplicate: true,
    * });
@@ -144,7 +144,7 @@ export class MerkleTree {
   }
 
   /**
-   * Check if a block is included in the tree
+   * Checks if a block is included in the tree.
    *
    * @param block Data block
    */
@@ -155,7 +155,7 @@ export class MerkleTree {
 
   /**
    * Calculates the path from a leaf at the given index to the root hash.
-   * Throws if the index is out of range.
+   * Throws `RangeError` if there is no leaf with the given index.
    *
    * @param index Index of the leaf.
    */
