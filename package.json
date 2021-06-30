@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "test": "deno test *.test.ts",
+    "test": "deno test --unstable *.test.ts",
     "build": "deno run --unstable --allow-read=. --allow-write=dist _build.ts"
   },
   "contributors": [

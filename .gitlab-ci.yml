@@ -14,7 +14,7 @@ test:
   stage: test
   script:
     - deno lint --ignore=node_modules,dist
-    - deno test *.test.ts
+    - deno test --unstable *.test.ts
 
 setup:
   stage: setup
