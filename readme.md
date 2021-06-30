@@ -17,11 +17,11 @@ progressive root derivation over a long runtime. You can find the
 const { MerkleTree } = require("@tzstamp/tezos-merkle");
 
 // Deno
-import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/mod.ts";
+import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.1/mod.ts";
 ```
 
 See the
-[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.0/mod.ts).
+[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.1/mod.ts).
 
 ### Building a Merkle tree
 
