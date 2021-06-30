@@ -18,9 +18,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/tzstamp/merkle.git"
+    "url": "https://gitlab.com/tzstamp/tezos-merkle.git"
   },
-  "homepage": "https://gitlab.com/tzstamp/merkle",
+  "homepage": "https://gitlab.com/tzstamp/tezos-merkle",
   "license": "MIT",
   "dependencies": {
     "@tzstamp/helpers": "^0.3.1",
