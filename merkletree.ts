@@ -160,7 +160,7 @@ export class MerkleTree {
    * @param index Index of the leaf.
    */
   path(index: number): Path {
-    if (!(index in this.blocks[0])) {
+    if (!(index in this.blocks)) {
       throw new RangeError("Leaf index is out of range");
     }
 
