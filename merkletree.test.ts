@@ -1,5 +1,5 @@
-import { MerkleTree } from "../src/mod.ts";
-import { blake2b, concat } from "../src/deps.deno.ts";
+import { MerkleTree } from "./merkletree.ts";
+import { Blake2b, concat } from "./deps.ts";
 import { assert, assertEquals, assertThrows } from "./dev_deps.ts";
 
 const blocks: Uint8Array[] = Array.from(
@@ -10,28 +10,28 @@ const blocks: Uint8Array[] = Array.from(
 const manualRoot = hashcat(
   hashcat(
     hashcat(
-      blake2b(blocks[0]),
-      blake2b(blocks[1]),
+      Blake2b.digest(blocks[0]),
+      Blake2b.digest(blocks[1]),
     ),
     hashcat(
-      blake2b(blocks[2]),
-      blake2b(blocks[3]),
+      Blake2b.digest(blocks[2]),
+      Blake2b.digest(blocks[3]),
     ),
   ),
   hashcat(
     hashcat(
-      blake2b(blocks[4]),
-      blake2b(blocks[5]),
+      Blake2b.digest(blocks[4]),
+      Blake2b.digest(blocks[5]),
     ),
     hashcat(
-      blake2b(blocks[6]),
-      blake2b(blocks[6]),
+      Blake2b.digest(blocks[6]),
+      Blake2b.digest(blocks[6]),
     ),
   ),
 );
 
 function hashcat(a: Uint8Array, b: Uint8Array): Uint8Array {
-  return blake2b(concat(a, b));
+  return Blake2b.digest(concat(a, b));
 }
 
 Deno.test({
@@ -86,7 +86,7 @@ Deno.test({
       return result;
     };
 
-    const L0 = sequence.map((item) => blake2b(item));
+    const L0 = sequence.map((item) => Blake2b.digest(item));
     const L1 = raise(L0, 128);
     const L2 = raise(L1, 64);
     const L3 = raise(L2, 32);
