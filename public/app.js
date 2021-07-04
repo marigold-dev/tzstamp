@@ -123,7 +123,11 @@ verifyButton.addEventListener("click", async () => {
       proof = await proof.resolve();
     }
   } catch (error) {
-    displayOutput.value = `Error resolving proof: ${error.message}`;
+    if (error instanceof SyntaxError) {
+      displayOutput.value = `Timestamp proof is pending publication`;
+    } else {
+      displayOutput.value = `Error resolving proof: ${error.message}`;
+    }
     updateButtons();
     return;
   }
