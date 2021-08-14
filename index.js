@@ -3,9 +3,13 @@
 require('dotenv').config()
 const { ProofStorage } = require('./lib/storage')
 const { Aggregator } = require('./lib/aggregator')
-const { configureAPI } = require('./lib/api')
+const {
+  stampHandler,
+  proofHandler,
+  statusHandler,
+  configureAPI
+} = require('./lib/api')
 const { configureTezosClient } = require('./lib/tezos')
-const { Publisher } = require('./lib/publisher')
 const { CronJob } = require('cron')
 
 const {
@@ -24,14 +28,18 @@ const {
  */
 void async function () {
   const storage = new ProofStorage(proofsDirectory)
-  const aggregator = new Aggregator()
   const tezosClient = await configureTezosClient(secret, keyFile, rpcURL)
-  const publisher = new Publisher(storage, aggregator, tezosClient)
-  await publisher.bind(contractAddress)
-  const job = new CronJob(schedule, () => publisher.publish())
-  const app = await configureAPI(baseURL, storage, aggregator)
+  const contract = await tezosClient.contract.at(contractAddress)
+  const aggregator = new Aggregator(storage, tezosClient.rpc, contract)
+  const job = new CronJob(schedule, () => aggregator.publish())
+  const network = await tezosClient.rpc.getChainId()
+  const app = await configureAPI(
+    stampHandler(baseURL, aggregator, schedule),
+    proofHandler(baseURL, storage, aggregator),
+    statusHandler(network, contractAddress, schedule)
+  )
   app.listen(port, () => {
-    console.log(`Serving on port ${port}`)
+    console.log(`Listening on port ${port}`)
   })
   job.start()
 }()
