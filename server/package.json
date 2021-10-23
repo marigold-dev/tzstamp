@@ -1,0 +1,23 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "npx jest",
+    "lint": "npx eslint index.js lib/**/*.js --fix"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@koa/router": "^10.0.0",
+    "@taquito/signer": "^9.1.1",
+    "@taquito/taquito": "^9.1.1",
+    "@tzstamp/helpers": "^0.3.1",
+    "@tzstamp/proof": "^0.3.0",
+    "@tzstamp/tezos-merkle": "^0.3.1",
+    "cron": "^1.8.2",
+    "dotenv": "^10.0.0",
+    "koa": "^2.13.1",
+    "koa-bodyparser": "^4.3.0"
+  }
+}
