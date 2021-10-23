@@ -1,0 +1,54 @@
+{
+  "name": "@tzstamp/cli",
+  "version": "0.2.0",
+  "description": "Tezos timestamping utility",
+  "main": "bin/index.js",
+  "bin": {
+    "tzstamp": "./bin/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "man"
+  ],
+  "scripts": {
+    "lint": "npx --yes eslint **/*.js --fix",
+    "test": "node test/test.js",
+    "build": "npx pkg . --bytecode false"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/JD-P/tzstamp.git"
+  },
+  "keywords": [
+    "timestamp",
+    "timestamping",
+    "tezos",
+    "cli"
+  ],
+  "contributors": [
+    "John David Pressman",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/JD-P/tzstamp/issues"
+  },
+  "homepage": "https://gitlab.com/JD-P/tzstamp#readme",
+  "dependencies": {
+    "@tzstamp/helpers": "^0.1.1",
+    "@tzstamp/proof": "^0.2.0",
+    "chalk": "^4.1.1",
+    "delay": "^5.0.0",
+    "minimist": "^1.2.5",
+    "node-fetch": "^2.6.1"
+  },
+  "pkg": {
+    "targets": [
+      "node16-linux-x64",
+      "node16-macos-x64",
+      "node16-win-x64"
+    ],
+    "outputPath": "dist"
+  }
+}
