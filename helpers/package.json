@@ -1,0 +1,27 @@
+{
+  "name": "@tzstamp/helpers",
+  "version": "0.3.1",
+  "description": "TzStamp helper functions",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "deno test",
+    "build": "deno run --unstable --allow-read=. --allow-write=dist _build.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/tzstamp/helpers.git"
+  },
+  "contributors": [
+    "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
+  "bugs": {
+    "url": "https://gitlab.com/tzstamp/helpers/issues"
+  },
+  "homepage": "https://gitlab.com/tzstamp/helpers/node",
+  "license": "MIT"
+}

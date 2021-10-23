@@ -1,0 +1,16 @@
+image: denoland/deno:1.10.3
+
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  script:
+    - deno lint *.ts
+    - deno test
+
+build:
+  stage: build
+  script:
+    - deno run --unstable --allow-read --allow-write _build.ts
