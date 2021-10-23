@@ -1,0 +1,32 @@
+{
+  "name": "@tzstamp/proof",
+  "version": "0.3.0",
+  "description": "Cryptographic proofs for TzStamp tools",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/mod.js",
+  "types": "dist/mod.d.ts",
+  "scripts": {
+    "build": "deno run --unstable --allow-read=. --allow-write=dist _build.ts",
+    "test": "deno test --unstable --allow-net *.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/tzstamp/proof.git"
+  },
+  "contributors": [
+    "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
+    "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
+  ],
+  "homepage": "https://gitlab.com/tzstamp/proof",
+  "license": "MIT",
+  "dependencies": {
+    "@tzstamp/helpers": "^0.3.1",
+    "jtd": "^0.1.1",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.10"
+  }
+}
