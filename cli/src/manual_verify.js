@@ -33,6 +33,8 @@ async function handler (options) {
   let step = 1
   console.log(chalk.bold`Manual verification instructions`)
   console.log(`${step++}. Begin with hash ${Hex.stringify(proof.hash)}`)
+  console.log(`Asserted block hash: ${proof.blockHash}`)
+  console.log(`proof operations length ${proof.operations.length}`)
   for (const operation of proof.operations) {
     if (operation instanceof Sha256Operation) {
       console.log(`${step++}. Take the SHA-256 hash.`)

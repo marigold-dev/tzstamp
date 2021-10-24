@@ -134,9 +134,14 @@ async function getProof (location, verbose) {
  * @returns {string} Tezos node URL
  */
 function getNode (network) {
-  return network == 'NetXdQprcVkpaWU'
-    ? 'https://mainnet-tezos.giganode.io/'
-    : 'https://testnet-tezos.giganode.io/'
+  switch (network) {
+    case 'NetXdQprcVkpaWU':
+      return 'https://mainnet.api.tez.ie/'
+    case 'NetXz969SFaFn8k':
+      return 'https://granadanet.api.tez.ie/'
+    case 'NetXxkAx4woPLyu':
+      return 'https://florencenet.api.tez.ie/'
+  }
 }
 
 /**
@@ -149,6 +154,8 @@ function getIndexer (network) {
   switch (network) {
     case 'NetXdQprcVkpaWU':
       return 'http://tzkt.io/'
+    case 'NetXz969SFaFn8k':
+      return 'https://granadanet.tzkt.io/'
     case 'NetXxkAx4woPLyu':
       return 'https://florencenet.tzkt.io/'
     case 'NetXSgo1ZT2DRUG':
