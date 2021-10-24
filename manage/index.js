@@ -6,7 +6,7 @@ const argv = parseArgs(
   process.argv,
   {
     'default': {
-      'node': 'https://mainnet-tezos.giganode.io/',
+      'node': 'https://mainnet.api.tez.ie',
       'indexer': 'https://api.better-call.dev/v1',
       'network': 'mainnet'
     },
