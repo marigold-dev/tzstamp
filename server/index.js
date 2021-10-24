@@ -19,7 +19,7 @@ const {
   KEY_FILE: keyFile,
   SECRET: secret,
   CONTRACT_ADDRESS: contractAddress = 'KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj',
-  RPC_URL: rpcURL = 'https://mainnet-tezos.giganode.io/',
+  RPC_URL: rpcURL = 'https://mainnet.api.tez.ie',
   SCHEDULE: schedule = '0 0 * * *'
 } = process.env
 

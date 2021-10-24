@@ -1,7 +1,7 @@
 import { Blake2bOperation, Proof, Sha256Operation } from "./proof.js";
 
 const AGGREGATOR_URL = "https://api.tzstamp.io";
-const RPC_URL = "https://mainnet-tezos.giganode.io";
+const RPC_URL = "https://mainnet.api.tez.ie";
 
 let proof = null;
 

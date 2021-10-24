@@ -82,7 +82,7 @@ Used variables are as follows:
 - `KEY_FILE`: Path to JSON key file.
 - `SECRET`: Bare secret key. Takes precedence over `KEY_KEY`.
 - `CONTRACT_ADDRESS`: "KT1..." smart contract address. Defaults to `"KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj"`.
-- `RPC_URL`: Tezos node RPC base URL. Defaults to `"https://mainnet-tezos.giganode.io/"`. Any public or private accessible Tezos RPC may be used.
+- `RPC_URL`: Tezos node RPC base URL. Defaults to `"https://mainnet.api.tez.ie"`. Any public or private accessible Tezos RPC may be used.
 - `SCHEDULE`: 5- or 6-field [cron expression](https://docs.oracle.com/cd/E12058_01/doc/doc.1014/e12030/cron_expressions.htm). Defaults to `"0 0 * * *"`, which is daily at midnight, local to the server.
 
 One of `SECRET` or `KEY_FILE` must be set.
