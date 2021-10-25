@@ -171,6 +171,7 @@ function buildBlockHashProof (network, header) {
         .padStart(4, '0')
     ),
     Hex.parse(header.proof_of_work_nonce), // proof_of_work_nonce
+    header.liquidity_baking_escape_vote ? 1 : 0,
     0, // seed_nonce_hash flag
     encodeSignature(header.signature) // signature
   )
