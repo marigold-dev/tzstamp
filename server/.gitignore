@@ -1,3 +1,4 @@
 node_modules
 proofs
 .env
+*key.json
