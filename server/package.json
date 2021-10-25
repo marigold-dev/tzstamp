@@ -10,8 +10,8 @@
   "license": "MIT",
   "dependencies": {
     "@koa/router": "^10.0.0",
-    "@taquito/signer": "^9.1.1",
-    "@taquito/taquito": "^9.1.1",
+    "@taquito/signer": "^10.2.1",
+    "@taquito/taquito": "^10.2.1",
     "@tzstamp/helpers": "^0.3.1",
     "@tzstamp/proof": "^0.3.0",
     "@tzstamp/tezos-merkle": "^0.3.1",
