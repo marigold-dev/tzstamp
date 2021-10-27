@@ -7,7 +7,7 @@ Upgrade deprecated [TzStamp] proofs to a supported version.
 Install with [Deno]:
 
 ```bash
-deno install --allow-read https://gitlab.com/metanomial/tzstamp-upgrade/-/raw/main/tzstamp-upgrade.ts
+deno install --allow-read https://raw.githubusercontent.com/marigold-dev/tzstamp/main/upgrade/tzstamp-upgrade.ts
 ```
 
 Version 0 to Version 1:

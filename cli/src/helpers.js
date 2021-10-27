@@ -121,7 +121,7 @@ async function getProof (location, verbose) {
   }
   if (json instanceof Object && json.version === 0) {
     throw new Error(
-      'Unable to parse version 0 proofs. Use <https://gitlab.com/tzstamp/upgrade> to upgrade the proofs manually.'
+      'Unable to parse version 0 proofs. Use <https://github.com/marigold-dev/tzstamp/tree/main/upgrade> to upgrade the proofs manually.'
     )
   }
   return Proof.from(json)

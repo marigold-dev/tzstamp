@@ -12,7 +12,7 @@ await exportCommonJS({
     "schemas.ts",
   ],
   dependencyMap: new Map([
-    ["https://gitlab.com/tzstamp/helpers/raw/0.3.0/mod.ts", "@tzstamp/helpers"],
+    ["https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/helpers/mod.ts", "@tzstamp/helpers"],
     ["https://deno.land/x/jtd@v0.1.0/mod.ts", "jtd"],
   ]),
   shims: [{

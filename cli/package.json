@@ -18,7 +18,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://gitlab.com/JD-P/tzstamp.git"
+    "url": "https://github.com/marigold-dev/tzstamp.git",
+    "directory": "cli"
   },
   "keywords": [
     "timestamp",
@@ -32,9 +33,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://gitlab.com/JD-P/tzstamp/issues"
+    "url": "https://github.com/marigold-dev/tzstamp/issues"
   },
-  "homepage": "https://gitlab.com/JD-P/tzstamp#readme",
+  "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/cli#readme",
   "dependencies": {
     "@tzstamp/helpers": "^0.1.1",
     "@tzstamp/proof": "^0.2.0",

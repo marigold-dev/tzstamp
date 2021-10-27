@@ -17,11 +17,11 @@ progressive root derivation over a long runtime. You can find the
 const { MerkleTree } = require("@tzstamp/tezos-merkle");
 
 // Deno
-import { MerkleTree } from "https://gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.1/mod.ts";
+import { MerkleTree } from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/tezos-merkle/mod.ts";
 ```
 
 See the
-[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/tezos-merkle/-/raw/0.3.1/mod.ts).
+[full reference documentation here](https://doc.deno.land/https/raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/tezos-merkle/mod.ts).
 
 ### Building a Merkle tree
 
@@ -76,7 +76,7 @@ path.siblings;
 // [ { hash: Uint8Array {}, relation: "left" }, ... ]
 ```
 
-A [timestamp proof segment](https://gitlab.com/tzstamp/proof) can be constructed
+A [timestamp proof segment](https://github.com/marigold-dev/tzstamp/tree/main/proof) can be constructed
 with the `.toProof` method:
 
 ```js

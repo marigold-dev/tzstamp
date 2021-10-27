@@ -18,9 +18,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/tzstamp/tezos-merkle.git"
+    "url": "https://github.com/marigold-dev/tzstamp.git",
+    "directory": "tezos-merkle"
   },
-  "homepage": "https://gitlab.com/tzstamp/tezos-merkle",
+  "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/tezos-merkle#readme",
   "license": "MIT",
   "dependencies": {
     "@tzstamp/helpers": "^0.3.1",

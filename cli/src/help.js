@@ -30,7 +30,7 @@ const globalHelp = {
   footer:
     'Copyright (c) 2021 John David Pressman, Benjamin Herman\n' +
     'For use under the MIT License\n' +
-    'Source: <https://gitlab.com/tzstamp/cli>'
+    'Source: <https://github.com/marigold-dev/tzstamp/tree/main/cli>'
 }
 
 async function handler (options, printGlobalHelp = false) {
