@@ -13,15 +13,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/tzstamp/helpers.git"
+    "url": "https://github.com/marigold-dev/tzstamp.git",
+    "directory": "helpers"
   },
   "contributors": [
     "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
     "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
   ],
   "bugs": {
-    "url": "https://gitlab.com/tzstamp/helpers/issues"
+    "url": "https://github.com/marigold-dev/tzstamp/issues"
   },
-  "homepage": "https://gitlab.com/tzstamp/helpers/node",
+  "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/helpers#readme",
   "license": "MIT"
 }

@@ -22,7 +22,7 @@ or billions of entries.
 See https://www.gwern.net/Timestamping for more background information on
 trusted timestamping services.
 
-For more information on using tzstamp-server [see its manual page](https://gitlab.com/tzstamp/server/-/blob/main/man/man1/tzstamp-server.md).
+For more information on using tzstamp-server [see its manual page](https://github.com/marigold-dev/tzstamp/blob/main/server/man/man1/tzstamp-server.md).
 
 ## Setup TestNet TzStamp On Debian 10.6
 
@@ -43,8 +43,8 @@ where you store this key as we'll use it in the following steps.
 
 Next clone the tzstamp contract management utility.
 
-    git clone https://gitlab.com/tzstamp/manage
-    cd manage
+    git clone https://github.com/marigold-dev/tzstamp
+    cd tzstamp/manage
 
 Install the dependencies for the management utility.
 
@@ -59,8 +59,8 @@ contract. Write down the KT1, you'll use it in the server configuration.
 
 Clone the tzstamp server software.
 
-    git clone https://gitlab.com/tzstamp/server
-    cd server
+    git clone https://github.com/marigold-dev/tzstamp
+    cd tzstamp/server
 
 Install the tzstamp server dependencies.
 

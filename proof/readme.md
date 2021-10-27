@@ -34,11 +34,11 @@ garbage collect it.
 const {/*...*/} = require("@tzstamp/proof");
 
 // Deno
-import {/*...*/} from "https://gitlab.com/tzstamp/proof/raw/0.3.0/mod.ts";
+import {/*...*/} from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/proof/mod.ts";
 ```
 
 See the
-[full reference documentation here](https://doc.deno.land/https/gitlab.com/tzstamp/proof/raw/0.3.0/mod.ts).
+[full reference documentation here](https://doc.deno.land/https/raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/proof/mod.ts).
 
 ### Constructing a proof
 

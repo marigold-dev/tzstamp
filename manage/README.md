@@ -23,8 +23,8 @@ before you can run TzStamp:
 
 Next clone the tzstamp contract management utility.
 
-    git clone https://gitlab.com/tzstamp/manage
-    cd manage
+    git clone https://github.com/marigold-dev/tzstamp
+    cd tzstamp/manage
 
 Install the dependencies for the management utility.
 

@@ -12,11 +12,11 @@ await exportCommonJS({
   outDir: "dist",
   dependencyMap: new Map([
     [
-      "https://gitlab.com/tzstamp/helpers/-/raw/0.3.0/mod.ts",
+      "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/helpers/mod.ts",
       "@tzstamp/helpers",
     ],
     [
-      "https://gitlab.com/tzstamp/proof/-/raw/0.3.0/mod.ts",
+      "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/proof/mod.ts",
       "@tzstamp/proof",
     ],
   ]),

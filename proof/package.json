@@ -13,13 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/tzstamp/proof.git"
+    "url": "https://github.com/marigold-dev/tzstamp.git",
+    "directory": "proof"
   },
   "contributors": [
     "John David Pressman <jd@jdpressman.com> (https://jdpressman.com)",
     "Benjamin Herman <benjamin@metanomial.com> (https://metanomial.com)"
   ],
-  "homepage": "https://gitlab.com/tzstamp/proof",
+  "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/proof#readme",
   "license": "MIT",
   "dependencies": {
     "@tzstamp/helpers": "^0.3.1",

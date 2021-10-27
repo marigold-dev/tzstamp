@@ -78,7 +78,7 @@ export class Path {
   }
 
   /**
-   * Creates a [timestamp proof](https://gitlab.com/tzstamp/proof) from the path.
+   * Creates a [timestamp proof](https://github.com/marigold-dev/tzstamp/tree/main/proof) from the path.
    */
   toProof(): Proof {
     const operations: Operation[] = [new Blake2bOperation()];
