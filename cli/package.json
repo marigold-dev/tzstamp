@@ -1,6 +1,6 @@
 {
   "name": "@tzstamp/cli",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "description": "Tezos timestamping utility",
   "main": "bin/index.js",
   "bin": {
@@ -37,8 +37,8 @@
   },
   "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/cli#readme",
   "dependencies": {
-    "@tzstamp/helpers": "^0.1.1",
-    "@tzstamp/proof": "^0.2.0",
+    "@tzstamp/helpers": "^0.3.3",
+    "@tzstamp/proof": "^0.3.3",
     "chalk": "^4.1.1",
     "delay": "^5.0.0",
     "minimist": "^1.2.5",
