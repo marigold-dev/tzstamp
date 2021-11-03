@@ -4,14 +4,14 @@ import { parse } from "https://deno.land/std@0.97.0/flags/mod.ts";
 import { createHash } from "https://deno.land/std@0.97.0/hash/mod.ts";
 import { unreachable } from "https://deno.land/std@0.97.0/testing/asserts.ts";
 import { Schema, validate } from "https://deno.land/x/jtd@v0.1.0/mod.ts";
-import { Hex } from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/helpers/mod.ts";
+import { Hex } from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.3/helpers/mod.ts";
 import {
   AffixedProof,
   Blake2bOperation,
   JoinOperation,
   Operation,
   Sha256Operation,
-} from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.2/proof/mod.ts";
+} from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.3/proof/mod.ts";
 
 const options = parse(Deno.args, {
   string: [
