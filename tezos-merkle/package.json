@@ -1,6 +1,6 @@
 {
   "name": "@tzstamp/tezos-merkle",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Tezos-style Merkle trees",
   "main": "dist/mod.js",
   "types": "dist/mod.d.ts",
@@ -24,8 +24,8 @@
   "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/tezos-merkle#readme",
   "license": "MIT",
   "dependencies": {
-    "@tzstamp/helpers": "^0.3.3",
-    "@tzstamp/proof": "^0.3.3"
+    "@tzstamp/helpers": "^0.3.4",
+    "@tzstamp/proof": "^0.3.4"
   },
   "devDependencies": {
     "@types/node": "^15.0.2"

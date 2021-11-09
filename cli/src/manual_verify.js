@@ -1,5 +1,5 @@
 const { Hex } = require('@tzstamp/helpers')
-const { Blake2bOperation, Sha256Operation, JoinOperation, PendingProof, AffixedProof } = require('@tzstamp/proof')
+const { Blake2bOperation, Sha256Operation, JoinOperation, UnresolvedProof, AffixedProof } = require('@tzstamp/proof')
 const chalk = require('chalk')
 const Help = require('./help')
 const { getProof } = require('./helpers')
@@ -12,7 +12,7 @@ async function handler (options) {
 
   const proofLocation = options._[0]
   let proof = await getProof(proofLocation, options.verbose)
-  if (proof instanceof PendingProof) {
+  if (proof instanceof UnresolvedProof) {
     if (options.verbose) {
       console.log('Resolving partial proof')
     }

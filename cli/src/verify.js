@@ -2,7 +2,7 @@ const Help = require('./help')
 const chalk = require('chalk')
 const { getHash, getProof, getNode, getIndexer } = require('./helpers')
 const { compare } = require('@tzstamp/helpers')
-const { PendingProof, AffixedProof, VerifyStatus } = require('@tzstamp/proof')
+const { UnresolvedProof, AffixedProof, VerifyStatus } = require('@tzstamp/proof')
 
 async function handler (options) {
   // Early exits
@@ -17,7 +17,7 @@ async function handler (options) {
   if (!compare(hash, proof.hash)) {
     throw new Error('Proof is unrelated to the file hash')
   }
-  if (proof instanceof PendingProof) {
+  if (proof instanceof UnresolvedProof) {
     if (options.verbose) {
       console.log('Resolving partial proof')
     }
@@ -41,10 +41,10 @@ async function handler (options) {
     if (options.verbose) {
       console.log(chalk.dim`Querying node ${node} for the header of block ${proof.blockHash}\n`)
     }
-    const status = await proof.verify(node)
-    if (status != VerifyStatus.Verified) {
+    const verifyResult = await proof.verify(node)
+    if (!verifyResult.verified) {
       console.log(chalk.red.bold`Could not verify proof`)
-      switch (status) {
+      switch (verifyResult.status) {
         case VerifyStatus.NetError:
           console.log('A network error occurred')
           break

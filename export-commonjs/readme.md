@@ -3,7 +3,7 @@
 Example usage:
 
 ```js
-import { exportCommonJS } from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.3/export-commonjs/mod.ts";
+import { exportCommonJS } from "https://raw.githubusercontent.com/marigold-dev/tzstamp/0.3.4/export-commonjs/mod.ts";
 
 await exportCommonJS({
   filePaths: [

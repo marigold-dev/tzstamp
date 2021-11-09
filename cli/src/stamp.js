@@ -1,7 +1,7 @@
 const fs = require('fs/promises')
 const { randomBytes } = require('crypto')
 const { Hex } = require('@tzstamp/helpers')
-const { Proof, FetchError, PendingProof, Blake2bOperation, InvalidTemplateError } = require('@tzstamp/proof')
+const { Proof, FetchError, UnresolvedProof, Blake2bOperation, InvalidTemplateError } = require('@tzstamp/proof')
 const chalk = require('chalk')
 const fetch = require('node-fetch')
 const delay = require('delay')
@@ -109,7 +109,7 @@ async function handler (options) {
         if (options.verbose) {
           console.log(chalk.dim`Successfully submitted hash to <${server}>`)
         }
-        const remoteProof = new PendingProof({
+        const remoteProof = new UnresolvedProof({
           hash: baseProof.derivation,
           operations: [],
           remote: proofURL

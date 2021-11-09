@@ -1,6 +1,6 @@
 {
   "name": "@tzstamp/proof",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Cryptographic proofs for TzStamp tools",
   "files": [
     "dist"
@@ -23,7 +23,7 @@
   "homepage": "https://github.com/marigold-dev/tzstamp/tree/main/proof#readme",
   "license": "MIT",
   "dependencies": {
-    "@tzstamp/helpers": "^0.3.3",
+    "@tzstamp/helpers": "^0.3.4",
     "jtd": "^0.1.1",
     "node-fetch": "^2.6.1"
   },
