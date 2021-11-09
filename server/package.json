@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -12,9 +12,9 @@
     "@koa/router": "^10.0.0",
     "@taquito/signer": "^10.2.1",
     "@taquito/taquito": "^10.2.1",
-    "@tzstamp/helpers": "^0.3.3",
-    "@tzstamp/proof": "^0.3.3",
-    "@tzstamp/tezos-merkle": "^0.3.3",
+    "@tzstamp/helpers": "^0.3.4",
+    "@tzstamp/proof": "^0.3.4",
+    "@tzstamp/tezos-merkle": "^0.3.4",
     "cron": "^1.8.2",
     "dotenv": "^10.0.0",
     "koa": "^2.13.1",

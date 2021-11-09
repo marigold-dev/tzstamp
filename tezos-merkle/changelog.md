@@ -49,4 +49,4 @@ This project adheres to
 [0.3.0]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.3.0
 [0.3.1]: https://gitlab.com/tzstamp/tezos-merkle/-/releases/0.3.1
 [0.3.2]: https://github.com/marigold-dev/tzstamp/releases/tag/0.3.2
-[0.3.3]: https://github.com/marigold-dev/tzstamp/releases/tag/0.3.3
+[0.3.4]: https://github.com/marigold-dev/tzstamp/releases/tag/0.3.4
