@@ -1,6 +1,7 @@
-FROM node:10-alpine
-WORKDIR .
-COPY . .
+FROM node:16.13-alpine
+WORKDIR /app
+COPY ["package.json", "package-lock.json*", "./"]
 RUN npm install
-EXPOSE 8080
+COPY . .
+EXPOSE 8000
 CMD ["node", "index.js"]
