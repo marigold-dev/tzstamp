@@ -3,6 +3,7 @@ const Router = require('@koa/router')
 const bodyParser = require('koa-bodyparser')
 const { Hex, Blake2b } = require('@tzstamp/helpers')
 const { timeout } = require('cron')
+const cors = require('@koa/cors');
 
 /**
  * @typedef {import('./storage').ProofStorage} ProofStorage
@@ -22,6 +23,7 @@ exports.configureAPI = async function (stampHandler, proofHandler, statusHandler
     .get('/proof/:id', proofHandler)
     .get('/status', statusHandler)
   const app = new Koa()
+    .use(cors())
     .use(errorHandler)
     .use(bodyParser())
     .use(router.routes())

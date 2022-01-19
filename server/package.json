@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@koa/cors": "^3.1.0",
     "@koa/router": "^10.0.0",
     "@taquito/signer": "^10.2.1",
     "@taquito/taquito": "^10.2.1",
