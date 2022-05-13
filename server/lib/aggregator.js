@@ -12,7 +12,7 @@ class Aggregator {
    * @param {import('@taquito/rpc').RpcClient} rpc
    * @param {import('@taquito/taquito').ContractAbstraction<import('@taquito/taquito').ContractProvider>} contract
    */
-  constructor (storage, rpc, contract) {
+  constructor(storage, rpc, contract) {
     this.cycle()
     this.pendingProofs = new Set()
     this._storage = storage
@@ -25,7 +25,7 @@ class Aggregator {
    *
    * @returns the recent active Merkle tree
    */
-  cycle () {
+  cycle() {
     const currentTree = this.merkleTree
     this.merkleTree = new MerkleTree({ deduplicate: true })
     return currentTree
@@ -34,19 +34,27 @@ class Aggregator {
   /**
    * Publishes the aggregator root.
    */
-  async publish () {
+  async publish() {
     if (this.merkleTree.size == 0) {
       console.log('Aggregator is empty. Skipping publication')
       return
     }
-    const merkleTree = this.cycle()
-    const payload = Hex.stringify(merkleTree.root)
-    console.log(`Publishing aggregator root "${payload}" (${merkleTree.size} leaves)`)
-    const [ block, opGroup ] = await this._invoke(payload)
-    console.log(`Saving proofs for root "${payload}" (${merkleTree.size} leaves)`)
-    const highProof = await buildHighProof(block, opGroup.hash, merkleTree.root)
-    await this._output(merkleTree, highProof)
-    console.log(`Operation for root "${payload}" injected: https://tzkt.io/${opGroup.hash}`)
+    try {
+      const merkleTree = this.cycle()
+      const payload = Hex.stringify(merkleTree.root)
+      console.log(`Publishing aggregator root "${payload}" (${merkleTree.size} leaves)`)
+      const [block, opGroup] = await this._invoke(payload)
+      console.log(`Block hash is ${block.hash}`)
+      console.log(`Saving proofs for root "${payload}" (${merkleTree.size} leaves)`)
+      const highProof = await buildHighProof(block, opGroup.hash, merkleTree.root)
+      console.log(`Derivation: ${highProof.derivation}`)
+      console.log(`Derivation Hex: ${Hex.stringify(highProof.derivation)}`)
+      console.log(`Block Hash found using derivation: ${highProof.blockHash}`)
+      await this._output(merkleTree, highProof)
+      console.log(`Operation for root "${payload}" injected: https://tzkt.io/${opGroup.hash}`)
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   /**
@@ -54,11 +62,11 @@ class Aggregator {
    *
    * @param {string} payload
    */
-  async _invoke (payload) {
+  async _invoke(payload) {
     const opGroup = await this._contract.methods.default(payload).send()
     const level = await opGroup.confirmation(3)
     const block = await this._rpc.getBlock({ block: level - 2 }) // 2 blocks before 3rd confirmation
-    return [ block, opGroup ]
+    return [block, opGroup]
   }
 
   /**
@@ -67,7 +75,7 @@ class Aggregator {
    * @param {MerkleTree} merkleTree
    * @param {import('./proof').AffixedProof} highProof
    */
-  async _output (merkleTree, highProof) {
+  async _output(merkleTree, highProof) {
     for (const path of merkleTree.paths()) {
       const proof = path.toProof().concat(highProof)
       const proofId = Hex.stringify(path.leaf)

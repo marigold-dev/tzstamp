@@ -19,7 +19,7 @@ const {
  * @param {string} opHash Operation hash
  * @param {Uint8Array} root Aggregator root
  */
-async function buildHighProof (block, opHash, root) {
+async function buildHighProof(block, opHash, root) {
   const opGroup = block.operations[3].find((opGroup) => opGroup.hash == opHash)
   if (!opGroup) {
     throw new Error('Target operation group not found in fourth validation pass of the given block')
@@ -38,8 +38,8 @@ async function buildHighProof (block, opHash, root) {
  * @param {object} opGroup Operation group data
  * @param {Uint8Array} root Aggregator root
  */
-function buildOpGroupProof (opGroup, root) {
-  const [ revealOp, txnOp ] = separateOperations(opGroup.contents)
+function buildOpGroupProof(opGroup, root) {
+  const [revealOp, txnOp] = separateOperations(opGroup.contents)
   const revealSegment = revealOp
     ? encodeReveal(revealOp)
     : new Uint8Array
@@ -80,9 +80,9 @@ function buildOpGroupProof (opGroup, root) {
  *
  * @param {object[]} contents
  */
-function separateOperations (contents) {
+function separateOperations(contents) {
   if (contents.length == 1) {
-    return [ undefined, contents[0] ]
+    return [undefined, contents[0]]
   } else if (contents.length == 2) {
     return contents
   } else {
@@ -96,7 +96,7 @@ function separateOperations (contents) {
  * @param {object[][]} passList Operations list list
  * @param {string} opHash Operation hash
  */
-function buildOpsHashProof (passList, opHash) {
+function buildOpsHashProof(passList, opHash) {
   const passTrees = buildPassTrees(passList)
   const fourthPassProof = buildFourthPassProof(passTrees[3], opHash)
   const multipassTree = new MerkleTree()
@@ -116,8 +116,8 @@ function buildOpsHashProof (passList, opHash) {
  * @param {MerkleTree} passTree Fourth operation pass Merkle tree
  * @param {string} opHash Operation hash
  */
-function buildFourthPassProof (passTree, opHash) {
-  const rawOpHash = Base58.decodeCheck(opHash, new Uint8Array([ 5, 116 ]))
+function buildFourthPassProof(passTree, opHash) {
+  const rawOpHash = Base58.decodeCheck(opHash, new Uint8Array([5, 116]))
   const opPath = Array
     .from(passTree.paths())
     .find((path) => compare(path.block, rawOpHash))
@@ -133,7 +133,7 @@ function buildFourthPassProof (passTree, opHash) {
  * @param {string} network Tezos network identifier
  * @param {object} header Block header data
  */
-function buildBlockHashProof (network, header) {
+function buildBlockHashProof(network, header) {
   const timestamp = new Date(header.timestamp)
   const prepend = concat(
     Hex.parse( // level
@@ -144,7 +144,7 @@ function buildBlockHashProof (network, header) {
     header.proto, // proto
     Base58.decodeCheck(
       header.predecessor,
-      new Uint8Array([ 1, 52 ])
+      new Uint8Array([1, 52])
     ), // predecessor
     Hex.parse( // timestamp
       Math.floor(timestamp.getTime() / 1000)
@@ -161,23 +161,27 @@ function buildBlockHashProof (network, header) {
           .map(encodeVariable)
       )
     ),
-    Base58.decodeCheck(
+    Base58.decodeCheck( // context
       header.context,
-      new Uint8Array([ 79, 199 ])
-    ), // context
-    Hex.parse( // priority
-      header.priority
+      new Uint8Array([79, 199])
+    ),
+    Base58.decodeCheck( // payload_hash
+      header.payload_hash,
+      new Uint8Array([001, 106, 242])
+    ),
+    Hex.parse( // payload_round
+      header.payload_round
         .toString(16)
-        .padStart(4, '0')
+        .padStart(8, '0')
     ),
     Hex.parse(header.proof_of_work_nonce), // proof_of_work_nonce
-    header.liquidity_baking_escape_vote ? 1 : 0,
+    header.liquidity_baking_escape_vote ? 1 : 0, // liquidity_baking_escape_vote
     0, // seed_nonce_hash flag
     encodeSignature(header.signature) // signature
   )
   const rawOpHash = Base58.decodeCheck(
     header.operations_hash,
-    new Uint8Array([ 29, 159, 109 ])
+    new Uint8Array([29, 159, 109])
   )
   return new AffixedProof({
     hash: rawOpHash,
@@ -195,7 +199,7 @@ function buildBlockHashProof (network, header) {
  *
  * @param {object[][]} passList
  */
-function buildPassTrees (passList) {
+function buildPassTrees(passList) {
   const trees = []
   for (const pass of passList) {
     const merkleTree = new MerkleTree()
@@ -203,7 +207,7 @@ function buildPassTrees (passList) {
       merkleTree.append(
         Base58.decodeCheck(
           opGroup.hash,
-          new Uint8Array([ 5, 116 ])
+          new Uint8Array([5, 116])
         )
       )
     }
