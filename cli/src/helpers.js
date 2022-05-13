@@ -18,7 +18,7 @@ const VALID_HASH = /^[0-9a-f]{64,128}$/i
  */
 const VALID_HTTP = /^https?:\/\//
 
-function sha256Async (stream) {
+function sha256Async(stream) {
   return new Promise((resolve, reject) => {
     if (stream.readableEnded) {
       reject(new Error('Stream has ended'))
@@ -31,7 +31,7 @@ function sha256Async (stream) {
   })
 }
 
-function hashFile (path) {
+function hashFile(path) {
   const stream = createReadStream(path)
   return sha256Async(stream)
 }
@@ -41,7 +41,7 @@ function hashFile (path) {
  *
  * @param {Promise<string>} target File path or file hash
  */
-async function getHash (target, verbose) {
+async function getHash(target, verbose) {
   try {
     if (VALID_HASH.test(target)) {
       return Hex.parse(target)
@@ -56,7 +56,7 @@ async function getHash (target, verbose) {
   }
 }
 
-async function fetchProofText (url) {
+async function fetchProofText(url) {
   const response = await fetch(url, {
     headers: {
       accept: 'application/json'
@@ -80,7 +80,7 @@ async function fetchProofText (url) {
  * @param {string} location Filepath or URL
  * @returns {Promise<Proof>}
  */
-async function getProof (location, verbose) {
+async function getProof(location, verbose) {
   // Get proof text
   let text
   if (VALID_HTTP.test(location)) {
@@ -112,10 +112,9 @@ async function getProof (location, verbose) {
     json = JSON.parse(text)
   } catch (_) {
     throw new Error(
-      `${
-        VALID_HTTP.test(location)
-          ? 'Fetched proof'
-          : 'Proof file'
+      `${VALID_HTTP.test(location)
+        ? 'Fetched proof'
+        : 'Proof file'
       } is not valid JSON`
     )
   }
@@ -133,14 +132,14 @@ async function getProof (location, verbose) {
  * @param {string} network
  * @returns {string} Tezos node URL
  */
-function getNode (network) {
+function getNode(network) {
   switch (network) {
     case 'NetXdQprcVkpaWU':
-      return 'https://mainnet.api.tez.ie/'
-    case 'NetXz969SFaFn8k':
-      return 'https://granadanet.api.tez.ie/'
-    case 'NetXxkAx4woPLyu':
-      return 'https://florencenet.api.tez.ie/'
+      return 'https://mainnet.tezos.marigold.dev/'
+    case 'NetXnHfVqm9iesp':
+      return 'https://ithacanet.tezos.marigold.dev/'
+    case 'NetXLH1uAxK7CCh':
+      return 'https://jakartanet.tezos.marigold.dev/'
   }
 }
 
@@ -150,27 +149,25 @@ function getNode (network) {
  * @param {string} network
  * @returns {string|undefined} Indexer URL
  */
-function getIndexer (network) {
+function getIndexer(network) {
   switch (network) {
     case 'NetXdQprcVkpaWU':
       return 'http://tzkt.io/'
-    case 'NetXz969SFaFn8k':
-      return 'https://granadanet.tzkt.io/'
-    case 'NetXxkAx4woPLyu':
-      return 'https://florencenet.tzkt.io/'
-    case 'NetXSgo1ZT2DRUG':
-      return 'https://edo2net.tzkt.io/'
+    case 'NetXnHfVqm9iesp':
+      return 'https://ithacanet.tzkt.io/'
+    case 'NetXLH1uAxK7CCh':
+      return 'https://jakartanet.tzkt.io/'
   }
 }
 
-function *nameCandidates (base) {
+function* nameCandidates(base) {
   yield `${base}.proof.json`
-  for (let i = 1;; ++i) {
+  for (let i = 1; ; ++i) {
     yield `${base}-${i}.proof.json`
   }
 }
 
-function *safeNames (target, directory, entries) {
+function* safeNames(target, directory, entries) {
   for (const name of nameCandidates(target)) {
     if (entries.includes(name)) {
       continue
@@ -185,7 +182,7 @@ function *safeNames (target, directory, entries) {
  * @param {string} fileOrDir
  * @returns {Promise<Generator<string>>} File name
  */
-async function getSafeNames (target, directory, verbose) {
+async function getSafeNames(target, directory, verbose) {
   // Resolve directory
   let dir = directory
   if (directory == undefined) {
