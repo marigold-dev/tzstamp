@@ -1,7 +1,8 @@
 import { Blake2bOperation, Proof, Sha256Operation } from "./proof.js";
 
-const AGGREGATOR_URL = "https://api.tzstamp.io";
-const RPC_URL = "https://mainnet.tezos.marigold.dev";
+const HOST = window.location.host;
+const TESTNETS = ["jakartanet", "hangzhounet"];
+const [AGGREGATOR_URL, RPC_URL] = generateURLs(HOST)
 
 let proof = null;
 
@@ -73,16 +74,13 @@ stampButton.addEventListener("click", async () => {
   const proof1 = Proof.create({
     hash: parseHex(hashInput.value),
     operations: [
-      new Blake2bOperation(
-        32,
-        crypto.getRandomValues(new Uint8Array(32)),
-      ),
+      new Blake2bOperation(32, crypto.getRandomValues(new Uint8Array(32))),
     ],
   });
   const response = await fetch(AGGREGATOR_URL + "/stamp", {
     method: "POST",
     headers: {
-      "Accept": "application/json",
+      Accept: "application/json",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -134,16 +132,16 @@ verifyButton.addEventListener("click", async () => {
   if (proof.isAffixed()) {
     const result = await proof.verify(RPC_URL);
     if (!proof.mainnet) {
-      displayOutput.value =
-        `Caution! The timestamp proof is affixed to an alternative network "${proof.network}". It might not be trustworthy.\n\n`;
+      displayOutput.value = `Caution! The timestamp proof is affixed to an alternative network "${proof.network}". It might not be trustworthy.\n\n`;
     }
     if (result.verified) {
-      displayOutput.value += "Verified!\n" +
+      displayOutput.value +=
+        "Verified!\n" +
         `Hash existed at ${proof.timestamp.toLocaleString()}\n` +
         `Block hash: ${proof.blockHash}`;
     } else {
-      displayOutput.value += "Could not verify timestamp proof.\n" +
-        result.message;
+      displayOutput.value +=
+        "Could not verify timestamp proof.\n" + result.message;
       resolveFlag = false;
     }
   } else {
@@ -165,7 +163,7 @@ function parseHex(string) {
   const byteCount = Math.ceil(string.length / 2);
   const bytes = new Uint8Array(byteCount);
   for (let index = 0; index < string.length / 2; ++index) {
-    const offset = index * 2 - string.length % 2;
+    const offset = index * 2 - (string.length % 2);
     const hexByte = string.substring(offset, offset + 2);
     bytes[index] = parseInt(hexByte, 16);
   }
@@ -173,8 +171,7 @@ function parseHex(string) {
 }
 
 function stringifyHex(bytes) {
-  return Array
-    .from(bytes)
+  return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
@@ -184,10 +181,7 @@ function getFileName() {
 }
 
 function downloadProof(proof, fileName) {
-  const file = new Blob(
-    [JSON.stringify(proof)],
-    { type: "application/json" },
-  );
+  const file = new Blob([JSON.stringify(proof)], { type: "application/json" });
   const a = document.createElement("a");
   const url = URL.createObjectURL(file);
   a.href = url;
@@ -206,4 +200,14 @@ function compare(a, b) {
     if (a[i] != b[i]) return false;
   }
   return true;
+}
+
+
+function generateURLs(url) {
+  const testnet = TESTNETS.find(testnet => url.includes(testnet))
+  if (testnet) {
+    return [`https://${testnet}-api.tzstamp.io`, `https://${testnet}.tezos.marigold.dev`]
+  }
+
+  return ["https://api.tzstamp.io", "https://mainnet.tezos.marigold.dev"]
 }

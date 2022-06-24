@@ -26,7 +26,8 @@ export { InvalidTezosNetworkError1 as InvalidTezosNetworkError };
 export { FetchError1 as FetchError };
 const validator = /^[0-9a-fA-F]+$/;
 function stringify(bytes) {
-  return Array.from(bytes).map((__byte) => __byte.toString(16).padStart(2, "0"))
+  return Array.from(bytes)
+    .map((__byte) => __byte.toString(16).padStart(2, "0"))
     .join("");
 }
 function parse(input) {
@@ -39,94 +40,35 @@ function parse(input) {
   const byteCount = Math.ceil(input.length / 2);
   const bytes = new Uint8Array(byteCount);
   for (let index = 0; index < input.length / 2; ++index) {
-    const offset = index * 2 - input.length % 2;
+    const offset = index * 2 - (input.length % 2);
     const hexByte = input.substring(offset, offset + 2);
     bytes[index] = parseInt(hexByte, 16);
   }
   return bytes;
 }
-const mod = function () {
+const mod = (function () {
   return {
     validator: validator,
     stringify: stringify,
     parse: parse,
   };
-}();
+})();
 const IV = [
-  1779033703,
-  3144134277,
-  1013904242,
-  2773480762,
-  1359893119,
-  2600822924,
-  528734635,
-  1541459225,
+  1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924,
+  528734635, 1541459225,
 ];
 const K = [
-  1116352408,
-  1899447441,
-  3049323471,
-  3921009573,
-  961987163,
-  1508970993,
-  2453635748,
-  2870763221,
-  3624381080,
-  310598401,
-  607225278,
-  1426881987,
-  1925078388,
-  2162078206,
-  2614888103,
-  3248222580,
-  3835390401,
-  4022224774,
-  264347078,
-  604807628,
-  770255983,
-  1249150122,
-  1555081692,
-  1996064986,
-  2554220882,
-  2821834349,
-  2952996808,
-  3210313671,
-  3336571891,
-  3584528711,
-  113926993,
-  338241895,
-  666307205,
-  773529912,
-  1294757372,
-  1396182291,
-  1695183700,
-  1986661051,
-  2177026350,
-  2456956037,
-  2730485921,
-  2820302411,
-  3259730800,
-  3345764771,
-  3516065817,
-  3600352804,
-  4094571909,
-  275423344,
-  430227734,
-  506948616,
-  659060556,
-  883997877,
-  958139571,
-  1322822218,
-  1537002063,
-  1747873779,
-  1955562222,
-  2024104815,
-  2227730452,
-  2361852424,
-  2428436474,
-  2756734187,
-  3204031479,
-  3329325298,
+  1116352408, 1899447441, 3049323471, 3921009573, 961987163, 1508970993,
+  2453635748, 2870763221, 3624381080, 310598401, 607225278, 1426881987,
+  1925078388, 2162078206, 2614888103, 3248222580, 3835390401, 4022224774,
+  264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986,
+  2554220882, 2821834349, 2952996808, 3210313671, 3336571891, 3584528711,
+  113926993, 338241895, 666307205, 773529912, 1294757372, 1396182291,
+  1695183700, 1986661051, 2177026350, 2456956037, 2730485921, 2820302411,
+  3259730800, 3345764771, 3516065817, 3600352804, 4094571909, 275423344,
+  430227734, 506948616, 659060556, 883997877, 958139571, 1322822218, 1537002063,
+  1747873779, 1955562222, 2024104815, 2227730452, 2361852424, 2428436474,
+  2756734187, 3204031479, 3329325298,
 ];
 class Sha256 {
   state = new ArrayBuffer(32);
@@ -161,13 +103,13 @@ class Sha256 {
   compress() {
     const state1 = new DataView(this.state);
     const buffer = new DataView(this.buffer);
-    const rotate = (x, y) => x >>> y | x << 32 - y;
-    const choose = (x, y, z) => x & y ^ ~x & z;
-    const majority = (x, y, z) => x & y ^ x & z ^ y & z;
+    const rotate = (x, y) => (x >>> y) | (x << (32 - y));
+    const choose = (x, y, z) => (x & y) ^ (~x & z);
+    const majority = (x, y, z) => (x & y) ^ (x & z) ^ (y & z);
     const Σ0 = (x) => rotate(x, 2) ^ rotate(x, 13) ^ rotate(x, 22);
     const Σ1 = (x) => rotate(x, 6) ^ rotate(x, 11) ^ rotate(x, 25);
-    const σ0 = (x) => rotate(x, 7) ^ rotate(x, 18) ^ x >>> 3;
-    const σ1 = (x) => rotate(x, 17) ^ rotate(x, 19) ^ x >>> 10;
+    const σ0 = (x) => rotate(x, 7) ^ rotate(x, 18) ^ (x >>> 3);
+    const σ1 = (x) => rotate(x, 17) ^ rotate(x, 19) ^ (x >>> 10);
     const W = new Uint32Array(64);
     for (let i1 = 0; i1 < 16; ++i1) {
       W[i1] = buffer.getUint32(i1 * 4, false);
@@ -312,7 +254,7 @@ function decodeCheck(string, prefix = new Uint8Array()) {
   }
   return prefixedPayload.slice(prefix.length);
 }
-const mod1 = function () {
+const mod1 = (function () {
   return {
     PrefixError: PrefixError,
     ChecksumError: ChecksumError,
@@ -322,7 +264,7 @@ const mod1 = function () {
     encodeCheck: encodeCheck,
     decodeCheck: decodeCheck,
   };
-}();
+})();
 const IV1 = [
   7640891576956012808n,
   13503953896175478587n,
@@ -334,236 +276,26 @@ const IV1 = [
   6620516959819538809n,
 ];
 const SIGMA = [
-  [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-  ],
-  [
-    14,
-    10,
-    4,
-    8,
-    9,
-    15,
-    13,
-    6,
-    1,
-    12,
-    0,
-    2,
-    11,
-    7,
-    5,
-    3,
-  ],
-  [
-    11,
-    8,
-    12,
-    0,
-    5,
-    2,
-    15,
-    13,
-    10,
-    14,
-    3,
-    6,
-    7,
-    1,
-    9,
-    4,
-  ],
-  [
-    7,
-    9,
-    3,
-    1,
-    13,
-    12,
-    11,
-    14,
-    2,
-    6,
-    5,
-    10,
-    4,
-    0,
-    15,
-    8,
-  ],
-  [
-    9,
-    0,
-    5,
-    7,
-    2,
-    4,
-    10,
-    15,
-    14,
-    1,
-    11,
-    12,
-    6,
-    8,
-    3,
-    13,
-  ],
-  [
-    2,
-    12,
-    6,
-    10,
-    0,
-    11,
-    8,
-    3,
-    4,
-    13,
-    7,
-    5,
-    15,
-    14,
-    1,
-    9,
-  ],
-  [
-    12,
-    5,
-    1,
-    15,
-    14,
-    13,
-    4,
-    10,
-    0,
-    7,
-    6,
-    3,
-    9,
-    2,
-    8,
-    11,
-  ],
-  [
-    13,
-    11,
-    7,
-    14,
-    12,
-    1,
-    3,
-    9,
-    5,
-    0,
-    15,
-    4,
-    8,
-    6,
-    2,
-    10,
-  ],
-  [
-    6,
-    15,
-    14,
-    9,
-    11,
-    3,
-    0,
-    8,
-    12,
-    2,
-    13,
-    7,
-    1,
-    4,
-    10,
-    5,
-  ],
-  [
-    10,
-    2,
-    8,
-    4,
-    7,
-    6,
-    1,
-    5,
-    15,
-    11,
-    9,
-    14,
-    3,
-    12,
-    13,
-    0,
-  ],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+  [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
+  [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4],
+  [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8],
+  [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13],
+  [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9],
+  [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11],
+  [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10],
+  [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5],
+  [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
 ];
 const MIX_INDICES = [
-  [
-    0,
-    4,
-    8,
-    12,
-  ],
-  [
-    1,
-    5,
-    9,
-    13,
-  ],
-  [
-    2,
-    6,
-    10,
-    14,
-  ],
-  [
-    3,
-    7,
-    11,
-    15,
-  ],
-  [
-    0,
-    5,
-    10,
-    15,
-  ],
-  [
-    1,
-    6,
-    11,
-    12,
-  ],
-  [
-    2,
-    7,
-    8,
-    13,
-  ],
-  [
-    3,
-    4,
-    9,
-    14,
-  ],
+  [0, 4, 8, 12],
+  [1, 5, 9, 13],
+  [2, 6, 10, 14],
+  [3, 7, 11, 15],
+  [0, 5, 10, 15],
+  [1, 6, 11, 12],
+  [2, 7, 8, 13],
+  [3, 4, 9, 14],
 ];
 class Blake2b {
   state = new ArrayBuffer(64);
@@ -593,8 +325,10 @@ class Blake2b {
     for (let i1 = 0; i1 < 8; ++i1) {
       state2.setBigUint64(i1 * 8, IV1[i1], true);
     }
-    const firstWord = state2.getBigUint64(0, true) ^ 16842752n ^
-      BigInt(key.length << 8 ^ this.digestLength);
+    const firstWord =
+      state2.getBigUint64(0, true) ^
+      16842752n ^
+      BigInt((key.length << 8) ^ this.digestLength);
     state2.setBigUint64(0, firstWord, true);
     if (key.length) {
       this.update(key);
@@ -629,7 +363,7 @@ class Blake2b {
     if (last) {
       vector[14] = ~vector[14];
     }
-    const rotate = (x, y) => x >> y | x << 64n - y;
+    const rotate = (x, y) => (x >> y) | (x << (64n - y));
     for (let i2 = 0; i2 < 12; ++i2) {
       const s = SIGMA[i2 % 10];
       for (let j = 0; j < 8; ++j) {
@@ -647,8 +381,8 @@ class Blake2b {
       }
     }
     for (let i3 = 0; i3 < 8; ++i3) {
-      const word = state2.getBigUint64(i3 * 8, true) ^ vector[i3] ^
-        vector[i3 + 8];
+      const word =
+        state2.getBigUint64(i3 * 8, true) ^ vector[i3] ^ vector[i3 + 8];
       state2.setBigUint64(i3 * 8, word, true);
     }
   }
@@ -729,32 +463,14 @@ function maxDay(year, month) {
 function isLeapYear(n) {
   return n % 4 === 0 && (n % 100 !== 0 || n % 400 === 0);
 }
-const MONTH_LENGTHS = [
-  0,
-  31,
-  0,
-  31,
-  30,
-  31,
-  30,
-  31,
-  31,
-  30,
-  31,
-  30,
-  31,
-];
-class MaxDepthExceededError extends Error {
-}
-class MaxErrorsReachedError extends Error {
-}
+const MONTH_LENGTHS = [0, 31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+class MaxDepthExceededError extends Error {}
+class MaxErrorsReachedError extends Error {}
 function validate(schema, instance, config) {
   const state2 = {
     errors: [],
     instanceTokens: [],
-    schemaTokens: [
-      [],
-    ],
+    schemaTokens: [[]],
     root: schema,
     config: config || {
       maxDepth: 0,
@@ -779,10 +495,7 @@ function validateWithState(state2, schema, instance, parentTag) {
     if (state2.schemaTokens.length === state2.config.maxDepth) {
       throw new MaxDepthExceededError();
     }
-    state2.schemaTokens.push([
-      "definitions",
-      schema.ref,
-    ]);
+    state2.schemaTokens.push(["definitions", schema.ref]);
     validateWithState(state2, state2.root.definitions[schema.ref], instance);
     state2.schemaTokens.pop();
   } else if (isTypeForm(schema)) {
@@ -853,7 +566,8 @@ function validateWithState(state2, schema, instance, parentTag) {
     popSchemaToken(state2);
   } else if (isPropertiesForm(schema)) {
     if (
-      typeof instance === "object" && instance !== null &&
+      typeof instance === "object" &&
+      instance !== null &&
       !Array.isArray(instance)
     ) {
       if (schema.properties !== undefined) {
@@ -873,9 +587,9 @@ function validateWithState(state2, schema, instance, parentTag) {
       }
       if (schema.optionalProperties !== undefined) {
         pushSchemaToken(state2, "optionalProperties");
-        for (
-          const [name, subSchema] of Object.entries(schema.optionalProperties)
-        ) {
+        for (const [name, subSchema] of Object.entries(
+          schema.optionalProperties
+        )) {
           pushSchemaToken(state2, name);
           if (instance.hasOwnProperty(name)) {
             pushInstanceToken(state2, name);
@@ -889,8 +603,8 @@ function validateWithState(state2, schema, instance, parentTag) {
       if (schema.additionalProperties !== true) {
         for (const name of Object.keys(instance)) {
           const inRequired = schema.properties && name in schema.properties;
-          const inOptional = schema.optionalProperties &&
-            name in schema.optionalProperties;
+          const inOptional =
+            schema.optionalProperties && name in schema.optionalProperties;
           if (!inRequired && !inOptional && name !== parentTag) {
             pushInstanceToken(state2, name);
             pushError(state2);
@@ -910,7 +624,8 @@ function validateWithState(state2, schema, instance, parentTag) {
   } else if (isValuesForm(schema)) {
     pushSchemaToken(state2, "values");
     if (
-      typeof instance === "object" && instance !== null &&
+      typeof instance === "object" &&
+      instance !== null &&
       !Array.isArray(instance)
     ) {
       for (const [name, subInstance] of Object.entries(instance)) {
@@ -924,7 +639,8 @@ function validateWithState(state2, schema, instance, parentTag) {
     popSchemaToken(state2);
   } else if (isDiscriminatorForm(schema)) {
     if (
-      typeof instance === "object" && instance !== null &&
+      typeof instance === "object" &&
+      instance !== null &&
       !Array.isArray(instance)
     ) {
       if (instance.hasOwnProperty(schema.discriminator)) {
@@ -937,7 +653,7 @@ function validateWithState(state2, schema, instance, parentTag) {
               state2,
               schema.mapping[tag],
               instance,
-              schema.discriminator,
+              schema.discriminator
             );
             popSchemaToken(state2);
             popSchemaToken(state2);
@@ -969,8 +685,10 @@ function validateWithState(state2, schema, instance, parentTag) {
 }
 function validateInt(state2, instance, min, max) {
   if (
-    typeof instance !== "number" || !Number.isInteger(instance) ||
-    instance < min || instance > max
+    typeof instance !== "number" ||
+    !Number.isInteger(instance) ||
+    instance < min ||
+    instance > max
   ) {
     pushError(state2);
   }
@@ -989,12 +707,8 @@ function popSchemaToken(state2) {
 }
 function pushError(state2) {
   state2.errors.push({
-    instancePath: [
-      ...state2.instanceTokens,
-    ],
-    schemaPath: [
-      ...state2.schemaTokens[state2.schemaTokens.length - 1],
-    ],
+    instancePath: [...state2.instanceTokens],
+    schemaPath: [...state2.schemaTokens[state2.schemaTokens.length - 1]],
   });
   if (state2.errors.length === state2.config.maxErrors) {
     throw new MaxErrorsReachedError();
@@ -1006,7 +720,7 @@ function isValid(schema, instance) {
 const operationSchema = {
   discriminator: "type",
   mapping: {
-    "join": {
+    join: {
       optionalProperties: {
         prepend: {
           type: "string",
@@ -1016,7 +730,7 @@ const operationSchema = {
         },
       },
     },
-    "blake2b": {
+    blake2b: {
       optionalProperties: {
         length: {
           type: "uint32",
@@ -1026,7 +740,7 @@ const operationSchema = {
         },
       },
     },
-    "sha256": {
+    sha256: {
       properties: {},
     },
   },
@@ -1096,7 +810,7 @@ class Operation1 {
       case "blake2b":
         return new Blake2bOperation1(
           template.length,
-          template.key ? mod.parse(template.key) : undefined,
+          template.key ? mod.parse(template.key) : undefined
         );
       case "sha256":
         return new Sha256Operation1();
@@ -1147,15 +861,17 @@ class Blake2bOperation1 extends Operation1 {
     }
     if (key2 && key2.length > 64) {
       throw new RangeError(
-        "BLAKE2b key length must be no longer than 64 bytes.",
+        "BLAKE2b key length must be no longer than 64 bytes."
       );
     }
     this.length = length;
     this.key = key2;
   }
   toString() {
-    return `BLAKE2b hash, ${this.length}-byte digest` +
-      (this.key ? ` with key 0x${mod.stringify(this.key)}` : "");
+    return (
+      `BLAKE2b hash, ${this.length}-byte digest` +
+      (this.key ? ` with key 0x${mod.stringify(this.key)}` : "")
+    );
   }
   toJSON() {
     const template = {
@@ -1191,15 +907,8 @@ export { Operation1 as Operation };
 export { JoinOperation1 as JoinOperation };
 export { Blake2bOperation1 as Blake2bOperation };
 export { Sha256Operation1 as Sha256Operation };
-const NETWORK_PREFIX = new Uint8Array([
-  87,
-  82,
-  0,
-]);
-const BLOCK_PREFIX = new Uint8Array([
-  1,
-  52,
-]);
+const NETWORK_PREFIX = new Uint8Array([87, 82, 0]);
+const BLOCK_PREFIX = new Uint8Array([1, 52]);
 const TEZOS_MAINNET = "NetXdQprcVkpaWU";
 class Proof1 {
   hash;
@@ -1210,7 +919,7 @@ class Proof1 {
     this.operations = operations;
     this.derivation = operations.reduce(
       (input, operation) => operation.commit(input),
-      hash,
+      hash
     );
   }
   isAffixed() {
@@ -1222,7 +931,7 @@ class Proof1 {
   concat(proof) {
     if (!compare(this.derivation, proof.hash)) {
       throw new MismatchedHashError1(
-        "Derivation of current proof does not match the stored hash of the appended proof",
+        "Derivation of current proof does not match the stored hash of the appended proof"
       );
     }
     const baseOptions = {
@@ -1267,7 +976,7 @@ class Proof1 {
     if (template.version != 1) {
       throw new UnsupportedVersionError1(
         template.version,
-        `Unsupported proof version "${template.version}"`,
+        `Unsupported proof version "${template.version}"`
       );
     }
     const baseOptions = {
@@ -1326,7 +1035,7 @@ class AffixedProof1 extends Proof1 {
   async verify(rpcURL) {
     const endpoint = new URL(
       `chains/${this.network}/blocks/${this.blockHash}/header`,
-      rpcURL,
+      rpcURL
     ).toString();
     const controller = new AbortController();
     const response = await fetch(endpoint, {
