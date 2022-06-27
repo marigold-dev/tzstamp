@@ -62,8 +62,8 @@ if (argv.faucet) { // TestNet Key
     FAUCET_KEY.email,
     FAUCET_KEY.password,
     FAUCET_KEY.mnemonic.join(' '),
-    FAUCET_KEY.secret
-  )
+    FAUCET_KEY.activation_code
+  ).catch((e) => console.error(e))
 }
 
 let TZSTAMP_VERSIONS = new Set()

@@ -9,9 +9,9 @@
   "author": "John David Pressman",
   "license": "MIT",
   "dependencies": {
-    "@taquito/michel-codec": "^7.1.0-beta.0",
-    "@taquito/signer": "^7.1.0-beta.0",
-    "@taquito/taquito": "^7.1.0-beta.0",
+    "@taquito/michel-codec": "^13.0.0",
+    "@taquito/signer": "^13.0.0",
+    "@taquito/taquito": "^13.0.0",
     "@tzstamp/helpers": "^0.3.4",
     "dotenv": "^8.2.0",
     "dotenv-defaults": "^2.0.1",
