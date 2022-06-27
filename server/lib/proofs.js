@@ -1,6 +1,7 @@
 const { MerkleTree } = require('@tzstamp/tezos-merkle')
 const { Proof, AffixedProof, JoinOperation, Blake2bOperation } = require('@tzstamp/proof')
 const { Hex, Base58, Blake2b, concat, compare } = require('@tzstamp/helpers')
+const axios = require('axios');
 const {
   encodeBranch,
   encodeReveal,
@@ -19,14 +20,17 @@ const {
  * @param {string} opHash Operation hash
  * @param {Uint8Array} root Aggregator root
  */
-async function buildHighProof(block, opHash, root) {
+async function buildHighProof(block, opHash, root, rpcURL) {
   const opGroup = block.operations[3].find((opGroup) => opGroup.hash == opHash)
   if (!opGroup) {
     throw new Error('Target operation group not found in fourth validation pass of the given block')
   }
+
+  const blockHeaderRaw = await getBlockHeaderRaw(block.hash, rpcURL)
+
   const opGroupProof = buildOpGroupProof(opGroup, root)
   const opsHashProof = buildOpsHashProof(block.operations, opHash)
-  const blockHashProof = buildBlockHashProof(block.chain_id, block.header)
+  const blockHashProof = buildBlockHashProof(block, blockHeaderRaw)
   return opGroupProof
     .concat(opsHashProof)
     .concat(blockHashProof)
@@ -130,68 +134,66 @@ function buildFourthPassProof(passTree, opHash) {
 /**
  * Builds a proof committing the operations hash to the block hash.
  *
- * @param {string} network Tezos network identifier
- * @param {object} header Block header data
+ * @param {object} block Block data
+ * @param {string} blockHeaderRaw Block Header Raw
  */
-function buildBlockHashProof(network, header) {
-  const timestamp = new Date(header.timestamp)
-  const prepend = concat(
-    Hex.parse( // level
-      header.level
-        .toString(16)
-        .padStart(8, '0')
-    ),
-    header.proto, // proto
-    Base58.decodeCheck(
-      header.predecessor,
-      new Uint8Array([1, 52])
-    ), // predecessor
-    Hex.parse( // timestamp
-      Math.floor(timestamp.getTime() / 1000)
-        .toString(16)
-        .padStart(16, '0')
-    ),
-    header.validation_pass // validation passes
-  )
-  const append = concat(
-    encodeVariable( // fitness
-      concat(
-        ...header.fitness
-          .map(Hex.parse)
-          .map(encodeVariable)
-      )
-    ),
-    Base58.decodeCheck( // context
-      header.context,
-      new Uint8Array([79, 199])
-    ),
-    Base58.decodeCheck( // payload_hash
-      header.payload_hash,
-      new Uint8Array([001, 106, 242])
-    ),
-    Hex.parse( // payload_round
-      header.payload_round
-        .toString(16)
-        .padStart(8, '0')
-    ),
-    Hex.parse(header.proof_of_work_nonce), // proof_of_work_nonce
-    header.liquidity_baking_escape_vote ? 1 : 0, // liquidity_baking_escape_vote
-    0, // seed_nonce_hash flag
-    encodeSignature(header.signature) // signature
-  )
+function buildBlockHashProof(block, blockHeaderRaw) {
+  const network = block.chain_id
+  const header = block.header;
+  const timestamp = new Date(header.timestamp);
+
   const rawOpHash = Base58.decodeCheck(
     header.operations_hash,
     new Uint8Array([29, 159, 109])
-  )
+  );
+
+  const [prepend, append] = extractOperations(blockHeaderRaw, rawOpHash);
+
+  console.log(`blockHeaderRaw: ${blockHeaderRaw}`)
+  console.log(`prepend: ${prepend}`)
+  console.log(`rawOpHash: ${rawOpHash}`)
+  console.log(`append: ${append}`)
+
   return new AffixedProof({
     hash: rawOpHash,
     operations: [
       new JoinOperation({ append, prepend }),
-      new Blake2bOperation
+      new Blake2bOperation(),
     ],
     network,
-    timestamp
-  })
+    timestamp,
+  });
+}
+
+function removeDoubleQuotes(str) {
+  var fIndex = str.indexOf('""');
+  var lIndex = str.lastIndexOf('""');
+  if (fIndex >= 0 && lIndex >= 0) {
+    str = str.substring(fIndex + 1, lIndex + 1);
+  }
+  return str;
+}
+
+async function getBlockHeaderRaw(blockHash, rpcURL) {
+  const blockURL = `${rpcURL}/chains/main/blocks/${blockHash}/header/raw`;
+  const response = await axios.get(blockURL)
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch block header: ${blockURL}`)
+  }
+  return removeDoubleQuotes(response.data)
+}
+
+function extractOperations(blockHeaderRaw, rawOpHash) {
+  // TODO find a optiminal solution to do this
+  const hex = Hex.parse(blockHeaderRaw);
+  const rawOpHashString = rawOpHash.toString() // opHash [32,31]
+  const rawWithoutOpHash = hex.toString().replace(rawOpHashString, "") // raw [1,52,32,31,32]
+  const indexSeparator = rawWithoutOpHash.indexOf(",,") // [1,52,,32,32]
+  const prependString = rawWithoutOpHash.substring(0, indexSeparator) // [1,52]
+  const appendString = rawWithoutOpHash.substring(indexSeparator + 2) // [32,32]
+  const prepend = new Uint8Array(prependString.split(",").map(Number));
+  const append = new Uint8Array(appendString.split(",").map(Number));
+  return [prepend, append];
 }
 
 /**

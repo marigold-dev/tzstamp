@@ -40,13 +40,14 @@ class Aggregator {
       return
     }
     try {
+      const rpcUrl = this._rpc.getRpcUrl()
       const merkleTree = this.cycle()
       const payload = Hex.stringify(merkleTree.root)
       console.log(`Publishing aggregator root "${payload}" (${merkleTree.size} leaves)`)
       const [block, opGroup] = await this._invoke(payload)
       console.log(`Block hash is ${block.hash}`)
       console.log(`Saving proofs for root "${payload}" (${merkleTree.size} leaves)`)
-      const highProof = await buildHighProof(block, opGroup.hash, merkleTree.root)
+      const highProof = await buildHighProof(block, opGroup.hash, merkleTree.root, rpcUrl)
       console.log(`Derivation: ${highProof.derivation}`)
       console.log(`Derivation Hex: ${Hex.stringify(highProof.derivation)}`)
       console.log(`Block Hash found using derivation: ${highProof.blockHash}`)
