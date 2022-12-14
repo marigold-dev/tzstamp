@@ -1,6 +1,4 @@
-<img src="https://tzstamp.io/workmark-small.png" width="300px" />
-
-## About tzstamp-client
+# TzStamp CLI
 
 **tzstamp-client** is the command line client for the TzStamp server software.
 It lets users stamp and verify files. A full description of its functionality can

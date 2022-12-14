@@ -1,4 +1,4 @@
-## About
+# TzStamp Manage
 
 **tzstamp-manage** is a helper utility for managing and deploying instances of
 the tzstamp smart contract. This is especially useful for users who need to

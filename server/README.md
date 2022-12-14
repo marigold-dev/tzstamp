@@ -1,6 +1,4 @@
-<img src="https://tzstamp.io/workmark-small.png" width="300px" />
-
-## About
+# TzStamp Server
 
 tzstamp is a [cryptographic timestamping service](https://www.gwern.net/Timestamping)
 that uses the Tezos blockchain to prove a file existed at or before a certain time.
