@@ -1,8 +1,15 @@
-import { Blake2bOperation, Proof, Sha256Operation } from "./proof.js";
+import {
+  Blake2bOperation,
+  Proof,
+} from "./proof.js";
 
 const HOST = window.location.host;
-const TESTNETS = ["jakartanet", "hangzhounet"];
+const TESTNETS = ["jakartanet", "limanet"];
 const [AGGREGATOR_URL, RPC_URL] = generateURLs(HOST)
+
+// Todo: This is hardcode mainnet contract
+// Handle this better when rewrite this app
+const CONTRACT = "KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj";
 
 let proof = null;
 
@@ -15,6 +22,12 @@ const {
   clear: clearButton,
   display: displayOutput,
 } = document.forms.app;
+
+const indexes = document.getElementById("indexes");
+const tzktBlockLink = document.getElementById("tzkt-block");
+const tzstatsBlockLink = document.getElementById("tzstats-block");
+const tzktOperationLink = document.getElementById("tzkt-operation");
+const tzstatsOperationLink = document.getElementById("tzstats-operation");
 
 fileInput.addEventListener("change", async () => {
   displayOutput.value = "";
@@ -135,10 +148,25 @@ verifyButton.addEventListener("click", async () => {
       displayOutput.value = `Caution! The timestamp proof is affixed to an alternative network "${proof.network}". It might not be trustworthy.\n\n`;
     }
     if (result.verified) {
+      const operation = await findOperation(proof.blockHash);
+      const operationHash = operation?.hash;
       displayOutput.value +=
         "Verified!\n" +
         `Hash existed at ${proof.timestamp.toLocaleString()}\n` +
         `Block hash: ${proof.blockHash}`;
+
+      if (operationHash) {
+        displayOutput.value += `\nOperation hash: ${operationHash}`;
+      }
+
+      tzstatsBlockLink.href = `https://tzstats.com/${proof.blockHash}`;
+      tzktBlockLink.href = `https://tzkt.io/${proof.blockHash}`;
+      tzktOperationLink.hidden = !operationHash;
+      tzktOperationLink.href = `https://tzstats.com/${operationHash}`;
+      tzstatsOperationLink.hidden = !operationHash;
+      tzstatsOperationLink.href = `https://tzkt.io/${operationHash}`;
+      indexes.hidden = false;
+
     } else {
       displayOutput.value +=
         "Could not verify timestamp proof.\n" + result.message;
@@ -153,6 +181,13 @@ verifyButton.addEventListener("click", async () => {
   }
   updateButtons();
 });
+
+async function findOperation(block) {
+  const resp = await fetch(`${RPC_URL}/chains/main/blocks/${block}/operations`);
+  const operations = await resp.json()
+  const operation = operations.flat().find(op => op.contents.some(c => c.destination === CONTRACT));
+  return operation;
+}
 
 clearButton.addEventListener("click", () => {
   document.forms.app.reset();
@@ -181,7 +216,9 @@ function getFileName() {
 }
 
 function downloadProof(proof, fileName) {
-  const file = new Blob([JSON.stringify(proof)], { type: "application/json" });
+  const file = new Blob([JSON.stringify(proof)], {
+    type: "application/json"
+  });
   const a = document.createElement("a");
   const url = URL.createObjectURL(file);
   a.href = url;

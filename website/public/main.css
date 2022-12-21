@@ -212,7 +212,7 @@ input[type=file]::file-selector-button {
 
 output {
   display: block;
-  margin: var(--normal-spacing) 0;
+  margin: var(--normal-spacing) 0 0 0;
   white-space: pre-line;
 }
 
