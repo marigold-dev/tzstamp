@@ -70,7 +70,7 @@ example setup:
     PORT=80
     BASE_URL=https://tzstamp.example.com/ # Base URL for the API
     SECRET=edpk... # Tezos wallet secret
-    CONTRACT_ADDRESS=KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj # On mainnet
+    CONTRACT_ADDRESS=KT1AtaeG5PhuFyyivbfPZRUBkVMiqyxpo2cH # On mainnet
     SCHEDULE="0 0 * * *" # Publish at midnight every day
 
 Used variables are as follows:
@@ -79,7 +79,7 @@ Used variables are as follows:
 - `BASE_URL`: Base URL for the API. Used in responses containing a dynamic endpoint. Does not need to match the server port if, for example, a reverse proxy is being used. Defaults to `"http://localhost:8000"`
 - `KEY_FILE`: Path to JSON key file.
 - `SECRET`: Bare secret key. Takes precedence over `KEY_KEY`.
-- `CONTRACT_ADDRESS`: "KT1..." smart contract address. Defaults to `"KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj"`.
+- `CONTRACT_ADDRESS`: "KT1..." smart contract address. Defaults to `"KT1AtaeG5PhuFyyivbfPZRUBkVMiqyxpo2cH"`.
 - `RPC_URL`: Tezos node RPC base URL. Defaults to `"https://mainnet.tezos.marigold.dev"`. Any public or private accessible Tezos RPC may be used.
 - `SCHEDULE`: 5- or 6-field [cron expression](https://docs.oracle.com/cd/E12058_01/doc/doc.1014/e12030/cron_expressions.htm). Defaults to `"0 0 * * *"`, which is daily at midnight, local to the server.
 

@@ -9,7 +9,7 @@ const [AGGREGATOR_URL, RPC_URL] = generateURLs(HOST)
 
 // Todo: This is hardcode mainnet contract
 // Handle this better when rewrite this app
-const CONTRACT = "KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj";
+const CONTRACT = "KT1AtaeG5PhuFyyivbfPZRUBkVMiqyxpo2cH";
 
 let proof = null;
 

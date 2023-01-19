@@ -1,1 +1,3 @@
-parameter bytes; storage unit; code { CDR ; NIL operation ; PAIR }
+{ parameter bytes ;
+  storage (pair (big_map %metadata string bytes) (address %owner)) ;
+  code { CDR ; NIL operation ; PAIR } }

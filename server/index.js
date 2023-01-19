@@ -18,7 +18,7 @@ const {
   BASE_URL: baseURL = 'http://localhost:8000',
   KEY_FILE: keyFile,
   SECRET: secret,
-  CONTRACT_ADDRESS: contractAddress = 'KT1NU6erpSTBphHi9fJ9SxuT2a6eTouoWSLj',
+  CONTRACT_ADDRESS: contractAddress = 'KT1AtaeG5PhuFyyivbfPZRUBkVMiqyxpo2cH',
   RPC_URL: rpcURL = 'https://mainnet.tezos.marigold.dev',
   SCHEDULE: schedule = '*/5 * * * *'
 } = process.env

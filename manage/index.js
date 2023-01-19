@@ -29,15 +29,17 @@ const crypto = require('crypto')
 
 const { Hex } = require('@tzstamp/helpers')
 
-const { TezosToolkit } = require('@taquito/taquito')
+const { TezosToolkit, MichelsonMap, MichelsonList } = require('@taquito/taquito')
 
 const { InMemorySigner } = require('@taquito/signer')
 
 const  { importKey } = require('@taquito/signer')
 
 const { Parser } = require('@taquito/michel-codec')
+const { Tzip16Module, char2Bytes } = require ('@taquito/tzip16');
 
 let Tezos = new TezosToolkit(`${argv.node}`)
+Tezos.addExtension(new Tzip16Module());
 
 const SECRET = (() => {
   if (argv.secret_path) {
@@ -66,9 +68,10 @@ if (argv.faucet) { // TestNet Key
   ).catch((e) => console.error(e))
 }
 
+//TODO change it
 let TZSTAMP_VERSIONS = new Set()
 TZSTAMP_VERSIONS.add(
-  '7009d7d3c79963f5128ba90d7f548eb82d4ec3d7f23ac919329234882e0d8ce3'
+  '9eceefb08500af16dddee0d9f78fac2e3e0602db4e8561e997bdf5b8b689010c'
 )
 
 async function getContractHash (addr) {
@@ -76,7 +79,7 @@ async function getContractHash (addr) {
   const code = contract.script.code
   return crypto.createHash('sha256')
     .update(JSON.stringify(code))
-    .digest('hex')
+    .digest('hex');
 }
 
 async function isTzStamp (addr) {
@@ -96,10 +99,20 @@ async function readContract (contractName) {
 }
 
 async function deploy (contractName) {
+  const url = 'https://ipfs.io/ipfs/QmaY7Ga724SkP5WRDuyrmvFwpStziB8WEqu24P8UWLxZ44';
   const contract = await readContract(contractName)
+  const metadata = new MichelsonMap();
+  const owner = await Tezos.signer.publicKeyHash();
+  metadata.set(
+    "",
+    char2Bytes(url)
+  );
   Tezos.contract.originate({
     code: contract,
-    init: 'Unit'
+    storage: {
+      metadata: metadata,
+      owner: owner,
+    }
   })
     .then(originationOp => {
       console.log(`Waiting for confirmation of origination for ${originationOp.contractAddress}...`)
